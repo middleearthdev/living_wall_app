@@ -1,0 +1,1369 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Living Wall — Development Brief · Phase 1 (Flutter)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#000;--surface:#0c0d10;--surface-2:#141619;--surface-3:#1c1f25;
+    --line:rgba(226,231,246,.075);--line-2:rgba(226,231,246,.15);
+    --text:#eef0f5;--text-dim:rgba(238,240,245,.56);--text-faint:rgba(238,240,245,.32);
+    --accent:#7c8ef5;--accent-2:#9aa8ff;--accent-deep:#5d6fe0;
+    --accent-soft:rgba(124,142,245,.13);--accent-line:rgba(124,142,245,.4);
+    --high:#e8826b;--med:#d2a07a;--low:#9ec5a8;
+    --display:'Fraunces',serif;--body:'Hanken Grotesk',sans-serif;--mono:'JetBrains Mono',monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html{scroll-behavior:smooth;}
+  body{background:var(--ink);color:var(--text);font-family:var(--body);-webkit-font-smoothing:antialiased;
+    background:radial-gradient(900px 620px at 8% -8%, rgba(124,142,245,.10), transparent 60%),
+      radial-gradient(820px 700px at 102% 6%, rgba(124,142,245,.055), transparent 55%),var(--ink);
+    padding:0 0 96px;line-height:1.55;}
+  .wrap{max-width:1280px;margin:0 auto;padding:0 28px;}
+
+  /* cover */
+  .cover{padding:80px 0 40px;}
+  .kicker{font-size:12px;letter-spacing:.32em;text-transform:uppercase;color:var(--accent-2);font-weight:600;margin-bottom:22px;}
+  h1{font-family:var(--display);font-weight:400;font-size:clamp(38px,5.4vw,64px);line-height:1.04;letter-spacing:-.022em;max-width:18ch;}
+  h1 em{font-style:italic;color:var(--accent-2);}
+  .cover .sub{margin-top:22px;max-width:68ch;color:var(--text-dim);font-size:16.5px;}
+  .cover .sub b{color:var(--text);}
+  .decisions{margin-top:28px;display:flex;gap:10px;flex-wrap:wrap;}
+  .dec{font-size:12.5px;padding:7px 14px;border:1px solid var(--accent-line);border-radius:100px;color:var(--accent-2);background:var(--accent-soft);}
+  .dec b{color:var(--text);font-weight:600;}
+
+  .toc{margin-top:52px;border:1px solid var(--line);border-radius:20px;
+    background:linear-gradient(160deg,var(--surface-2),var(--ink));padding:28px 32px;
+    display:grid;grid-template-columns:repeat(2,1fr);gap:6px 30px;}
+  .toc-h{grid-column:1/-1;font-size:11px;letter-spacing:.26em;text-transform:uppercase;color:var(--text-faint);font-weight:600;margin-bottom:6px;}
+  .toc a{text-decoration:none;display:flex;gap:12px;align-items:baseline;padding:9px 0;border-bottom:1px solid var(--line);}
+  .toc a:hover .toc-t{color:var(--accent-2);}
+  .toc-n{font-family:var(--display);font-size:15px;color:var(--accent-2);flex:none;width:26px;}
+  .toc-t{font-size:13.5px;color:var(--text);font-weight:600;transition:color .15s;}
+  .toc-d{font-size:11px;color:var(--text-faint);margin-top:1px;}
+
+  /* section */
+  .section{padding-top:88px;}
+  .sec-tab{display:inline-flex;align-items:center;gap:9px;margin-bottom:18px;}
+  .sec-tab .badge{font-family:var(--display);font-size:14px;width:30px;height:30px;display:grid;place-items:center;
+    border-radius:8px;background:var(--accent-soft);border:1px solid var(--accent-line);color:var(--accent-2);}
+  .sec-tab .lbl{font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:var(--accent-2);font-weight:600;}
+  .sec-h{font-family:var(--display);font-weight:400;font-size:clamp(28px,3.5vw,42px);letter-spacing:-.018em;max-width:24ch;}
+  .sec-h em{font-style:italic;color:var(--accent-2);}
+  .sec-intro{margin-top:14px;color:var(--text-dim);font-size:15.5px;max-width:74ch;}
+  .sec-intro b{color:var(--text);}
+
+  .block{margin-top:30px;border:1px solid var(--line);border-radius:18px;
+    background:linear-gradient(165deg,var(--surface-2),var(--ink));padding:28px 32px;}
+  .blk-h{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--accent-2);font-weight:600;margin-bottom:14px;}
+  .blk-h.muted{color:var(--text-faint);}
+  .blk-p{font-size:14px;color:var(--text-dim);line-height:1.6;}
+  .blk-p b{color:var(--text);}
+  .blk-p + .blk-p{margin-top:8px;}
+
+  /* package table */
+  .pkg{display:grid;grid-template-columns:1fr 1fr 1.6fr;border-top:1px solid var(--line);}
+  .pkg > div{padding:12px 14px;border-bottom:1px solid var(--line);font-size:13px;}
+  .pkg > div:nth-child(3n+1){font-family:var(--mono);font-size:12.5px;color:var(--accent-2);font-weight:500;}
+  .pkg > div:nth-child(3n+2){color:var(--text);font-weight:600;}
+  .pkg > div:nth-child(3n+3){color:var(--text-dim);}
+  .pkg.head > div{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--text-faint);font-weight:600;padding-bottom:9px;border-bottom:1px solid var(--line-2);font-family:var(--body);}
+
+  /* code */
+  .code{font-family:var(--mono);font-size:12px;line-height:1.65;background:#06080c;
+    border:1px solid var(--line);border-radius:12px;padding:18px 22px;
+    color:var(--text-dim);white-space:pre;overflow-x:auto;margin-top:16px;}
+  .code.sm{font-size:11.5px;padding:14px 18px;}
+  .code .k{color:#9aa8ff;}
+  .code .n{color:#d2a07a;}
+  .code .s{color:#9ec5a8;}
+  .code .c{color:var(--text-faint);font-style:italic;}
+  .code .t{color:#c688b8;}
+  .code .y{color:var(--accent-2);}
+
+  /* tree */
+  .tree{font-family:var(--mono);font-size:12.5px;line-height:1.65;color:var(--text-dim);
+    background:#06080c;border:1px solid var(--line);border-radius:12px;padding:20px 24px;
+    white-space:pre;overflow-x:auto;}
+  .tree .d{color:var(--accent-2);}
+  .tree .f{color:var(--text);}
+  .tree .c{color:var(--text-faint);}
+
+  /* architecture diagram */
+  .arch{margin-top:24px;display:flex;flex-direction:column;gap:12px;}
+  .arch-layer{border:1px solid var(--line-2);border-radius:12px;padding:16px 20px;background:rgba(226,231,246,.025);}
+  .arch-layer.l1{border-color:rgba(124,142,245,.4);background:rgba(124,142,245,.08);}
+  .arch-tag{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent-2);font-weight:600;margin-bottom:10px;}
+  .arch-items{display:flex;flex-wrap:wrap;gap:8px;}
+  .arch-item{font-size:12px;padding:5px 11px;border-radius:7px;background:rgba(0,0,0,.4);border:1px solid var(--line-2);color:var(--text);font-family:var(--mono);}
+  .arch-arrow{text-align:center;font-size:14px;color:var(--text-faint);padding:1px 0;}
+
+  /* mapping table */
+  .map-tbl{margin-top:20px;border-top:1px solid var(--line);display:grid;
+    grid-template-columns:1fr 1fr 1.4fr;}
+  .map-tbl > div{padding:12px 14px;border-bottom:1px solid var(--line);font-size:13px;}
+  .map-tbl.head > div{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--text-faint);font-weight:600;padding-bottom:9px;border-bottom:1px solid var(--line-2);}
+  .map-tbl > div:nth-child(3n+1){font-family:var(--mono);font-size:12.5px;color:var(--accent-2);font-weight:500;}
+  .map-tbl > div:nth-child(3n+2){font-family:var(--mono);font-size:12.5px;color:var(--text);font-weight:500;}
+  .map-tbl > div:nth-child(3n+3){color:var(--text-dim);font-size:12px;}
+
+  /* sprint */
+  .sprint{margin-top:24px;display:grid;grid-template-columns:auto 1fr;gap:0;}
+  .sprint > div{padding:14px 18px;border-bottom:1px solid var(--line);}
+  .sprint > div:nth-child(2n+1){font-family:var(--display);font-size:17px;color:var(--accent-2);background:rgba(124,142,245,.04);font-weight:500;border-right:1px solid var(--line);white-space:nowrap;}
+  .sprint > div:nth-child(2n+2) h5{font-size:13px;color:var(--text);font-weight:600;margin-bottom:5px;}
+  .sprint > div:nth-child(2n+2) p{font-size:12.5px;color:var(--text-dim);line-height:1.55;}
+  .sprint > div:nth-child(2n+2) p b{color:var(--text);}
+
+  /* risk */
+  .risks{margin-top:24px;display:flex;flex-direction:column;gap:14px;}
+  .risk{display:grid;grid-template-columns:74px 1fr;gap:18px;padding:18px 22px;
+    border:1px solid var(--line);border-radius:13px;background:rgba(226,231,246,.025);}
+  .risk-sev{font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;font-weight:700;padding:5px 10px;border-radius:6px;
+    height:fit-content;text-align:center;}
+  .risk-sev.high{color:#0a0c0a;background:var(--high);}
+  .risk-sev.med{color:#0a0c0a;background:var(--med);}
+  .risk-sev.low{color:#0a0c0a;background:var(--low);}
+  .risk h5{font-size:14px;color:var(--text);margin-bottom:6px;font-weight:600;}
+  .risk p{font-size:12.5px;color:var(--text-dim);line-height:1.6;}
+  .risk p + p{margin-top:7px;}
+  .risk p b{color:var(--text);font-weight:600;}
+  .risk p .lbl{font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-2);font-weight:600;margin-right:5px;}
+
+  .rule{height:1px;background:linear-gradient(90deg,transparent,var(--line-2),transparent);margin:0;}
+
+  .foot{margin-top:88px;padding:30px;border-top:1px solid var(--line);text-align:center;}
+  .foot .ft{font-family:var(--display);font-size:16px;color:var(--text);}
+  .foot .fm{font-size:12px;color:var(--text-faint);margin-top:5px;}
+
+  @media(max-width:980px){
+    .toc{grid-template-columns:1fr;}
+    .pkg,.map-tbl{grid-template-columns:1fr;}
+    .pkg > div,.map-tbl > div{border-right:none;}
+    .arch-items{flex-direction:column;}
+    body{padding:0 0 70px;}
+    .wrap{padding:0 16px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ================= COVER ================= -->
+  <header class="cover">
+    <div class="kicker">Living Wall · Phase 1 · Development Brief</div>
+    <h1>Dari design canvas ke <em>kode yang siap dijalankan</em>.</h1>
+    <p class="sub">
+      Dokumen ini menerjemahkan <b>20 artboard</b> dan <b>12 komponen React</b> dari design canvas
+      menjadi struktur Flutter konkret. Sumber kebenaran tetap design spec; brief ini menjawab
+      pertanyaan "bagaimana kita membangunnya" — package, arsitektur, network layer, mapping
+      komponen, konfigurasi native, dan rencana sprint.
+    </p>
+    <div class="decisions">
+      <span class="dec">Stack: <b>Flutter + Riverpod + drift</b></span>
+      <span class="dec">Arsitektur: <b>4-layer · local-first</b></span>
+      <span class="dec">WLED: <b>JSON API + WebSocket</b></span>
+      <span class="dec">Discovery: <b>mDNS + subnet fallback</b></span>
+      <span class="dec">Platform: <b>iOS &amp; Android</b></span>
+    </div>
+
+    <nav class="toc">
+      <div class="toc-h">Isi dokumen</div>
+      <a href="#s1"><span class="toc-n">01</span><span><span class="toc-t">Keputusan &amp; Stack</span><div class="toc-d">Package, versi, justifikasi</div></span></a>
+      <a href="#s2"><span class="toc-n">02</span><span><span class="toc-t">Struktur Proyek</span><div class="toc-d">Folder layout · 4 layer</div></span></a>
+      <a href="#s3"><span class="toc-n">03</span><span><span class="toc-t">Sistem Tema</span><div class="toc-d">ThemeData · token desain</div></span></a>
+      <a href="#s4"><span class="toc-n">04</span><span><span class="toc-t">Model Data</span><div class="toc-d">Freezed · Home/Room/Wall/Scene</div></span></a>
+      <a href="#s5"><span class="toc-n">05</span><span><span class="toc-t">Network Layer</span><div class="toc-d">WLED client · WebSocket · discovery</div></span></a>
+      <a href="#s6"><span class="toc-n">06</span><span><span class="toc-t">State Management</span><div class="toc-d">Riverpod graph</div></span></a>
+      <a href="#s7"><span class="toc-n">07</span><span><span class="toc-t">Pemetaan Layar</span><div class="toc-d">React → Flutter widget</div></span></a>
+      <a href="#s8"><span class="toc-n">08</span><span><span class="toc-t">Routing</span><div class="toc-d">go_router · 20 artboard</div></span></a>
+      <a href="#s9"><span class="toc-n">09</span><span><span class="toc-t">Konfigurasi Native</span><div class="toc-d">iOS Info.plist · Android Manifest</div></span></a>
+      <a href="#s10"><span class="toc-n">10</span><span><span class="toc-t">Sprint &amp; Risk</span><div class="toc-d">Timeline 8 minggu · risk register</div></span></a>
+    </nav>
+  </header>
+
+  <div class="rule"></div>
+
+  <!-- ================= 01 — STACK ================= -->
+  <section class="section" id="s1">
+    <div class="sec-tab"><span class="badge">01</span><span class="lbl">Keputusan &amp; Stack</span></div>
+    <h2 class="sec-h">Sembilan pilihan yang menentukan <em>seluruh</em> codebase.</h2>
+    <p class="sec-intro">
+      Setiap pilihan di sini berdampak ke lusinan keputusan harian di Phase 1. Saya pilihkan tech stack
+      yang <b>matang, terdokumentasi, dan mendukung pertumbuhan ke Phase 2</b> (cloud sync, multi-user).
+      Tidak ada hal eksperimental. Daftar singkat alternatif disertakan kalau timmu sudah punya
+      preferensi yang kuat di kolom kanan.
+    </p>
+
+    <div class="block">
+      <div class="blk-h">Stack inti</div>
+      <div class="pkg head">
+        <div>Package · Versi</div>
+        <div>Peran</div>
+        <div>Mengapa ini · alternatif</div>
+      </div>
+      <div class="pkg">
+        <div>flutter 3.24+</div>
+        <div>Framework</div>
+        <div>Dart 3.x, Material 3, stable channel.</div>
+
+        <div>flutter_riverpod ^2.5</div>
+        <div>State management</div>
+        <div>Type-safe, async-friendly, tanpa BuildContext acrobatics. <i>Alt: Bloc kalau tim sudah terbiasa.</i></div>
+
+        <div>riverpod_generator ^2.4</div>
+        <div>Code-gen provider</div>
+        <div>Mengurangi boilerplate, support hot-reload.</div>
+
+        <div>go_router ^14</div>
+        <div>Routing</div>
+        <div>Declarative, deep-link ready, cocok untuk struktur ruangan→wall→scene yang berlapis.</div>
+
+        <div>dio ^5.5</div>
+        <div>HTTP client</div>
+        <div>Interceptor untuk retry &amp; logging, lebih praktis dari raw <code style="font-family:var(--mono);">http</code>.</div>
+
+        <div>web_socket_channel ^3</div>
+        <div>WebSocket ke WLED</div>
+        <div>Official package, support ws://. Untuk stream realtime state wall.</div>
+
+        <div>multicast_dns ^0.3</div>
+        <div>Discovery mDNS</div>
+        <div>Untuk mencari <code style="font-family:var(--mono);">_wled._tcp</code> service di jaringan.</div>
+
+        <div>network_info_plus ^6</div>
+        <div>Info WiFi/IP</div>
+        <div>Dapat SSID, IP, subnet untuk fallback scan dan validasi network.</div>
+
+        <div>drift ^2.20</div>
+        <div>Local DB (SQLite)</div>
+        <div>Type-safe queries, migrasi mulus, mudah di-sync ke cloud Phase 2. <i>Alt: hive_ce kalau ingin lebih cepat ship.</i></div>
+
+        <div>freezed ^2.5</div>
+        <div>Immutable models</div>
+        <div>copyWith, ==, hashCode, sealed unions. Wajib untuk Scene/Wall yang banyak field.</div>
+
+        <div>json_serializable ^6.8</div>
+        <div>JSON parsing</div>
+        <div>Untuk parsing scenes.json &amp; WLED API response.</div>
+
+        <div>google_fonts ^6.2</div>
+        <div>Font loading</div>
+        <div>Fraunces + Hanken Grotesk on-demand. Atau bundle sebagai aset (lebih reliable, ukuran +~400KB).</div>
+
+        <div>permission_handler ^11</div>
+        <div>Native permissions</div>
+        <div>Untuk Android location permission (dibutuhkan untuk SSID), iOS local network.</div>
+
+        <div>url_launcher ^6.3</div>
+        <div>Open WiFi settings</div>
+        <div>Membuka Settings &gt; Wi-Fi pada langkah onboarding "Buka Pengaturan WiFi".</div>
+
+        <div>flutter_secure_storage ^9</div>
+        <div>Storage sensitif</div>
+        <div>Phase 1 belum dipakai aktif — tapi disiapkan untuk Phase 2 (token API, dsb).</div>
+      </div>
+    </div>
+
+    <div class="block">
+      <div class="blk-h muted">Yang TIDAK kita pakai di Phase 1 (sengaja)</div>
+      <p class="blk-p">
+        <b>Firebase / backend apa pun</b> — local-first di Phase 1, tidak ada akun, tidak ada cloud sync.
+        <b>Push notifications</b> — tidak dibutuhkan, semua kontrol manual atau jadwal lokal.
+        <b>Native iOS/Android code (platform channel)</b> — semua kebutuhan terpenuhi oleh package Dart.
+        <b>Audio reactivity / mic input</b> — di luar scope, butuh perubahan firmware WLED.
+        <b>HomeKit / Google Home integration</b> — Phase 3+, butuh sertifikasi MFi/Matter.
+      </p>
+    </div>
+  </section>
+
+  <div class="rule"></div>
+
+  <!-- ================= 02 — STRUCTURE ================= -->
+  <section class="section" id="s2">
+    <div class="sec-tab"><span class="badge">02</span><span class="lbl">Struktur Proyek</span></div>
+    <h2 class="sec-h">Empat lapis. Garis batasnya <em>tidak dilanggar</em>.</h2>
+    <p class="sec-intro">
+      Arsitektur 4 lapis: <b>presentation</b> (widget), <b>application</b> (provider &amp; logic), <b>data</b> (repo, service, model), dan <b>core</b> (tema, constant).
+      Aturan satu arah: presentation memanggil application, application memanggil data — tidak sebaliknya.
+      Ini membuat dev bisa mengganti WLED API dengan mock saat tes tanpa menyentuh layar.
+    </p>
+
+    <div class="block">
+      <div class="blk-h">Lapis arsitektur</div>
+      <div class="arch">
+        <div class="arch-layer l1">
+          <div class="arch-tag">Presentation</div>
+          <div class="arch-items">
+            <span class="arch-item">screens/*</span>
+            <span class="arch-item">widgets/*</span>
+            <span class="arch-item">routing/</span>
+          </div>
+        </div>
+        <div class="arch-arrow">↓ baca state · panggil action</div>
+        <div class="arch-layer">
+          <div class="arch-tag">Application</div>
+          <div class="arch-items">
+            <span class="arch-item">providers/*</span>
+            <span class="arch-item">controllers/*</span>
+            <span class="arch-item">use_cases/*</span>
+          </div>
+        </div>
+        <div class="arch-arrow">↓ panggil service · simpan ke DB</div>
+        <div class="arch-layer">
+          <div class="arch-tag">Data</div>
+          <div class="arch-items">
+            <span class="arch-item">models/*</span>
+            <span class="arch-item">services/wled_*</span>
+            <span class="arch-item">database/*</span>
+            <span class="arch-item">repositories/*</span>
+          </div>
+        </div>
+        <div class="arch-arrow">↓ konstanta · tema</div>
+        <div class="arch-layer">
+          <div class="arch-tag">Core</div>
+          <div class="arch-items">
+            <span class="arch-item">theme/</span>
+            <span class="arch-item">constants/</span>
+            <span class="arch-item">utils/</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="block">
+      <div class="blk-h">Folder konkret</div>
+<div class="tree"><span class="d">lib/</span>
+  <span class="f">main.dart</span>                          <span class="c">// ProviderScope + runApp</span>
+  <span class="f">app.dart</span>                           <span class="c">// MaterialApp.router</span>
+
+  <span class="d">core/</span>
+    <span class="d">theme/</span>
+      <span class="f">app_theme.dart</span>                 <span class="c">// ThemeData light + dark</span>
+      <span class="f">colors.dart</span>                    <span class="c">// periwinkle palette</span>
+      <span class="f">typography.dart</span>                <span class="c">// Fraunces + Hanken styles</span>
+    <span class="d">constants/</span>
+      <span class="f">durations.dart</span>                 <span class="c">// transition 14 = 1.4s</span>
+      <span class="f">network.dart</span>                   <span class="c">// timeouts, retry counts</span>
+    <span class="d">utils/</span>
+      <span class="f">async_value_x.dart</span>             <span class="c">// AsyncValue extensions</span>
+
+  <span class="d">data/</span>
+    <span class="d">models/</span>
+      <span class="f">home.dart</span>                      <span class="c">// Freezed</span>
+      <span class="f">room.dart</span>
+      <span class="f">wall.dart</span>
+      <span class="f">scene.dart</span>
+      <span class="f">wall_state.dart</span>                <span class="c">// derived realtime state</span>
+    <span class="d">database/</span>
+      <span class="f">app_database.dart</span>              <span class="c">// drift @DriftDatabase</span>
+      <span class="f">tables.dart</span>                    <span class="c">// HomesTable, RoomsTable, WallsTable</span>
+    <span class="d">services/</span>
+      <span class="f">wled_client.dart</span>               <span class="c">// HTTP wrapper (dio)</span>
+      <span class="f">wled_socket.dart</span>               <span class="c">// WebSocket</span>
+      <span class="f">discovery_service.dart</span>         <span class="c">// mDNS + subnet fallback</span>
+      <span class="f">wifi_service.dart</span>              <span class="c">// SSID, IP via network_info_plus</span>
+    <span class="d">repositories/</span>
+      <span class="f">home_repository.dart</span>
+      <span class="f">wall_repository.dart</span>
+      <span class="f">scene_repository.dart</span>
+
+  <span class="d">application/</span>
+    <span class="d">providers/</span>
+      <span class="f">database_provider.dart</span>
+      <span class="f">home_providers.dart</span>
+      <span class="f">wall_providers.dart</span>
+      <span class="f">scene_providers.dart</span>
+      <span class="f">discovery_providers.dart</span>
+    <span class="d">controllers/</span>
+      <span class="f">onboarding_controller.dart</span>     <span class="c">// state machine 4 langkah</span>
+      <span class="f">scene_application_controller.dart</span>  <span class="c">// apply scene + sync group</span>
+      <span class="f">add_wall_controller.dart</span>       <span class="c">// modul "Alur Tambah Wall"</span>
+
+  <span class="d">presentation/</span>
+    <span class="d">routing/</span>
+      <span class="f">app_router.dart</span>                <span class="c">// go_router config</span>
+      <span class="f">routes.dart</span>                    <span class="c">// const route names</span>
+    <span class="d">screens/</span>
+      <span class="d">onboarding/</span>
+        <span class="f">empty_state_screen.dart</span>       <span class="c">// S01</span>
+        <span class="f">wifi_guide_screen.dart</span>        <span class="c">// S02 — dipakai onboarding & add-wall</span>
+        <span class="f">discovery_screen.dart</span>         <span class="c">// S03</span>
+        <span class="f">name_place_screen.dart</span>        <span class="c">// S04</span>
+      <span class="d">dashboard/</span>
+        <span class="f">dashboard_screen.dart</span>         <span class="c">// S05 (+ dialog tambah ruangan)</span>
+      <span class="d">room/</span>
+        <span class="f">room_screen.dart</span>              <span class="c">// S07 — parameterized, dipakai 4x</span>
+      <span class="d">wall/</span>
+        <span class="f">wall_control_screen.dart</span>      <span class="c">// S06 + toast applied</span>
+      <span class="d">scenes/</span>
+        <span class="f">scene_gallery_screen.dart</span>     <span class="c">// S08</span>
+        <span class="f">adjustment_sheet.dart</span>         <span class="c">// S09 (showModalBottomSheet)</span>
+    <span class="d">widgets/</span>
+      <span class="f">room_card.dart</span>                 <span class="c">// dengan mini-controls</span>
+      <span class="f">mini_controls.dart</span>             <span class="c">// 3 quick scene + slider</span>
+      <span class="f">scene_card.dart</span>                <span class="c">// thumbnail + nama</span>
+      <span class="f">sync_banner.dart</span>               <span class="c">// "n wall tersinkron"</span>
+      <span class="f">brightness_slider.dart</span>
+      <span class="f">stepper_dots.dart</span>              <span class="c">// 3-step indicator</span>
+      <span class="f">device_pulse.dart</span>              <span class="c">// pulse radar di discovery</span>
+      <span class="f">context_banner.dart</span>            <span class="c">// "akan masuk ke [room]"</span>
+
+<span class="d">assets/</span>
+  <span class="f">scenes.json</span>                        <span class="c">// 18 scene dari catalog</span>
+  <span class="d">images/scenes/</span>                      <span class="c">// thumbnail Unsplash bundled</span>
+  <span class="d">fonts/</span>                              <span class="c">// Fraunces + Hanken (opsional)</span></div>
+    </div>
+  </section>
+
+  <div class="rule"></div>
+
+  <!-- ================= 03 — THEME ================= -->
+  <section class="section" id="s3">
+    <div class="sec-tab"><span class="badge">03</span><span class="lbl">Sistem Tema</span></div>
+    <h2 class="sec-h">Token desain jadi <em>ThemeData</em> + ThemeExtension.</h2>
+    <p class="sec-intro">
+      Inline style di kode React kamu jadi <b>satu sumber kebenaran</b> di sini. Warna periwinkle yang
+      tidak masuk Material spec ditampung di custom <code style="font-family:var(--mono);font-size:13px;">ThemeExtension</code> agar bisa diakses lewat <code style="font-family:var(--mono);font-size:13px;">Theme.of(context).extension&lt;LivingWallTheme&gt;()</code> dari widget mana pun.
+    </p>
+
+    <div class="block">
+      <div class="blk-h">core/theme/colors.dart</div>
+<div class="code"><span class="c">// Palet periwinkle — sumber kebenaran semua warna brand</span>
+<span class="k">import</span> <span class="s">'package:flutter/material.dart'</span><span class="k">;</span>
+
+<span class="k">class</span> <span class="t">AppColors</span> {
+  <span class="k">static const</span> ink         <span class="k">=</span> <span class="t">Color</span>(<span class="n">0xFF000000</span>)<span class="k">;</span>
+  <span class="k">static const</span> surface     <span class="k">=</span> <span class="t">Color</span>(<span class="n">0xFF0C0D10</span>)<span class="k">;</span>
+  <span class="k">static const</span> surface2    <span class="k">=</span> <span class="t">Color</span>(<span class="n">0xFF141619</span>)<span class="k">;</span>
+  <span class="k">static const</span> surface3    <span class="k">=</span> <span class="t">Color</span>(<span class="n">0xFF1C1F25</span>)<span class="k">;</span>
+
+  <span class="k">static const</span> accent      <span class="k">=</span> <span class="t">Color</span>(<span class="n">0xFF7C8EF5</span>)<span class="k">;</span>  <span class="c">// periwinkle</span>
+  <span class="k">static const</span> accentLight <span class="k">=</span> <span class="t">Color</span>(<span class="n">0xFF9AA8FF</span>)<span class="k">;</span>
+  <span class="k">static const</span> accentDeep  <span class="k">=</span> <span class="t">Color</span>(<span class="n">0xFF5D6FE0</span>)<span class="k">;</span>
+
+  <span class="k">static const</span> text        <span class="k">=</span> <span class="t">Color</span>(<span class="n">0xFFEEF0F5</span>)<span class="k">;</span>
+  <span class="k">static</span> <span class="k">final</span>  textDim     <span class="k">=</span> text<span class="k">.</span>withOpacity(<span class="n">0.56</span>)<span class="k">;</span>
+  <span class="k">static</span> <span class="k">final</span>  textFaint   <span class="k">=</span> text<span class="k">.</span>withOpacity(<span class="n">0.32</span>)<span class="k">;</span>
+
+  <span class="c">// Kategori scene</span>
+  <span class="k">static const</span> tenang  <span class="k">=</span> <span class="t">Color</span>(<span class="n">0xFF8AA6C9</span>)<span class="k">;</span>
+  <span class="k">static const</span> fokus   <span class="k">=</span> <span class="t">Color</span>(<span class="n">0xFF9EC5A8</span>)<span class="k">;</span>
+  <span class="k">static const</span> sosial  <span class="k">=</span> <span class="t">Color</span>(<span class="n">0xFFD2A07A</span>)<span class="k">;</span>
+  <span class="k">static const</span> dinamis <span class="k">=</span> <span class="t">Color</span>(<span class="n">0xFFC688B8</span>)<span class="k">;</span>
+}</div>
+    </div>
+
+    <div class="block">
+      <div class="blk-h">core/theme/app_theme.dart</div>
+<div class="code"><span class="k">import</span> <span class="s">'package:google_fonts/google_fonts.dart'</span><span class="k">;</span>
+
+<span class="k">class</span> <span class="t">LivingWallTheme</span> <span class="k">extends</span> <span class="t">ThemeExtension</span><span class="k">&lt;</span><span class="t">LivingWallTheme</span><span class="k">&gt;</span> {
+  <span class="k">final</span> <span class="t">Color</span> accent<span class="k">,</span> accentLight<span class="k">,</span> tenang<span class="k">,</span> fokus<span class="k">,</span> sosial<span class="k">,</span> dinamis<span class="k">;</span>
+  <span class="k">final</span> <span class="t">Color</span> surface2<span class="k">,</span> surface3<span class="k">,</span> textDim<span class="k">,</span> textFaint<span class="k">;</span>
+
+  <span class="t">LivingWallTheme</span>({
+    <span class="k">required</span> <span class="k">this</span><span class="k">.</span>accent<span class="k">,</span> <span class="k">required</span> <span class="k">this</span><span class="k">.</span>accentLight<span class="k">,</span>
+    <span class="k">required</span> <span class="k">this</span><span class="k">.</span>surface2<span class="k">,</span> <span class="k">required</span> <span class="k">this</span><span class="k">.</span>surface3<span class="k">,</span>
+    <span class="k">required</span> <span class="k">this</span><span class="k">.</span>textDim<span class="k">,</span> <span class="k">required</span> <span class="k">this</span><span class="k">.</span>textFaint<span class="k">,</span>
+    <span class="k">required</span> <span class="k">this</span><span class="k">.</span>tenang<span class="k">,</span> <span class="k">required</span> <span class="k">this</span><span class="k">.</span>fokus<span class="k">,</span>
+    <span class="k">required</span> <span class="k">this</span><span class="k">.</span>sosial<span class="k">,</span> <span class="k">required</span> <span class="k">this</span><span class="k">.</span>dinamis<span class="k">,</span>
+  })<span class="k">;</span>
+
+  <span class="t">Color</span> sceneCategory(<span class="t">SceneCategory</span> c) <span class="k">=&gt;</span> <span class="k">switch</span>(c) {
+    <span class="t">SceneCategory</span><span class="k">.</span>tenang  <span class="k">=&gt;</span> tenang<span class="k">,</span>
+    <span class="t">SceneCategory</span><span class="k">.</span>fokus   <span class="k">=&gt;</span> fokus<span class="k">,</span>
+    <span class="t">SceneCategory</span><span class="k">.</span>sosial  <span class="k">=&gt;</span> sosial<span class="k">,</span>
+    <span class="t">SceneCategory</span><span class="k">.</span>dinamis <span class="k">=&gt;</span> dinamis<span class="k">,</span>
+  }<span class="k">;</span>
+
+  <span class="c">// lerp, copyWith — diisi sesuai standar ThemeExtension</span>
+  <span class="k">@override</span> ... <span class="c">// elided</span>
+}
+
+<span class="t">ThemeData</span> buildAppTheme() {
+  <span class="k">final</span> base <span class="k">=</span> <span class="t">ThemeData</span><span class="k">.</span>dark(useMaterial3: <span class="n">true</span>)<span class="k">;</span>
+  <span class="k">return</span> base<span class="k">.</span>copyWith(
+    scaffoldBackgroundColor: <span class="t">AppColors</span><span class="k">.</span>ink<span class="k">,</span>
+    colorScheme: <span class="t">ColorScheme</span><span class="k">.</span>fromSeed(
+      seedColor: <span class="t">AppColors</span><span class="k">.</span>accent<span class="k">,</span>
+      brightness: <span class="t">Brightness</span><span class="k">.</span>dark<span class="k">,</span>
+      surface: <span class="t">AppColors</span><span class="k">.</span>ink<span class="k">,</span>
+    )<span class="k">,</span>
+    textTheme: <span class="t">GoogleFonts</span><span class="k">.</span>hankenGroteskTextTheme(base<span class="k">.</span>textTheme)<span class="k">.</span>copyWith(
+      displayLarge: <span class="t">GoogleFonts</span><span class="k">.</span>fraunces(
+        fontWeight: <span class="t">FontWeight</span><span class="k">.</span>w400<span class="k">,</span> fontSize: <span class="n">60</span><span class="k">,</span> letterSpacing: <span class="k">-</span><span class="n">1.2</span><span class="k">,</span>
+        color: <span class="t">AppColors</span><span class="k">.</span>text<span class="k">,</span>
+      )<span class="k">,</span>
+      displayMedium: <span class="t">GoogleFonts</span><span class="k">.</span>fraunces(
+        fontWeight: <span class="t">FontWeight</span><span class="k">.</span>w400<span class="k">,</span> fontSize: <span class="n">42</span><span class="k">,</span> letterSpacing: <span class="k">-</span><span class="n">0.7</span><span class="k">,</span>
+      )<span class="k">,</span>
+      headlineMedium: <span class="t">GoogleFonts</span><span class="k">.</span>fraunces(fontSize: <span class="n">30</span>)<span class="k">,</span>
+      <span class="c">// body styles default ke Hanken Grotesk</span>
+    )<span class="k">,</span>
+    extensions: [
+      <span class="t">LivingWallTheme</span>(
+        accent: <span class="t">AppColors</span><span class="k">.</span>accent<span class="k">,</span>
+        accentLight: <span class="t">AppColors</span><span class="k">.</span>accentLight<span class="k">,</span>
+        surface2: <span class="t">AppColors</span><span class="k">.</span>surface2<span class="k">,</span>
+        surface3: <span class="t">AppColors</span><span class="k">.</span>surface3<span class="k">,</span>
+        textDim: <span class="t">AppColors</span><span class="k">.</span>textDim<span class="k">,</span>
+        textFaint: <span class="t">AppColors</span><span class="k">.</span>textFaint<span class="k">,</span>
+        tenang: <span class="t">AppColors</span><span class="k">.</span>tenang<span class="k">,</span>
+        fokus: <span class="t">AppColors</span><span class="k">.</span>fokus<span class="k">,</span>
+        sosial: <span class="t">AppColors</span><span class="k">.</span>sosial<span class="k">,</span>
+        dinamis: <span class="t">AppColors</span><span class="k">.</span>dinamis<span class="k">,</span>
+      )<span class="k">,</span>
+    ]<span class="k">,</span>
+  )<span class="k">;</span>
+}</div>
+    </div>
+  </section>
+
+  <div class="rule"></div>
+
+  <!-- ================= 04 — DATA MODEL ================= -->
+  <section class="section" id="s4">
+    <div class="sec-tab"><span class="badge">04</span><span class="lbl">Model Data</span></div>
+    <h2 class="sec-h">Empat entitas. Garis batasnya <em>persis</em> seperti di spec.</h2>
+    <p class="sec-intro">
+      Hierarki <b>Home → Room → Wall</b> + katalog <b>Scene</b> yang independen. Semua model immutable via Freezed —
+      copyWith dan equality didapat gratis. Scene dimuat dari aset JSON (read-only), sisanya disimpan di drift.
+    </p>
+
+    <div class="block">
+      <div class="blk-h">data/models/wall.dart (contoh — pola sama untuk Home dan Room)</div>
+<div class="code"><span class="k">import</span> <span class="s">'package:freezed_annotation/freezed_annotation.dart'</span><span class="k">;</span>
+
+<span class="k">part</span> <span class="s">'wall.freezed.dart'</span><span class="k">;</span>
+<span class="k">part</span> <span class="s">'wall.g.dart'</span><span class="k">;</span>
+
+<span class="k">@freezed</span>
+<span class="k">class</span> <span class="t">Wall</span> <span class="k">with</span> <span class="t">_$Wall</span> {
+  <span class="k">const factory</span> <span class="t">Wall</span>({
+    <span class="k">required</span> <span class="t">String</span> id<span class="k">,</span>
+    <span class="k">required</span> <span class="t">String</span> roomId<span class="k">,</span>
+    <span class="k">required</span> <span class="t">String</span> name<span class="k">,</span>
+    <span class="k">required</span> <span class="t">String</span> deviceId<span class="k">,</span>      <span class="c">// MAC address WLED</span>
+    <span class="k">required</span> <span class="t">String</span> ipAddress<span class="k">,</span>
+    <span class="t">DateTime</span><span class="k">?</span> lastSeen<span class="k">,</span>
+    <span class="k">@Default</span>(<span class="n">false</span>) <span class="t">bool</span> online<span class="k">,</span>
+  }) <span class="k">=</span> <span class="t">_Wall</span><span class="k">;</span>
+
+  <span class="k">factory</span> <span class="t">Wall</span><span class="k">.</span>fromJson(<span class="t">Map</span><span class="k">&lt;</span><span class="t">String</span><span class="k">,</span> <span class="k">dynamic</span><span class="k">&gt;</span> json) <span class="k">=&gt;</span> <span class="t">_$WallFromJson</span>(json)<span class="k">;</span>
+}</div>
+    </div>
+
+    <div class="block">
+      <div class="blk-h">data/models/scene.dart</div>
+<div class="code"><span class="k">enum</span> <span class="t">SceneCategory</span> { tenang<span class="k">,</span> fokus<span class="k">,</span> sosial<span class="k">,</span> dinamis }
+
+<span class="k">@freezed</span>
+<span class="k">class</span> <span class="t">Scene</span> <span class="k">with</span> <span class="t">_$Scene</span> {
+  <span class="k">const factory</span> <span class="t">Scene</span>({
+    <span class="k">required</span> <span class="t">String</span> id<span class="k">,</span>                  <span class="c">// 'ocean', 'candle', dst</span>
+    <span class="k">required</span> <span class="t">String</span> name<span class="k">,</span>                <span class="c">// 'Ocean Drift'</span>
+    <span class="k">required</span> <span class="t">SceneCategory</span> category<span class="k">,</span>
+    <span class="k">required</span> <span class="t">String</span> description<span class="k">,</span>
+    <span class="k">required</span> <span class="t">String</span> useCase<span class="k">,</span>
+    <span class="k">required</span> <span class="t">String</span> thumbnailAsset<span class="k">,</span>      <span class="c">// 'assets/images/scenes/ocean.jpg'</span>
+
+    <span class="c">// WLED API params</span>
+    <span class="k">required</span> <span class="t">int</span> defaultBri<span class="k">,</span>
+    <span class="k">required</span> <span class="t">int</span> fx<span class="k">,</span>
+    <span class="k">required</span> <span class="t">int</span> pal<span class="k">,</span>
+    <span class="t">int</span><span class="k">?</span> defaultSx<span class="k">,</span>
+    <span class="t">int</span><span class="k">?</span> defaultIx<span class="k">,</span>
+    <span class="t">List</span><span class="k">&lt;</span><span class="t">int</span><span class="k">&gt;?</span> rgb<span class="k">,</span>                       <span class="c">// untuk solid/breathe</span>
+    <span class="k">@Default</span>(<span class="n">14</span>) <span class="t">int</span> transition<span class="k">,</span>         <span class="c">// 100ms units</span>
+  }) <span class="k">=</span> <span class="t">_Scene</span><span class="k">;</span>
+
+  <span class="k">factory</span> <span class="t">Scene</span><span class="k">.</span>fromJson(<span class="t">Map</span><span class="k">&lt;</span><span class="t">String</span><span class="k">,</span> <span class="k">dynamic</span><span class="k">&gt;</span> json) <span class="k">=&gt;</span> <span class="t">_$SceneFromJson</span>(json)<span class="k">;</span>
+}
+
+<span class="c">// Live state — derived dari WebSocket, tidak disimpan permanent</span>
+<span class="k">@freezed</span>
+<span class="k">class</span> <span class="t">WallState</span> <span class="k">with</span> <span class="t">_$WallState</span> {
+  <span class="k">const factory</span> <span class="t">WallState</span>({
+    <span class="k">required</span> <span class="t">bool</span> on<span class="k">,</span>
+    <span class="k">required</span> <span class="t">int</span> brightness<span class="k">,</span>
+    <span class="t">String</span><span class="k">?</span> activeSceneId<span class="k">,</span>
+    <span class="t">int</span><span class="k">?</span> fx<span class="k">,</span>
+    <span class="t">int</span><span class="k">?</span> pal<span class="k">,</span>
+  }) <span class="k">=</span> <span class="t">_WallState</span><span class="k">;</span>
+
+  <span class="k">factory</span> <span class="t">WallState</span><span class="k">.</span>fromWledJson(<span class="t">Map</span><span class="k">&lt;</span><span class="t">String</span><span class="k">,</span> <span class="k">dynamic</span><span class="k">&gt;</span> json) {
+    <span class="k">final</span> seg <span class="k">=</span> (json[<span class="s">'seg'</span>] <span class="k">as</span> <span class="t">List</span>)[<span class="n">0</span>] <span class="k">as</span> <span class="t">Map</span><span class="k">&lt;</span><span class="t">String</span><span class="k">,</span> <span class="k">dynamic</span><span class="k">&gt;;</span>
+    <span class="k">return</span> <span class="t">WallState</span>(
+      on: json[<span class="s">'on'</span>] <span class="k">as</span> <span class="t">bool</span><span class="k">,</span>
+      brightness: json[<span class="s">'bri'</span>] <span class="k">as</span> <span class="t">int</span><span class="k">,</span>
+      fx: seg[<span class="s">'fx'</span>] <span class="k">as</span> <span class="t">int</span><span class="k">?,</span>
+      pal: seg[<span class="s">'pal'</span>] <span class="k">as</span> <span class="t">int</span><span class="k">?,</span>
+    )<span class="k">;</span>
+  }
+}</div>
+    </div>
+
+    <div class="block">
+      <div class="blk-h">data/database/tables.dart — drift</div>
+<div class="code"><span class="k">import</span> <span class="s">'package:drift/drift.dart'</span><span class="k">;</span>
+
+<span class="k">class</span> <span class="t">Homes</span> <span class="k">extends</span> <span class="t">Table</span> {
+  <span class="t">TextColumn</span> <span class="k">get</span> id <span class="k">=&gt;</span> text()()<span class="k">;</span>
+  <span class="t">TextColumn</span> <span class="k">get</span> name <span class="k">=&gt;</span> text()()<span class="k">;</span>
+  <span class="k">@override</span> <span class="t">Set</span><span class="k">&lt;</span><span class="t">Column</span><span class="k">&gt;?</span> <span class="k">get</span> primaryKey <span class="k">=&gt;</span> {id}<span class="k">;</span>
+}
+
+<span class="k">class</span> <span class="t">Rooms</span> <span class="k">extends</span> <span class="t">Table</span> {
+  <span class="t">TextColumn</span> <span class="k">get</span> id <span class="k">=&gt;</span> text()()<span class="k">;</span>
+  <span class="t">TextColumn</span> <span class="k">get</span> homeId <span class="k">=&gt;</span> text()<span class="k">.</span>references(<span class="t">Homes</span><span class="k">,</span> #id)()<span class="k">;</span>
+  <span class="t">TextColumn</span> <span class="k">get</span> name <span class="k">=&gt;</span> text()()<span class="k">;</span>
+  <span class="t">IntColumn</span>  <span class="k">get</span> sortOrder <span class="k">=&gt;</span> integer()<span class="k">.</span>withDefault(<span class="k">const</span> <span class="t">Constant</span>(<span class="n">0</span>))()<span class="k">;</span>
+  <span class="k">@override</span> <span class="t">Set</span><span class="k">&lt;</span><span class="t">Column</span><span class="k">&gt;?</span> <span class="k">get</span> primaryKey <span class="k">=&gt;</span> {id}<span class="k">;</span>
+}
+
+<span class="k">class</span> <span class="t">Walls</span> <span class="k">extends</span> <span class="t">Table</span> {
+  <span class="t">TextColumn</span> <span class="k">get</span> id <span class="k">=&gt;</span> text()()<span class="k">;</span>
+  <span class="t">TextColumn</span> <span class="k">get</span> roomId <span class="k">=&gt;</span> text()<span class="k">.</span>references(<span class="t">Rooms</span><span class="k">,</span> #id)()<span class="k">;</span>
+  <span class="t">TextColumn</span> <span class="k">get</span> name <span class="k">=&gt;</span> text()()<span class="k">;</span>
+  <span class="t">TextColumn</span> <span class="k">get</span> deviceId <span class="k">=&gt;</span> text()<span class="k">.</span>unique()()<span class="k">;</span>
+  <span class="t">TextColumn</span> <span class="k">get</span> ipAddress <span class="k">=&gt;</span> text()()<span class="k">;</span>
+  <span class="t">DateTimeColumn</span> <span class="k">get</span> lastSeen <span class="k">=&gt;</span> dateTime()<span class="k">.</span>nullable()()<span class="k">;</span>
+  <span class="k">@override</span> <span class="t">Set</span><span class="k">&lt;</span><span class="t">Column</span><span class="k">&gt;?</span> <span class="k">get</span> primaryKey <span class="k">=&gt;</span> {id}<span class="k">;</span>
+}</div>
+    </div>
+  </section>
+
+  <div class="rule"></div>
+
+  <!-- ================= 05 — NETWORK ================= -->
+  <section class="section" id="s5">
+    <div class="sec-tab"><span class="badge">05</span><span class="lbl">Network Layer</span></div>
+    <h2 class="sec-h">Tiga service. Bagian yang <em>paling</em> menentukan rasa app.</h2>
+    <p class="sec-intro">
+      Tiga tanggung jawab terpisah: <b>WledClient</b> (kirim perintah HTTP), <b>WledSocket</b> (terima state realtime),
+      <b>DiscoveryService</b> (cari wall di jaringan). Latency rendah dan reconnect yang halus = app terasa "hidup";
+      latency tinggi atau koneksi putus tanpa handling = produk terasa rusak.
+    </p>
+
+    <div class="block">
+      <div class="blk-h">data/services/wled_client.dart</div>
+<div class="code"><span class="k">import</span> <span class="s">'package:dio/dio.dart'</span><span class="k">;</span>
+
+<span class="k">class</span> <span class="t">WledClient</span> {
+  <span class="k">final</span> <span class="t">Dio</span> _dio<span class="k">;</span>
+
+  <span class="t">WledClient</span>({<span class="k">required</span> <span class="t">String</span> baseUrl})
+      : _dio <span class="k">=</span> <span class="t">Dio</span>(<span class="t">BaseOptions</span>(
+          baseUrl: baseUrl<span class="k">,</span>
+          connectTimeout: <span class="k">const</span> <span class="t">Duration</span>(seconds: <span class="n">3</span>)<span class="k">,</span>
+          receiveTimeout: <span class="k">const</span> <span class="t">Duration</span>(seconds: <span class="n">3</span>)<span class="k">,</span>
+        ))<span class="k">;</span>
+
+  <span class="t">Future</span><span class="k">&lt;</span><span class="t">void</span><span class="k">&gt;</span> applyScene(
+    <span class="t">Scene</span> scene<span class="k">,</span> {
+    <span class="t">int</span><span class="k">?</span> briOverride<span class="k">,</span>
+    <span class="t">int</span><span class="k">?</span> sxOverride<span class="k">,</span>
+    <span class="t">int</span><span class="k">?</span> ixOverride<span class="k">,</span>
+  }) <span class="k">async</span> {
+    <span class="k">final</span> seg <span class="k">=</span> <span class="k">&lt;</span><span class="t">String</span><span class="k">,</span> <span class="k">dynamic</span><span class="k">&gt;</span>{
+      <span class="s">'id'</span>: <span class="n">0</span><span class="k">,</span>
+      <span class="s">'fx'</span>: scene<span class="k">.</span>fx<span class="k">,</span>
+      <span class="s">'pal'</span>: scene<span class="k">.</span>pal<span class="k">,</span>
+    }<span class="k">;</span>
+    <span class="k">final</span> sx <span class="k">=</span> sxOverride <span class="k">??</span> scene<span class="k">.</span>defaultSx<span class="k">;</span>
+    <span class="k">final</span> ix <span class="k">=</span> ixOverride <span class="k">??</span> scene<span class="k">.</span>defaultIx<span class="k">;</span>
+    <span class="k">if</span> (sx <span class="k">!=</span> <span class="n">null</span>) seg[<span class="s">'sx'</span>] <span class="k">=</span> sx<span class="k">;</span>
+    <span class="k">if</span> (ix <span class="k">!=</span> <span class="n">null</span>) seg[<span class="s">'ix'</span>] <span class="k">=</span> ix<span class="k">;</span>
+    <span class="k">if</span> (scene<span class="k">.</span>rgb <span class="k">!=</span> <span class="n">null</span>) seg[<span class="s">'col'</span>] <span class="k">=</span> [scene<span class="k">.</span>rgb]<span class="k">;</span>
+
+    <span class="k">await</span> _dio<span class="k">.</span>post(<span class="s">'/json/state'</span><span class="k">,</span> data: {
+      <span class="s">'on'</span>: <span class="n">true</span><span class="k">,</span>
+      <span class="s">'bri'</span>: briOverride <span class="k">??</span> scene<span class="k">.</span>defaultBri<span class="k">,</span>
+      <span class="s">'transition'</span>: scene<span class="k">.</span>transition<span class="k">,</span>
+      <span class="s">'seg'</span>: [seg]<span class="k">,</span>
+    })<span class="k">;</span>
+  }
+
+  <span class="t">Future</span><span class="k">&lt;</span><span class="t">void</span><span class="k">&gt;</span> setOnOff(<span class="t">bool</span> on) <span class="k">=&gt;</span>
+    _dio<span class="k">.</span>post(<span class="s">'/json/state'</span><span class="k">,</span> data: {<span class="s">'on'</span>: on})<span class="k">;</span>
+
+  <span class="t">Future</span><span class="k">&lt;</span><span class="t">void</span><span class="k">&gt;</span> setBrightness(<span class="t">int</span> bri) <span class="k">=&gt;</span>
+    _dio<span class="k">.</span>post(<span class="s">'/json/state'</span><span class="k">,</span> data: {<span class="s">'bri'</span>: bri})<span class="k">;</span>
+
+  <span class="t">Future</span><span class="k">&lt;</span><span class="t">WledInfo</span><span class="k">?&gt;</span> getInfo() <span class="k">async</span> {
+    <span class="k">try</span> {
+      <span class="k">final</span> r <span class="k">=</span> <span class="k">await</span> _dio<span class="k">.</span>get(<span class="s">'/json/info'</span>)<span class="k">;</span>
+      <span class="k">return</span> <span class="t">WledInfo</span><span class="k">.</span>fromJson(r<span class="k">.</span>data)<span class="k">;</span>
+    } <span class="k">catch</span> (_) {
+      <span class="k">return</span> <span class="n">null</span><span class="k">;</span>
+    }
+  }
+}</div>
+    </div>
+
+    <div class="block">
+      <div class="blk-h">data/services/wled_socket.dart</div>
+<div class="code"><span class="k">import</span> <span class="s">'dart:async'</span><span class="k">;</span>
+<span class="k">import</span> <span class="s">'package:web_socket_channel/web_socket_channel.dart'</span><span class="k">;</span>
+
+<span class="k">class</span> <span class="t">WledSocket</span> {
+  <span class="t">WebSocketChannel</span><span class="k">?</span> _channel<span class="k">;</span>
+  <span class="k">final</span> _controller <span class="k">=</span> <span class="t">StreamController</span><span class="k">&lt;</span><span class="t">WallState</span><span class="k">&gt;.</span>broadcast()<span class="k">;</span>
+  <span class="t">Timer</span><span class="k">?</span> _reconnectTimer<span class="k">;</span>
+  <span class="t">String</span><span class="k">?</span> _ip<span class="k">;</span>
+  <span class="t">bool</span> _disposed <span class="k">=</span> <span class="n">false</span><span class="k">;</span>
+
+  <span class="t">Stream</span><span class="k">&lt;</span><span class="t">WallState</span><span class="k">&gt;</span> <span class="k">get</span> stream <span class="k">=&gt;</span> _controller<span class="k">.</span>stream<span class="k">;</span>
+
+  <span class="t">void</span> connect(<span class="t">String</span> ip) {
+    _ip <span class="k">=</span> ip<span class="k">;</span>
+    _channel <span class="k">=</span> <span class="t">WebSocketChannel</span><span class="k">.</span>connect(<span class="t">Uri</span><span class="k">.</span>parse(<span class="s">'ws://$ip/ws'</span>))<span class="k">;</span>
+    _channel<span class="k">!.</span>stream<span class="k">.</span>listen(
+      _onMessage<span class="k">,</span>
+      onError: (_) <span class="k">=&gt;</span> _scheduleReconnect()<span class="k">,</span>
+      onDone: () <span class="k">=&gt;</span> _scheduleReconnect()<span class="k">,</span>
+    )<span class="k">;</span>
+  }
+
+  <span class="t">void</span> _onMessage(<span class="k">dynamic</span> raw) {
+    <span class="k">final</span> json <span class="k">=</span> jsonDecode(raw <span class="k">as</span> <span class="t">String</span>) <span class="k">as</span> <span class="t">Map</span><span class="k">&lt;</span><span class="t">String</span><span class="k">,</span> <span class="k">dynamic</span><span class="k">&gt;;</span>
+    <span class="k">if</span> (json[<span class="s">'state'</span>] <span class="k">!=</span> <span class="n">null</span>) {
+      _controller<span class="k">.</span>add(<span class="t">WallState</span><span class="k">.</span>fromWledJson(json[<span class="s">'state'</span>]))<span class="k">;</span>
+    }
+  }
+
+  <span class="t">void</span> _scheduleReconnect() {
+    <span class="k">if</span> (_disposed <span class="k">||</span> _ip <span class="k">==</span> <span class="n">null</span>) <span class="k">return</span><span class="k">;</span>
+    _reconnectTimer<span class="k">?.</span>cancel()<span class="k">;</span>
+    _reconnectTimer <span class="k">=</span> <span class="t">Timer</span>(
+      <span class="k">const</span> <span class="t">Duration</span>(seconds: <span class="n">2</span>)<span class="k">,</span>
+      () <span class="k">=&gt;</span> connect(_ip<span class="k">!</span>)<span class="k">,</span>
+    )<span class="k">;</span>
+  }
+
+  <span class="t">void</span> dispose() {
+    _disposed <span class="k">=</span> <span class="n">true</span><span class="k">;</span>
+    _reconnectTimer<span class="k">?.</span>cancel()<span class="k">;</span>
+    _channel<span class="k">?.</span>sink<span class="k">.</span>close()<span class="k">;</span>
+    _controller<span class="k">.</span>close()<span class="k">;</span>
+  }
+}</div>
+    </div>
+
+    <div class="block">
+      <div class="blk-h">data/services/discovery_service.dart — mDNS + fallback subnet scan</div>
+<div class="code"><span class="k">class</span> <span class="t">DiscoveryService</span> {
+  <span class="k">final</span> <span class="t">MDnsClient</span> _mdns <span class="k">=</span> <span class="t">MDnsClient</span>()<span class="k">;</span>
+
+  <span class="c">// Tahap 1: mDNS — cepat (~3 detik) di jaringan yang mendukung</span>
+  <span class="t">Stream</span><span class="k">&lt;</span><span class="t">DiscoveredWall</span><span class="k">&gt;</span> discoverMdns() <span class="k">async*</span> {
+    <span class="k">await</span> _mdns<span class="k">.</span>start()<span class="k">;</span>
+    <span class="k">try</span> {
+      <span class="k">final</span> ptrs <span class="k">=</span> _mdns<span class="k">.</span>lookup<span class="k">&lt;</span><span class="t">PtrResourceRecord</span><span class="k">&gt;</span>(
+        <span class="t">ResourceRecordQuery</span><span class="k">.</span>serverPointer(<span class="s">'_wled._tcp.local'</span>)<span class="k">,</span>
+      )<span class="k">.</span>timeout(<span class="k">const</span> <span class="t">Duration</span>(seconds: <span class="n">8</span>))<span class="k">;</span>
+
+      <span class="k">await for</span> (<span class="k">final</span> ptr <span class="k">in</span> ptrs) {
+        <span class="k">await for</span> (<span class="k">final</span> srv <span class="k">in</span> _mdns<span class="k">.</span>lookup<span class="k">&lt;</span><span class="t">SrvResourceRecord</span><span class="k">&gt;</span>(
+          <span class="t">ResourceRecordQuery</span><span class="k">.</span>service(ptr<span class="k">.</span>domainName)<span class="k">,</span>
+        )) {
+          <span class="k">await for</span> (<span class="k">final</span> ip <span class="k">in</span> _mdns<span class="k">.</span>lookup<span class="k">&lt;</span><span class="t">IPAddressResourceRecord</span><span class="k">&gt;</span>(
+            <span class="t">ResourceRecordQuery</span><span class="k">.</span>addressIPv4(srv<span class="k">.</span>target)<span class="k">,</span>
+          )) {
+            <span class="k">yield</span> <span class="t">DiscoveredWall</span>(
+              hostname: srv<span class="k">.</span>target<span class="k">,</span>
+              ip: ip<span class="k">.</span>address<span class="k">.</span>address<span class="k">,</span>
+            )<span class="k">;</span>
+          }
+        }
+      }
+    } <span class="k">finally</span> {
+      _mdns<span class="k">.</span>stop()<span class="k">;</span>
+    }
+  }
+
+  <span class="c">// Tahap 2: fallback — beberapa router/mikrotik blokir mDNS,</span>
+  <span class="c">// scan paralel /24 subnet dengan probe HTTP /json/info</span>
+  <span class="t">Stream</span><span class="k">&lt;</span><span class="t">DiscoveredWall</span><span class="k">&gt;</span> fallbackSubnetScan() <span class="k">async*</span> {
+    <span class="k">final</span> info <span class="k">=</span> <span class="t">NetworkInfo</span>()<span class="k">;</span>
+    <span class="k">final</span> ip <span class="k">=</span> <span class="k">await</span> info<span class="k">.</span>getWifiIP()<span class="k">;</span>
+    <span class="k">if</span> (ip <span class="k">==</span> <span class="n">null</span>) <span class="k">return</span><span class="k">;</span>
+
+    <span class="k">final</span> subnet <span class="k">=</span> ip<span class="k">.</span>substring(<span class="n">0</span><span class="k">,</span> ip<span class="k">.</span>lastIndexOf(<span class="s">'.'</span>))<span class="k">;</span>
+    <span class="k">final</span> futures <span class="k">=</span> <span class="t">List</span><span class="k">.</span>generate(<span class="n">254</span><span class="k">,</span> (i) <span class="k">=&gt;</span> _probe(<span class="s">'$subnet.${i + 1}'</span>))<span class="k">;</span>
+
+    <span class="k">final</span> results <span class="k">=</span> <span class="k">await</span> <span class="t">Future</span><span class="k">.</span>wait(futures)<span class="k">;</span>
+    <span class="k">for</span> (<span class="k">final</span> wall <span class="k">in</span> results<span class="k">.</span>whereType<span class="k">&lt;</span><span class="t">DiscoveredWall</span><span class="k">&gt;</span>()) {
+      <span class="k">yield</span> wall<span class="k">;</span>
+    }
+  }
+
+  <span class="t">Future</span><span class="k">&lt;</span><span class="t">DiscoveredWall</span><span class="k">?&gt;</span> _probe(<span class="t">String</span> ip) <span class="k">async</span> {
+    <span class="k">try</span> {
+      <span class="k">final</span> client <span class="k">=</span> <span class="t">WledClient</span>(baseUrl: <span class="s">'http://$ip'</span>)<span class="k">;</span>
+      <span class="k">final</span> info <span class="k">=</span> <span class="k">await</span> client<span class="k">.</span>getInfo()<span class="k">.</span>timeout(
+        <span class="k">const</span> <span class="t">Duration</span>(milliseconds: <span class="n">600</span>)<span class="k">,</span>
+      )<span class="k">;</span>
+      <span class="k">if</span> (info<span class="k">?.</span>brand <span class="k">==</span> <span class="s">'WLED'</span>) {
+        <span class="k">return</span> <span class="t">DiscoveredWall</span>(hostname: ip<span class="k">,</span> ip: ip<span class="k">,</span> deviceId: info<span class="k">!.</span>mac)<span class="k">;</span>
+      }
+    } <span class="k">catch</span> (_) {}
+    <span class="k">return</span> <span class="n">null</span><span class="k">;</span>
+  }
+}</div>
+    </div>
+
+    <div class="block">
+      <div class="blk-h muted">Strategi kontrol grup</div>
+      <p class="blk-p">
+        Sesuai spec: <b>kontrol grup di Phase 1 ditangani oleh WLED via UDP sync</b>, bukan oleh app. App hanya kirim
+        perintah ke <i>satu wall</i> di ruangan; WLED sendiri yang broadcast UDP ke wall lain dalam sync group
+        yang sama. Cara ini menjaga latency rendah dan tidak ada kemungkinan app jadi single point of failure
+        untuk sinkronisasi. <b>Yang perlu disiapkan app</b>: saat wall ditambahkan ke ruangan, set <code style="font-family:var(--mono);">udpn.send=true</code>
+        dan <code style="font-family:var(--mono);">udpn.recv=true</code> di config wall via API. Setelah itu, app tidak campur tangan.
+      </p>
+    </div>
+  </section>
+
+  <div class="rule"></div>
+
+  <!-- ================= 06 — STATE ================= -->
+  <section class="section" id="s6">
+    <div class="sec-tab"><span class="badge">06</span><span class="lbl">State Management</span></div>
+    <h2 class="sec-h">Riverpod graph — <em>satu</em> sumber per data.</h2>
+    <p class="sec-intro">
+      Aturannya sederhana: tiap data hidup di satu provider. Layar &amp; widget cuma <b>watch</b> provider yang relevan.
+      Modifikasi data lewat <b>controller</b> (notifier), yang memanggil repository, yang memanggil service.
+      Tidak ada modifikasi state dari layar langsung.
+    </p>
+
+    <div class="block">
+      <div class="blk-h">Provider utama</div>
+<div class="code"><span class="c">// ──────────────────────────────────────────</span>
+<span class="c">// Singleton infrastruktur</span>
+<span class="c">// ──────────────────────────────────────────</span>
+<span class="k">final</span> databaseProvider <span class="k">=</span> <span class="t">Provider</span>((ref) <span class="k">=&gt;</span> <span class="t">AppDatabase</span>())<span class="k">;</span>
+<span class="k">final</span> discoveryProvider <span class="k">=</span> <span class="t">Provider</span>((ref) <span class="k">=&gt;</span> <span class="t">DiscoveryService</span>())<span class="k">;</span>
+
+<span class="c">// WLED client per IP — di-cache, satu instance per wall</span>
+<span class="k">final</span> wledClientProvider <span class="k">=</span> <span class="t">Provider</span><span class="k">.</span>family<span class="k">&lt;</span><span class="t">WledClient</span><span class="k">,</span> <span class="t">String</span><span class="k">&gt;</span>(
+  (ref<span class="k">,</span> ip) <span class="k">=&gt;</span> <span class="t">WledClient</span>(baseUrl: <span class="s">'http://$ip'</span>)<span class="k">,</span>
+)<span class="k">;</span>
+
+<span class="c">// ──────────────────────────────────────────</span>
+<span class="c">// Data persisten — stream dari drift</span>
+<span class="c">// ──────────────────────────────────────────</span>
+<span class="k">final</span> roomsProvider <span class="k">=</span> <span class="t">StreamProvider</span>((ref) {
+  <span class="k">return</span> ref<span class="k">.</span>watch(databaseProvider)<span class="k">.</span>watchRooms()<span class="k">;</span>
+})<span class="k">;</span>
+
+<span class="k">final</span> wallsForRoomProvider <span class="k">=</span> <span class="t">StreamProvider</span><span class="k">.</span>family<span class="k">&lt;</span><span class="t">List</span><span class="k">&lt;</span><span class="t">Wall</span><span class="k">&gt;,</span> <span class="t">String</span><span class="k">&gt;</span>(
+  (ref<span class="k">,</span> roomId) <span class="k">=&gt;</span> ref<span class="k">.</span>watch(databaseProvider)<span class="k">.</span>watchWallsForRoom(roomId)<span class="k">,</span>
+)<span class="k">;</span>
+
+<span class="k">final</span> wallProvider <span class="k">=</span> <span class="t">StreamProvider</span><span class="k">.</span>family<span class="k">&lt;</span><span class="t">Wall</span><span class="k">?,</span> <span class="t">String</span><span class="k">&gt;</span>(
+  (ref<span class="k">,</span> wallId) <span class="k">=&gt;</span> ref<span class="k">.</span>watch(databaseProvider)<span class="k">.</span>watchWall(wallId)<span class="k">,</span>
+)<span class="k">;</span>
+
+<span class="c">// ──────────────────────────────────────────</span>
+<span class="c">// Realtime state via WebSocket — auto-dispose saat tidak dipakai</span>
+<span class="c">// ──────────────────────────────────────────</span>
+<span class="k">final</span> wallStateProvider <span class="k">=</span> <span class="t">StreamProvider</span><span class="k">.</span>autoDispose<span class="k">.</span>family<span class="k">&lt;</span><span class="t">WallState</span><span class="k">,</span> <span class="t">String</span><span class="k">&gt;</span>(
+  (ref<span class="k">,</span> wallId) {
+    <span class="k">final</span> wall <span class="k">=</span> ref<span class="k">.</span>watch(wallProvider(wallId))<span class="k">.</span>valueOrNull<span class="k">;</span>
+    <span class="k">if</span> (wall <span class="k">==</span> <span class="n">null</span>) <span class="k">return</span> <span class="k">const</span> <span class="t">Stream</span><span class="k">.</span>empty()<span class="k">;</span>
+
+    <span class="k">final</span> socket <span class="k">=</span> <span class="t">WledSocket</span>()<span class="k">..</span>connect(wall<span class="k">.</span>ipAddress)<span class="k">;</span>
+    ref<span class="k">.</span>onDispose(socket<span class="k">.</span>dispose)<span class="k">;</span>
+    <span class="k">return</span> socket<span class="k">.</span>stream<span class="k">;</span>
+  }<span class="k">,</span>
+)<span class="k">;</span>
+
+<span class="c">// ──────────────────────────────────────────</span>
+<span class="c">// Scene catalog — static asset, dimuat sekali</span>
+<span class="c">// ──────────────────────────────────────────</span>
+<span class="k">final</span> scenesProvider <span class="k">=</span> <span class="t">FutureProvider</span><span class="k">&lt;</span><span class="t">List</span><span class="k">&lt;</span><span class="t">Scene</span><span class="k">&gt;&gt;</span>((ref) <span class="k">async</span> {
+  <span class="k">final</span> raw <span class="k">=</span> <span class="k">await</span> rootBundle<span class="k">.</span>loadString(<span class="s">'assets/scenes.json'</span>)<span class="k">;</span>
+  <span class="k">final</span> list <span class="k">=</span> jsonDecode(raw) <span class="k">as</span> <span class="t">List</span><span class="k">;</span>
+  <span class="k">return</span> list<span class="k">.</span>map((e) <span class="k">=&gt;</span> <span class="t">Scene</span><span class="k">.</span>fromJson(e <span class="k">as</span> <span class="t">Map</span><span class="k">&lt;</span><span class="t">String</span><span class="k">,</span> <span class="k">dynamic</span><span class="k">&gt;</span>))<span class="k">.</span>toList()<span class="k">;</span>
+})<span class="k">;</span>
+
+<span class="k">final</span> scenesByCategoryProvider <span class="k">=</span> <span class="t">Provider</span><span class="k">.</span>family<span class="k">&lt;</span><span class="t">List</span><span class="k">&lt;</span><span class="t">Scene</span><span class="k">&gt;,</span> <span class="t">SceneCategory</span><span class="k">&gt;</span>(
+  (ref<span class="k">,</span> cat) <span class="k">=&gt;</span>
+    ref<span class="k">.</span>watch(scenesProvider)<span class="k">.</span>value<span class="k">?.</span>where((s) <span class="k">=&gt;</span> s<span class="k">.</span>category <span class="k">==</span> cat)<span class="k">.</span>toList() <span class="k">??</span> []<span class="k">,</span>
+)<span class="k">;</span></div>
+    </div>
+
+    <div class="block">
+      <div class="blk-h">Controller — apply scene ke wall</div>
+<div class="code"><span class="k">class</span> <span class="t">SceneApplicationController</span> <span class="k">extends</span> <span class="t">FamilyAsyncNotifier</span><span class="k">&lt;</span><span class="t">void</span><span class="k">,</span> <span class="t">String</span><span class="k">&gt;</span> {
+  <span class="k">@override</span>
+  <span class="t">FutureOr</span><span class="k">&lt;</span><span class="t">void</span><span class="k">&gt;</span> build(<span class="t">String</span> wallId) {}
+
+  <span class="t">Future</span><span class="k">&lt;</span><span class="t">void</span><span class="k">&gt;</span> apply(<span class="t">Scene</span> scene<span class="k">,</span> {
+    <span class="t">int</span><span class="k">?</span> briOverride<span class="k">,</span>
+    <span class="t">int</span><span class="k">?</span> sxOverride<span class="k">,</span>
+    <span class="t">int</span><span class="k">?</span> ixOverride<span class="k">,</span>
+  }) <span class="k">async</span> {
+    state <span class="k">=</span> <span class="k">const</span> <span class="t">AsyncLoading</span>()<span class="k">;</span>
+    state <span class="k">=</span> <span class="k">await</span> <span class="t">AsyncValue</span><span class="k">.</span>guard(() <span class="k">async</span> {
+      <span class="k">final</span> wall <span class="k">=</span> <span class="k">await</span> ref<span class="k">.</span>read(wallProvider(arg)<span class="k">.</span>future)<span class="k">;</span>
+      <span class="k">if</span> (wall <span class="k">==</span> <span class="n">null</span>) <span class="k">throw</span> <span class="t">WallNotFoundException</span>()<span class="k">;</span>
+
+      <span class="k">final</span> client <span class="k">=</span> ref<span class="k">.</span>read(wledClientProvider(wall<span class="k">.</span>ipAddress))<span class="k">;</span>
+      <span class="k">await</span> client<span class="k">.</span>applyScene(
+        scene<span class="k">,</span>
+        briOverride: briOverride<span class="k">,</span>
+        sxOverride: sxOverride<span class="k">,</span>
+        ixOverride: ixOverride<span class="k">,</span>
+      )<span class="k">;</span>
+    })<span class="k">;</span>
+  }
+}
+
+<span class="k">final</span> sceneApplicationProvider <span class="k">=</span>
+  <span class="t">AsyncNotifierProvider</span><span class="k">.</span>family<span class="k">&lt;</span><span class="t">SceneApplicationController</span><span class="k">,</span> <span class="t">void</span><span class="k">,</span> <span class="t">String</span><span class="k">&gt;</span>(
+    <span class="t">SceneApplicationController</span><span class="k">.</span>new<span class="k">,</span>
+  )<span class="k">;</span></div>
+    </div>
+  </section>
+
+  <div class="rule"></div>
+
+  <!-- ================= 07 — SCREEN MAPPING ================= -->
+  <section class="section" id="s7">
+    <div class="sec-tab"><span class="badge">07</span><span class="lbl">Pemetaan Layar</span></div>
+    <h2 class="sec-h">Komponen React kamu ke <em>widget Flutter</em>.</h2>
+    <p class="sec-intro">
+      Mapping satu-ke-satu antara 12 komponen React (yang dipakai untuk 20 artboard) ke widget Flutter.
+      Pola yang sama dengan code-mu: <b>screen parameterized</b> yang dipakai ulang dengan prop berbeda
+      menjadi widget yang menerima parameter. <code style="font-family:var(--mono);font-size:13px;">S07_RoomScreen</code> yang kamu pakai 4 kali tetap satu widget di Flutter.
+    </p>
+
+    <div class="block">
+      <div class="blk-h">12 komponen → 12 file Flutter</div>
+      <div class="map-tbl head">
+        <div>React component</div>
+        <div>Flutter widget</div>
+        <div>Catatan</div>
+      </div>
+      <div class="map-tbl">
+        <div>S01_EmptyState</div>
+        <div>EmptyStateScreen</div>
+        <div>First-run. Tombol → onboarding flow.</div>
+
+        <div>S02_WiFiGuide</div>
+        <div>WiFiGuideScreen</div>
+        <div>Param: <code style="font-family:var(--mono);">addContext</code> (bool), <code style="font-family:var(--mono);">roomId</code> (untuk add-wall).</div>
+
+        <div>S03_Discovery</div>
+        <div>DiscoveryScreen</div>
+        <div>Subscribe ke <code style="font-family:var(--mono);">discoveryProvider</code>. Filter wall yang sudah terdaftar.</div>
+
+        <div>S04_NamePlace</div>
+        <div>NamePlaceScreen</div>
+        <div>Param: <code style="font-family:var(--mono);">lockedRoomId</code>. Bila ada, chip ruangan terkunci.</div>
+
+        <div>S05_Dashboard</div>
+        <div>DashboardScreen</div>
+        <div>List RoomCard. Tombol "+" → showDialog AddRoomDialog.</div>
+
+        <div>S06_WallControl</div>
+        <div>WallControlScreen</div>
+        <div>Param: <code style="font-family:var(--mono);">wallId</code>. Watch wallStateProvider untuk realtime.</div>
+
+        <div>S07_RoomScreen</div>
+        <div>RoomScreen</div>
+        <div>Param: <code style="font-family:var(--mono);">roomId, banner, destFlag, toast</code>. Reused 4×.</div>
+
+        <div>S08_SceneGallery</div>
+        <div>SceneGalleryScreen</div>
+        <div>Param: <code style="font-family:var(--mono);">wallId, initialCategory</code>. Tab kategori.</div>
+
+        <div>S09_AdjustmentSheet</div>
+        <div>AdjustmentBottomSheet</div>
+        <div>showModalBottomSheet, parameter <code style="font-family:var(--mono);">scene, wallId</code>.</div>
+
+        <div>S10_AppliedToast</div>
+        <div>(Snackbar)</div>
+        <div>Tidak butuh widget — pakai <code style="font-family:var(--mono);">ScaffoldMessenger.showSnackBar</code>.</div>
+
+        <div>S11_WallExcluded</div>
+        <div>RoomScreen (state berbeda)</div>
+        <div>Sama dengan S07 tapi salah satu wall ditandai excluded.</div>
+
+        <div>S12_MoodApplied</div>
+        <div>RoomScreen (state berbeda)</div>
+        <div>Sama dengan S07 + scene aktif diset.</div>
+      </div>
+    </div>
+
+    <div class="block">
+      <div class="blk-h">Contoh penerjemahan — RoomCard (komponen yang paling sering dipakai ulang)</div>
+<div class="code"><span class="c">// presentation/widgets/room_card.dart</span>
+<span class="k">class</span> <span class="t">RoomCard</span> <span class="k">extends</span> <span class="t">ConsumerWidget</span> {
+  <span class="k">final</span> <span class="t">Room</span> room<span class="k">;</span>
+
+  <span class="k">const</span> <span class="t">RoomCard</span>({<span class="k">super</span><span class="k">.</span>key<span class="k">,</span> <span class="k">required</span> <span class="k">this</span><span class="k">.</span>room})<span class="k">;</span>
+
+  <span class="k">@override</span>
+  <span class="t">Widget</span> build(<span class="t">BuildContext</span> context<span class="k">,</span> <span class="t">WidgetRef</span> ref) {
+    <span class="k">final</span> walls <span class="k">=</span> ref<span class="k">.</span>watch(wallsForRoomProvider(room<span class="k">.</span>id))<span class="k">;</span>
+    <span class="k">final</span> theme <span class="k">=</span> <span class="t">Theme</span><span class="k">.</span>of(context)<span class="k">.</span>extension<span class="k">&lt;</span><span class="t">LivingWallTheme</span><span class="k">&gt;</span>()<span class="k">!;</span>
+
+    <span class="k">return</span> walls<span class="k">.</span>when(
+      data: (list) <span class="k">=&gt;</span> <span class="t">GestureDetector</span>(
+        onTap: () <span class="k">=&gt;</span> context<span class="k">.</span>push(<span class="s">'/dashboard/room/${room.id}'</span>)<span class="k">,</span>
+        child: <span class="t">Container</span>(
+          decoration: <span class="t">BoxDecoration</span>(
+            borderRadius: <span class="t">BorderRadius</span><span class="k">.</span>circular(<span class="n">18</span>)<span class="k">,</span>
+            border: <span class="t">Border</span><span class="k">.</span>all(color: <span class="t">AppColors</span><span class="k">.</span>text<span class="k">.</span>withOpacity(<span class="n">0.08</span>))<span class="k">,</span>
+            <span class="c">// Background gradient dari scene aktif (lihat helper di scene.dart)</span>
+          )<span class="k">,</span>
+          padding: <span class="k">const</span> <span class="t">EdgeInsets</span><span class="k">.</span>all(<span class="n">16</span>)<span class="k">,</span>
+          child: <span class="t">Column</span>(
+            crossAxisAlignment: <span class="t">CrossAxisAlignment</span><span class="k">.</span>start<span class="k">,</span>
+            children: [
+              <span class="t">Text</span>(room<span class="k">.</span>name<span class="k">,</span>
+                style: <span class="t">Theme</span><span class="k">.</span>of(context)<span class="k">.</span>textTheme<span class="k">.</span>headlineMedium)<span class="k">,</span>
+              <span class="k">const</span> <span class="t">SizedBox</span>(height: <span class="n">4</span>)<span class="k">,</span>
+              <span class="t">Text</span>(<span class="s">'${list.length} wall'</span><span class="k">,</span>
+                style: <span class="t">TextStyle</span>(color: theme<span class="k">.</span>textDim<span class="k">,</span> fontSize: <span class="n">12</span>))<span class="k">,</span>
+              <span class="k">const</span> <span class="t">SizedBox</span>(height: <span class="n">16</span>)<span class="k">,</span>
+              <span class="t">MiniControls</span>(roomId: room<span class="k">.</span>id)<span class="k">,</span>      <span class="c">// 3 quick scene + slider</span>
+            ]<span class="k">,</span>
+          )<span class="k">,</span>
+        )<span class="k">,</span>
+      )<span class="k">,</span>
+      loading: () <span class="k">=&gt;</span> <span class="k">const</span> <span class="t">RoomCardSkeleton</span>()<span class="k">,</span>
+      error: (e<span class="k">,</span> _) <span class="k">=&gt;</span> <span class="t">RoomCardError</span>(message: e<span class="k">.</span>toString())<span class="k">,</span>
+    )<span class="k">;</span>
+  }
+}</div>
+    </div>
+  </section>
+
+  <div class="rule"></div>
+
+  <!-- ================= 08 — ROUTING ================= -->
+  <section class="section" id="s8">
+    <div class="sec-tab"><span class="badge">08</span><span class="lbl">Routing</span></div>
+    <h2 class="sec-h">go_router yang <em>mencerminkan</em> 5 journey di spec.</h2>
+    <p class="sec-intro">
+      Struktur route nested mengikuti hierarki Home → Room → Wall → Scenes — paralel dengan
+      struktur navigasi yang user tap. Onboarding berdiri sendiri. Add-wall &amp; add-room
+      adalah nested route di bawah room (sesuai keputusan "entry per konteks").
+    </p>
+
+    <div class="block">
+      <div class="blk-h">presentation/routing/app_router.dart</div>
+<div class="code"><span class="k">final</span> appRouterProvider <span class="k">=</span> <span class="t">Provider</span><span class="k">&lt;</span><span class="t">GoRouter</span><span class="k">&gt;</span>((ref) {
+  <span class="k">return</span> <span class="t">GoRouter</span>(
+    initialLocation: <span class="s">'/'</span><span class="k">,</span>
+
+    <span class="c">// Redirect: kalau belum ada wall apa pun → onboarding</span>
+    redirect: (context<span class="k">,</span> state) <span class="k">async</span> {
+      <span class="k">final</span> hasWalls <span class="k">=</span> <span class="k">await</span> ref<span class="k">.</span>read(databaseProvider)<span class="k">.</span>hasAnyWalls()<span class="k">;</span>
+      <span class="k">if</span> (<span class="k">!</span>hasWalls <span class="k">&amp;&amp;</span> <span class="k">!</span>state<span class="k">.</span>matchedLocation<span class="k">.</span>startsWith(<span class="s">'/onboarding'</span>)) {
+        <span class="k">return</span> <span class="s">'/onboarding/empty'</span><span class="k">;</span>
+      }
+      <span class="k">return</span> <span class="n">null</span><span class="k">;</span>
+    }<span class="k">,</span>
+
+    routes: [
+      <span class="c">// ─── Onboarding (dipakai juga untuk add-wall di nested route) ───</span>
+      <span class="t">GoRoute</span>(
+        path: <span class="s">'/onboarding/empty'</span><span class="k">,</span>
+        builder: (_<span class="k">,</span> _) <span class="k">=&gt;</span> <span class="k">const</span> <span class="t">EmptyStateScreen</span>()<span class="k">,</span>
+      )<span class="k">,</span>
+      <span class="t">GoRoute</span>(
+        path: <span class="s">'/onboarding/wifi'</span><span class="k">,</span>
+        builder: (_<span class="k">,</span> _) <span class="k">=&gt;</span> <span class="k">const</span> <span class="t">WiFiGuideScreen</span>()<span class="k">,</span>
+      )<span class="k">,</span>
+      <span class="t">GoRoute</span>(
+        path: <span class="s">'/onboarding/discovery'</span><span class="k">,</span>
+        builder: (_<span class="k">,</span> _) <span class="k">=&gt;</span> <span class="k">const</span> <span class="t">DiscoveryScreen</span>()<span class="k">,</span>
+      )<span class="k">,</span>
+      <span class="t">GoRoute</span>(
+        path: <span class="s">'/onboarding/name'</span><span class="k">,</span>
+        builder: (_<span class="k">,</span> state) <span class="k">=&gt;</span> <span class="t">NamePlaceScreen</span>(
+          discoveredWall: state<span class="k">.</span>extra <span class="k">as</span> <span class="t">DiscoveredWall</span><span class="k">,</span>
+        )<span class="k">,</span>
+      )<span class="k">,</span>
+
+      <span class="c">// ─── App utama ───</span>
+      <span class="t">GoRoute</span>(
+        path: <span class="s">'/'</span><span class="k">,</span>
+        builder: (_<span class="k">,</span> _) <span class="k">=&gt;</span> <span class="k">const</span> <span class="t">DashboardScreen</span>()<span class="k">,</span>
+        routes: [
+          <span class="t">GoRoute</span>(
+            path: <span class="s">'room/:roomId'</span><span class="k">,</span>
+            builder: (_<span class="k">,</span> state) <span class="k">=&gt;</span> <span class="t">RoomScreen</span>(roomId: state<span class="k">.</span>pathParameters[<span class="s">'roomId'</span>]<span class="k">!</span>)<span class="k">,</span>
+            routes: [
+              <span class="c">// Tambah wall ke ruangan ini (Sub-A)</span>
+              <span class="t">GoRoute</span>(
+                path: <span class="s">'add-wall/wifi'</span><span class="k">,</span>
+                builder: (_<span class="k">,</span> state) <span class="k">=&gt;</span> <span class="t">WiFiGuideScreen</span>(
+                  addContext: <span class="n">true</span><span class="k">,</span>
+                  roomId: state<span class="k">.</span>pathParameters[<span class="s">'roomId'</span>]<span class="k">!,</span>
+                )<span class="k">,</span>
+              )<span class="k">,</span>
+              <span class="t">GoRoute</span>(path: <span class="s">'add-wall/discovery'</span><span class="k">,</span> builder: ...)<span class="k">,</span>
+              <span class="t">GoRoute</span>(path: <span class="s">'add-wall/name'</span><span class="k">,</span> builder: ...)<span class="k">,</span>
+
+              <span class="c">// Kontrol wall individu</span>
+              <span class="t">GoRoute</span>(
+                path: <span class="s">'wall/:wallId'</span><span class="k">,</span>
+                builder: (_<span class="k">,</span> state) <span class="k">=&gt;</span> <span class="t">WallControlScreen</span>(
+                  wallId: state<span class="k">.</span>pathParameters[<span class="s">'wallId'</span>]<span class="k">!,</span>
+                )<span class="k">,</span>
+                routes: [
+                  <span class="t">GoRoute</span>(
+                    path: <span class="s">'scenes'</span><span class="k">,</span>
+                    builder: (_<span class="k">,</span> state) <span class="k">=&gt;</span> <span class="t">SceneGalleryScreen</span>(
+                      wallId: state<span class="k">.</span>pathParameters[<span class="s">'wallId'</span>]<span class="k">!,</span>
+                    )<span class="k">,</span>
+                  )<span class="k">,</span>
+                ]<span class="k">,</span>
+              )<span class="k">,</span>
+            ]<span class="k">,</span>
+          )<span class="k">,</span>
+        ]<span class="k">,</span>
+      )<span class="k">,</span>
+    ]<span class="k">,</span>
+  )<span class="k">;</span>
+})<span class="k">;</span></div>
+    </div>
+
+    <div class="block">
+      <div class="blk-h muted">Catatan navigasi</div>
+      <p class="blk-p">
+        <b>Adjustment sheet</b> (S09) bukan route — dia <code style="font-family:var(--mono);">showModalBottomSheet</code> dari Wall Control atau Scene Gallery.
+        <b>Add Room dialog</b> juga bukan route — <code style="font-family:var(--mono);">showDialog</code> dari Dashboard.
+        Ini intentional: keduanya modal, tidak punya URL berdiri sendiri, dan kalau dijadikan route akan membuat back-button bingung.
+      </p>
+    </div>
+  </section>
+
+  <div class="rule"></div>
+
+  <!-- ================= 09 — NATIVE ================= -->
+  <section class="section" id="s9">
+    <div class="sec-tab"><span class="badge">09</span><span class="lbl">Konfigurasi Native</span></div>
+    <h2 class="sec-h">iOS dan Android punya <em>tuntutan</em> berbeda untuk local network.</h2>
+    <p class="sec-intro">
+      Tanpa konfigurasi ini, app akan <b>gagal mencari wall</b> dan tidak ada error yang jelas. Ini bagian yang sering
+      dilupakan tim Flutter sampai discovery tidak bekerja saat test di device fisik. Siapkan dari awal.
+    </p>
+
+    <div class="block">
+      <div class="blk-h">iOS — ios/Runner/Info.plist</div>
+<div class="code"><span class="k">&lt;</span>key<span class="k">&gt;</span>NSBonjourServices<span class="k">&lt;/</span>key<span class="k">&gt;</span>
+<span class="k">&lt;</span>array<span class="k">&gt;</span>
+  <span class="k">&lt;</span>string<span class="k">&gt;</span>_wled._tcp<span class="k">&lt;/</span>string<span class="k">&gt;</span>
+<span class="k">&lt;/</span>array<span class="k">&gt;</span>
+
+<span class="c">&lt;!-- Akan tampil sebagai dialog saat discovery pertama kali --&gt;</span>
+<span class="k">&lt;</span>key<span class="k">&gt;</span>NSLocalNetworkUsageDescription<span class="k">&lt;/</span>key<span class="k">&gt;</span>
+<span class="k">&lt;</span>string<span class="k">&gt;</span>Living Wall mencari wall di jaringan WiFi kamu untuk dikendalikan secara lokal.<span class="k">&lt;/</span>string<span class="k">&gt;</span>
+
+<span class="c">&lt;!-- WLED pakai HTTP (bukan HTTPS) — wajar untuk perangkat lokal --&gt;</span>
+<span class="k">&lt;</span>key<span class="k">&gt;</span>NSAppTransportSecurity<span class="k">&lt;/</span>key<span class="k">&gt;</span>
+<span class="k">&lt;</span>dict<span class="k">&gt;</span>
+  <span class="k">&lt;</span>key<span class="k">&gt;</span>NSAllowsLocalNetworking<span class="k">&lt;/</span>key<span class="k">&gt;</span>
+  <span class="k">&lt;</span>true<span class="k">/&gt;</span>
+<span class="k">&lt;/</span>dict<span class="k">&gt;</span></div>
+    </div>
+
+    <div class="block">
+      <div class="blk-h">Android — AndroidManifest.xml + network_security_config.xml</div>
+<div class="code"><span class="c">&lt;!-- android/app/src/main/AndroidManifest.xml --&gt;</span>
+<span class="k">&lt;</span>uses-permission android:name=<span class="s">"android.permission.INTERNET"</span><span class="k">/&gt;</span>
+<span class="k">&lt;</span>uses-permission android:name=<span class="s">"android.permission.ACCESS_WIFI_STATE"</span><span class="k">/&gt;</span>
+<span class="k">&lt;</span>uses-permission android:name=<span class="s">"android.permission.ACCESS_NETWORK_STATE"</span><span class="k">/&gt;</span>
+<span class="k">&lt;</span>uses-permission android:name=<span class="s">"android.permission.CHANGE_WIFI_MULTICAST_STATE"</span><span class="k">/&gt;</span>
+
+<span class="c">&lt;!-- Wajib di Android 8.1+ untuk membaca nama SSID jaringan saat ini --&gt;</span>
+<span class="k">&lt;</span>uses-permission android:name=<span class="s">"android.permission.ACCESS_FINE_LOCATION"</span><span class="k">/&gt;</span>
+
+<span class="k">&lt;</span>application
+  android:networkSecurityConfig=<span class="s">"@xml/network_security_config"</span><span class="k">&gt;</span>
+  ...
+<span class="k">&lt;/</span>application<span class="k">&gt;</span>
+
+<span class="c">&lt;!-- android/app/src/main/res/xml/network_security_config.xml --&gt;</span>
+<span class="k">&lt;?</span>xml version=<span class="s">"1.0"</span> encoding=<span class="s">"utf-8"</span><span class="k">?&gt;</span>
+<span class="k">&lt;</span>network-security-config<span class="k">&gt;</span>
+  <span class="k">&lt;</span>domain-config cleartextTrafficPermitted=<span class="s">"true"</span><span class="k">&gt;</span>
+    <span class="k">&lt;</span>domain includeSubdomains=<span class="s">"true"</span><span class="k">&gt;</span>192.168.0.0<span class="k">&lt;/</span>domain<span class="k">&gt;</span>
+    <span class="k">&lt;</span>domain includeSubdomains=<span class="s">"true"</span><span class="k">&gt;</span>10.0.0.0<span class="k">&lt;/</span>domain<span class="k">&gt;</span>
+    <span class="k">&lt;</span>domain includeSubdomains=<span class="s">"true"</span><span class="k">&gt;</span>172.16.0.0<span class="k">&lt;/</span>domain<span class="k">&gt;</span>
+  <span class="k">&lt;/</span>domain-config<span class="k">&gt;</span>
+<span class="k">&lt;/</span>network-security-config<span class="k">&gt;</span></div>
+    </div>
+
+    <div class="block">
+      <div class="blk-h muted">Catatan permissions runtime</div>
+      <p class="blk-p">
+        Pada Android, <code style="font-family:var(--mono);">ACCESS_FINE_LOCATION</code> tetap perlu request runtime dialog. Jelaskan ke user
+        <b>kenapa</b> permission lokasi diminta — "Diperlukan oleh Android untuk membaca nama jaringan WiFi yang terhubung,
+        agar app tahu wall mana yang seharusnya ada di sini." Tanpa penjelasan, user akan menolak.
+      </p>
+      <p class="blk-p">
+        Pada iOS, dialog <code style="font-family:var(--mono);">NSLocalNetworkUsageDescription</code> muncul otomatis saat panggilan mDNS pertama.
+        Tidak ada API untuk request manual — kontrol-nya iOS. Pastikan deskripsi-nya jelas (di Info.plist).
+      </p>
+    </div>
+  </section>
+
+  <div class="rule"></div>
+
+  <!-- ================= 10 — SPRINT & RISKS ================= -->
+  <section class="section" id="s10">
+    <div class="sec-tab"><span class="badge">10</span><span class="lbl">Sprint &amp; Risk</span></div>
+    <h2 class="sec-h">Delapan minggu yang <em>realistis</em>, lima risiko yang harus dipantau.</h2>
+    <p class="sec-intro">
+      Sprint plan asumsi tim 1-2 developer Flutter berpengalaman + 1 hardware/firmware untuk paralel.
+      Akhir minggu 8 = MVP yang bisa dipakai sendiri di rumah; bukan release ke publik. Risiko di bawah
+      adalah lima hal yang paling mungkin merepotkan — siapkan mitigasi sebelum kepentok.
+    </p>
+
+    <div class="block">
+      <div class="blk-h">Sprint plan · 8 minggu</div>
+      <div class="sprint">
+        <div>Minggu 1</div>
+        <div>
+          <h5>Foundation</h5>
+          <p>Setup project, dependency, theme, model Freezed (Home/Room/Wall/Scene), drift schema + migration awal.
+          <b>Deliverable:</b> app launch, scene gallery dummy bisa tampil dari scenes.json.</p>
+        </div>
+        <div>Minggu 2</div>
+        <div>
+          <h5>WLED API client</h5>
+          <p>WledClient (HTTP), WledSocket (WebSocket), unit test dengan mock server.
+          <b>Test target:</b> dari Dart code, bisa apply scene ke wall fisik di lab dan terima state via WebSocket.</p>
+        </div>
+        <div>Minggu 3</div>
+        <div>
+          <h5>Discovery + Onboarding (S01–S04)</h5>
+          <p>mDNS + fallback subnet scan. Onboarding 4-step. Native config iOS + Android.
+          <b>Risk gate:</b> tes di iPhone + Android device fisik, bukan simulator.</p>
+        </div>
+        <div>Minggu 4</div>
+        <div>
+          <h5>Dashboard + Room (S05, S07)</h5>
+          <p>DashboardScreen dengan RoomCard, MiniControls, RoomScreen dengan list wall.
+          Realtime state lewat wallStateProvider. <b>Test:</b> brightness slider di dashboard menggerakkan wall &lt;200ms.</p>
+        </div>
+        <div>Minggu 5</div>
+        <div>
+          <h5>Wall Control + Pick Scene (S06, S08, S09)</h5>
+          <p>WallControlScreen, SceneGallery, AdjustmentSheet. Apply scene via controller.
+          Polish toast applied (S10).</p>
+        </div>
+        <div>Minggu 6</div>
+        <div>
+          <h5>Group Control (S11, S12) + UDP sync</h5>
+          <p>Setup UDP sync group via API saat wall ditambahkan ke ruangan. Wall excluded state.
+          <b>Test:</b> dengan 2 wall di lab, perubahan di satu wall sync ke wall lain &lt;100ms.</p>
+        </div>
+        <div>Minggu 7</div>
+        <div>
+          <h5>Tambah Wall &amp; Ruangan (Sub-A, Sub-B)</h5>
+          <p>Reuse onboarding components dengan param add-context. AddRoomDialog. Edge case ruangan kosong.
+          <b>Risk gate:</b> alur add-wall dari awal-akhir di iOS + Android, termasuk captive portal flow.</p>
+        </div>
+        <div>Minggu 8</div>
+        <div>
+          <h5>Tuning scene di hardware + polish</h5>
+          <p>18 scene di-tune di wall sungguhan (brightness, speed, intensity disesuaikan dengan LED actual).
+          Bug fix. Internal release ke 3-5 user untuk feedback awal.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="block">
+      <div class="blk-h">Risk register</div>
+      <div class="risks">
+
+        <div class="risk">
+          <div class="risk-sev high">High</div>
+          <div>
+            <h5>Captive portal WLED-AP di iOS sering buggy</h5>
+            <p><span class="lbl">Konteks:</span> Saat wall pertama kali dinyalakan, dia jadi AP "WLED-AP".
+            Connect iPhone ke AP itu seharusnya memunculkan captive portal otomatis (4.3.2.1).
+            Pada iOS, halaman ini kadang tidak muncul atau tidak bisa menyimpan kredensial.</p>
+            <p><span class="lbl">Mitigasi:</span> Test di iOS sejak minggu 3. Siapkan jalur backup: instruksi
+            tertulis di app untuk user buka Safari manual ke 4.3.2.1. Phase 2: pertimbangkan Improv BLE
+            untuk menghindari captive portal sama sekali.</p>
+          </div>
+        </div>
+
+        <div class="risk">
+          <div class="risk-sev high">High</div>
+          <div>
+            <h5>Tuning scene di hardware berbeda dari simulator</h5>
+            <p><span class="lbl">Konteks:</span> 18 scene di catalog adalah titik awal yang masuk akal,
+            tapi <code style="font-family:var(--mono);">sx=64</code> akan terlihat beda di LED density rendah vs tinggi, dan brightness
+            255 mungkin silau di diffuser tertentu.</p>
+            <p><span class="lbl">Mitigasi:</span> Sediakan satu minggu khusus (minggu 8) untuk tuning di wall fisik.
+            Hardware spec (panjang strip, LED density) harus sudah final sebelum minggu 8 — kalau belum,
+            tuning tidak bisa dimulai dan release tertunda.</p>
+          </div>
+        </div>
+
+        <div class="risk">
+          <div class="risk-sev med">Med</div>
+          <div>
+            <h5>mDNS tidak reliable di beberapa router</h5>
+            <p><span class="lbl">Konteks:</span> Router cheap dan beberapa router enterprise (Mikrotik dengan
+            isolation, mesh router dengan AP isolation) memblokir mDNS multicast.</p>
+            <p><span class="lbl">Mitigasi:</span> Fallback subnet scan sudah disiapkan di DiscoveryService.
+            Trigger fallback otomatis kalau mDNS tidak menemukan apa-apa dalam 8 detik. Beri label
+            "Sedang mencari secara menyeluruh..." supaya user tahu kenapa sedikit lebih lama.</p>
+          </div>
+        </div>
+
+        <div class="risk">
+          <div class="risk-sev med">Med</div>
+          <div>
+            <h5>Android permission location butuh penjelasan</h5>
+            <p><span class="lbl">Konteks:</span> Android &lt; 12 menuntut <code style="font-family:var(--mono);">ACCESS_FINE_LOCATION</code> untuk
+            membaca SSID. User awam menolak permission yang terlihat invasif tanpa konteks.</p>
+            <p><span class="lbl">Mitigasi:</span> Sebelum trigger system dialog, tampilkan layar penjelasan
+            (1 layar singkat: "Android meminta permission lokasi untuk membaca nama WiFi-mu. Kami tidak
+            membaca lokasi GPS-mu."). Setelah itu baru trigger permission_handler.</p>
+          </div>
+        </div>
+
+        <div class="risk">
+          <div class="risk-sev low">Low</div>
+          <div>
+            <h5>User mengubah config wall via halaman web WLED secara langsung</h5>
+            <p><span class="lbl">Konteks:</span> Power user bisa akses <code style="font-family:var(--mono);">http://[ip-wall]/</code> dari browser
+            dan mengubah segment, effect, dll. App tidak tahu hal itu terjadi.</p>
+            <p><span class="lbl">Mitigasi:</span> WebSocket akan mengirim state baru — kalau app sedang
+            menampilkan layar wall, UI otomatis update. Untuk state yang berkonflik dengan record di drift
+            (mis. nama wall diubah via web), buat resolver: app sebagai source of truth untuk nama,
+            wall sebagai source of truth untuk state runtime.</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= FOOTER ================= -->
+  <footer class="foot">
+    <div class="ft">Living Wall — Phase 1 Development Brief</div>
+    <div class="fm">Flutter · Riverpod · drift · local-first · pasangan dari design spec terpadu</div>
+  </footer>
+
+</div>
+</body>
+</html>

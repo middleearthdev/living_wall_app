@@ -1,0 +1,1880 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Living Wall — Phase 1 · Design Spec Lengkap</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#000000;--surface:#0c0d10;--surface-2:#141619;--surface-3:#1c1f25;
+    --line:rgba(226,231,246,.075);--line-2:rgba(226,231,246,.15);
+    --text:#eef0f5;--text-dim:rgba(238,240,245,.56);--text-faint:rgba(238,240,245,.32);
+    --accent:#7c8ef5;--accent-2:#9aa8ff;--accent-deep:#5d6fe0;
+    --accent-soft:rgba(124,142,245,.13);--accent-line:rgba(124,142,245,.4);
+    --display:'Fraunces',serif;--body:'Hanken Grotesk',sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html{scroll-behavior:smooth;}
+  html,body{background:var(--ink);color:var(--text);font-family:var(--body);-webkit-font-smoothing:antialiased;}
+  body{
+    background:
+      radial-gradient(900px 620px at 8% -8%, rgba(124,142,245,.10), transparent 60%),
+      radial-gradient(820px 700px at 102% 6%, rgba(124,142,245,.055), transparent 55%),
+      var(--ink);
+    padding:0 0 110px;line-height:1.55;
+  }
+  .wrap{max-width:1320px;margin:0 auto;padding:0 28px;}
+
+  /* ---------- cover ---------- */
+  .cover{padding:96px 0 50px;}
+  .kicker{font-size:12px;letter-spacing:.32em;text-transform:uppercase;color:var(--accent-2);font-weight:600;margin-bottom:22px;}
+  h1{font-family:var(--display);font-weight:400;font-size:clamp(42px,6vw,80px);line-height:1.02;letter-spacing:-.025em;max-width:15ch;}
+  h1 em{font-style:italic;color:var(--accent-2);}
+  .cover .sub{margin-top:24px;max-width:66ch;color:var(--text-dim);font-size:17px;}
+  .cover .sub b{color:var(--text);}
+  .decisions{margin-top:30px;display:flex;gap:10px;flex-wrap:wrap;}
+  .dec{font-size:12.5px;padding:7px 14px;border:1px solid var(--accent-line);border-radius:100px;
+    color:var(--accent-2);background:var(--accent-soft);}
+  .dec b{color:var(--text);font-weight:600;}
+
+  /* ---------- table of contents ---------- */
+  .toc{margin-top:54px;border:1px solid var(--line);border-radius:20px;
+    background:linear-gradient(160deg,var(--surface-2),var(--ink));padding:32px 36px;
+    display:grid;grid-template-columns:repeat(3,1fr);gap:14px 30px;}
+  .toc-h{grid-column:1/-1;font-size:11px;letter-spacing:.26em;text-transform:uppercase;color:var(--text-faint);font-weight:600;margin-bottom:6px;}
+  .toc a{text-decoration:none;display:flex;gap:12px;align-items:baseline;padding:9px 0;border-bottom:1px solid var(--line);}
+  .toc a:hover .toc-t{color:var(--accent-2);}
+  .toc-n{font-family:var(--display);font-size:15px;color:var(--accent-2);flex:none;width:26px;}
+  .toc-t{font-size:13.5px;color:var(--text);font-weight:600;transition:color .15s;}
+  .toc-d{font-size:11px;color:var(--text-faint);margin-top:1px;}
+
+  /* ---------- section chrome ---------- */
+  .section{padding-top:96px;}
+  .sec-tab{display:inline-flex;align-items:center;gap:9px;margin-bottom:18px;}
+  .sec-tab .badge{font-family:var(--display);font-size:14px;width:30px;height:30px;display:grid;place-items:center;
+    border-radius:8px;background:var(--accent-soft);border:1px solid var(--accent-line);color:var(--accent-2);}
+  .sec-tab .lbl{font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:var(--accent-2);font-weight:600;}
+  .sec-h{font-family:var(--display);font-weight:400;font-size:clamp(30px,3.6vw,44px);letter-spacing:-.018em;max-width:22ch;}
+  .sec-h em{font-style:italic;color:var(--accent-2);}
+  .sec-intro{margin-top:14px;color:var(--text-dim);font-size:15.5px;max-width:74ch;}
+  .sec-intro b{color:var(--text);}
+
+  /* ---------- design system blocks ---------- */
+  .analysis{margin-top:34px;border:1px solid var(--line);border-radius:20px;
+    background:linear-gradient(165deg,var(--surface-2),var(--ink));padding:30px 34px;}
+  .blk-h{font-size:11px;letter-spacing:.26em;text-transform:uppercase;color:var(--accent-2);font-weight:600;margin-bottom:18px;}
+  .blk-h.muted{color:var(--text-faint);}
+  .analysis .rows{display:grid;grid-template-columns:1fr 1fr;gap:14px 40px;}
+  .aread{display:grid;grid-template-columns:auto 1fr;gap:13px;align-items:start;}
+  .aread .mark{width:34px;height:34px;border-radius:9px;flex:none;border:1px solid var(--line-2);position:relative;overflow:hidden;}
+  .m-black{background:#000;}
+  .m-accent{background:linear-gradient(140deg,#9aa8ff,#5d6fe0);}
+  .m-photo{background:radial-gradient(circle at 30% 30%,rgba(230,90,170,.8),transparent 60%),radial-gradient(circle at 75% 70%,rgba(70,180,210,.75),transparent 60%),#0c1018;}
+  .m-warm{background:linear-gradient(140deg,#f0a868,#e8826b);}
+  .aread p{font-size:13px;color:var(--text-dim);line-height:1.5;}
+  .aread p b{color:var(--text);font-weight:600;}
+
+  .system{margin-top:18px;border:1px solid var(--line);border-radius:20px;
+    background:linear-gradient(160deg,var(--surface-2),var(--ink));
+    padding:34px 36px;display:grid;grid-template-columns:1.05fr 1fr 1fr;gap:40px;}
+  .swatches{display:flex;gap:9px;flex-wrap:wrap;}
+  .sw{width:46px;height:46px;border-radius:11px;position:relative;border:1px solid var(--line-2);}
+  .sw span{position:absolute;bottom:-19px;left:0;font-size:9.5px;color:var(--text-faint);letter-spacing:.03em;}
+  .sw.ink{background:#000;} .sw.surf{background:var(--surface-3);}
+  .sw.acc{background:linear-gradient(140deg,#9aa8ff,#5d6fe0);} .sw.acc2{background:linear-gradient(140deg,#7c8ef5,#4456c8);}
+  .sw.txt{background:var(--text);} .sw.dim{background:var(--text-dim);}
+  .type-row{margin-bottom:14px;}
+  .type-row .lbl{font-size:10.5px;color:var(--text-faint);letter-spacing:.08em;text-transform:uppercase;}
+  .type-display{font-family:var(--display);font-size:30px;line-height:1.1;margin-top:2px;}
+  .type-body{font-family:var(--body);font-size:16px;margin-top:4px;color:var(--text-dim);}
+  .principle{font-size:14.5px;color:var(--text-dim);}
+  .principle b{color:var(--text);font-weight:600;}
+  .principle .em{color:var(--accent-2);font-family:var(--display);font-style:italic;font-size:16px;}
+
+  /* ---------- nav map ---------- */
+  .mapbox{margin-top:30px;border:1px solid var(--line);border-radius:20px;
+    background:linear-gradient(165deg,var(--surface-2),var(--ink));padding:30px 34px;}
+  .map-rows{display:flex;flex-direction:column;gap:16px;}
+  .nodes{display:flex;align-items:center;flex-wrap:wrap;gap:10px;}
+  .node{border:1px solid var(--line-2);border-radius:12px;padding:11px 15px;font-size:13px;
+    background:rgba(226,231,246,.025);position:relative;}
+  .node.start{border-color:var(--accent-line);background:var(--accent-soft);color:var(--accent-2);}
+  .node.dest{border-color:rgba(155,168,255,.55);background:rgba(124,142,245,.18);color:#fff;font-weight:600;}
+  .node b{color:var(--text);font-weight:600;display:block;font-size:13px;}
+  .node small{color:var(--text-dim);font-size:10.5px;}
+  .node.dest small{color:rgba(255,255,255,.7);}
+  .branch{display:flex;flex-direction:column;gap:4px;font-size:10px;color:var(--text-faint);text-align:center;padding:0 4px;}
+  .branch .l{color:var(--accent-2);font-weight:600;}
+  .conn{color:var(--text-faint);font-size:16px;}
+
+  /* ---------- subsection header ---------- */
+  .subhead{margin:48px 0 26px;}
+  .subhead .st{display:flex;align-items:baseline;gap:14px;}
+  .subhead .sn{font-family:var(--display);font-size:30px;color:var(--accent-2);line-height:1;}
+  .subhead .stt{font-family:var(--display);font-size:25px;letter-spacing:-.01em;}
+  .subhead p{margin-top:9px;color:var(--text-dim);font-size:14.5px;max-width:78ch;padding-left:44px;}
+  .subhead p b{color:var(--text);}
+
+  /* ---------- screen rail ---------- */
+  .rail{display:flex;flex-wrap:wrap;align-items:flex-start;}
+  .stepwrap{display:flex;align-items:flex-start;}
+  .arrow{width:42px;align-self:center;text-align:center;color:var(--text-faint);font-size:18px;flex:none;}
+  .arrow .lbl{font-size:8.5px;color:var(--accent-2);display:block;margin-top:3px;font-weight:600;}
+  .step{width:286px;flex:none;}
+  .note{width:286px;}
+
+  /* big grid variant for the 7-screen system tour */
+  .grid7{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:28px;align-items:start;}
+  .card7{border:1px solid var(--line);border-radius:22px;overflow:hidden;background:linear-gradient(170deg,var(--surface-2),var(--ink) 70%);}
+  .card7-bar{display:flex;align-items:center;gap:11px;padding:18px 20px 14px;border-bottom:1px solid var(--line);}
+  .card7-num{font-family:var(--display);font-size:15px;width:30px;height:30px;display:grid;place-items:center;border-radius:9px;
+    background:var(--accent-soft);border:1px solid var(--accent-line);color:var(--accent-2);flex:none;}
+  .card7-name{font-size:14.5px;font-weight:600;}
+  .card7-sub{font-size:11.5px;color:var(--text-faint);margin-top:1px;}
+  .card7-stage{padding:28px 22px 24px;display:flex;justify-content:center;
+    background:radial-gradient(360px 230px at 50% 16%, rgba(124,142,245,.06), transparent 70%);}
+
+  .step-tag{display:flex;align-items:center;gap:9px;margin-bottom:12px;}
+  .step-dot{font-family:var(--display);font-size:13px;width:26px;height:26px;display:grid;place-items:center;
+    border-radius:7px;background:var(--accent-soft);border:1px solid var(--accent-line);color:var(--accent-2);flex:none;}
+  .step-label{font-size:13px;font-weight:600;}
+  .step-micro{font-size:10.5px;color:var(--text-faint);margin-top:1px;}
+
+  /* ---------- phone ---------- */
+  .phone{width:248px;height:512px;border-radius:34px;position:relative;background:#000;
+    border:1px solid var(--line-2);box-shadow:0 26px 54px -20px rgba(0,0,0,.85), inset 0 0 0 5px #000;
+    overflow:hidden;margin-bottom:14px;}
+  .notch{position:absolute;top:9px;left:50%;transform:translateX(-50%);width:64px;height:6px;border-radius:10px;background:#000;z-index:9;}
+  .scr{position:absolute;inset:0;border-radius:30px;overflow:hidden;display:flex;flex-direction:column;background:#000;}
+  .statusbar{display:flex;justify-content:space-between;padding:13px 18px 0;font-size:9px;color:var(--text-dim);letter-spacing:.04em;z-index:5;}
+  .scr-body{flex:1;display:flex;flex-direction:column;padding:0 15px;position:relative;z-index:3;overflow:hidden;}
+
+  .glow{position:absolute;border-radius:50%;filter:blur(36px);pointer-events:none;z-index:1;}
+  .g-accent{background:radial-gradient(circle,rgba(124,142,245,.5),transparent 70%);}
+
+  /* photographic scene fills */
+  .ph{position:relative;overflow:hidden;background:#06080c;}
+  .ph::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 38%,rgba(0,0,0,.58));z-index:2;}
+  .sc-tokyo{background:radial-gradient(60% 70% at 22% 78%,rgba(232,84,168,.85),transparent 70%),radial-gradient(55% 60% at 80% 30%,rgba(72,182,214,.7),transparent 70%),radial-gradient(80% 90% at 60% 100%,rgba(120,80,210,.5),transparent 70%),linear-gradient(160deg,#10131f,#06070c);}
+  .sc-focus{background:radial-gradient(70% 80% at 30% 25%,rgba(96,200,224,.62),transparent 70%),radial-gradient(65% 70% at 80% 85%,rgba(86,120,236,.55),transparent 70%),linear-gradient(160deg,#0a141c,#06090f);}
+  .sc-sunset{background:radial-gradient(75% 80% at 28% 80%,rgba(240,150,90,.8),transparent 72%),radial-gradient(70% 70% at 78% 25%,rgba(232,96,112,.62),transparent 70%),linear-gradient(160deg,#1c120e,#0a0706);}
+  .sc-ocean{background:radial-gradient(70% 80% at 25% 30%,rgba(86,128,236,.72),transparent 70%),radial-gradient(70% 70% at 82% 82%,rgba(140,86,224,.62),transparent 70%),linear-gradient(160deg,#0c1024,#06070f);}
+  .sc-forest{background:radial-gradient(72% 80% at 30% 78%,rgba(96,176,118,.72),transparent 72%),radial-gradient(60% 65% at 80% 28%,rgba(150,182,108,.5),transparent 70%),linear-gradient(160deg,#0c1410,#060907);}
+  .sc-rain{background:radial-gradient(75% 85% at 35% 35%,rgba(120,150,180,.5),transparent 72%),radial-gradient(60% 65% at 80% 85%,rgba(96,116,150,.5),transparent 70%),linear-gradient(160deg,#0e1318,#06080b);}
+  .sc-party{background:radial-gradient(65% 70% at 25% 75%,rgba(224,84,180,.78),transparent 70%),radial-gradient(62% 66% at 82% 28%,rgba(132,80,228,.7),transparent 70%),linear-gradient(160deg,#150c1c,#08060d);}
+  .sc-candle{background:radial-gradient(78% 82% at 40% 75%,rgba(240,168,110,.7),transparent 74%),radial-gradient(55% 55% at 78% 30%,rgba(220,120,90,.45),transparent 70%),linear-gradient(160deg,#16110d,#080605);}
+  .sc-dawn{background:radial-gradient(75% 80% at 30% 78%,rgba(238,170,140,.7),transparent 72%),radial-gradient(64% 66% at 80% 26%,rgba(150,150,220,.5),transparent 70%),linear-gradient(160deg,#16120f,#08070a);}
+
+  /* text utilities */
+  .p-h{font-family:var(--display);font-weight:400;letter-spacing:-.015em;line-height:1.12;color:var(--text);}
+  .p-h.xl{font-size:25px;} .p-h.lg{font-size:19px;} .p-h.md{font-size:15px;} .p-h.sm{font-size:13px;}
+  .p-sub{font-size:10px;color:var(--text-dim);line-height:1.5;}
+  .p-word{font-size:8.5px;letter-spacing:.28em;text-transform:uppercase;color:var(--text-faint);font-weight:600;}
+  .p-btn{font-family:var(--body);font-size:11px;font-weight:600;padding:10px 0;border-radius:12px;text-align:center;
+    background:linear-gradient(135deg,#8b9cf6,#5d6fe0);color:#0a0c1a;border:none;}
+  .p-btn.ghost{background:transparent;border:1px solid var(--line-2);color:var(--text-dim);}
+  .p-card{border:1px solid var(--line-2);border-radius:15px;background:rgba(226,231,246,.025);}
+  .topbar{display:flex;align-items:center;gap:8px;padding:8px 0 12px;}
+  .chevron{font-size:14px;color:var(--text-dim);}
+  .topbar .t{font-size:11.5px;font-weight:600;}
+  .topbar .r{margin-left:auto;font-size:10px;color:var(--text-dim);}
+  .topbar .r.acc{color:var(--accent-2);}
+
+  /* onboarding bits */
+  .stepper{display:flex;gap:6px;margin-bottom:16px;}
+  .stepper i{height:3px;flex:1;border-radius:3px;background:var(--line-2);}
+  .stepper i.on{background:var(--accent);}
+  .guide-ill{height:114px;border-radius:14px;margin-bottom:14px;border:1px solid var(--line-2);overflow:hidden;
+    background:linear-gradient(160deg,var(--surface-3),#070809);display:grid;place-items:center;}
+  .wifi-rows{display:flex;flex-direction:column;gap:6px;width:78%;}
+  .wifi-r{display:flex;align-items:center;justify-content:space-between;font-size:8.5px;padding:6px 9px;border-radius:7px;color:var(--text-dim);background:rgba(226,231,246,.04);}
+  .wifi-r.sel{background:var(--accent-soft);color:var(--accent-2);border:1px solid var(--accent-line);}
+  .dot{width:5px;height:5px;border-radius:50%;background:var(--text-faint);}
+  .dot.a{background:var(--accent);}
+  .pulse{width:60px;height:60px;border-radius:50%;margin:6px auto 4px;position:relative;
+    background:radial-gradient(circle,rgba(124,142,245,.62),rgba(124,142,245,.05) 70%);}
+  .pulse::after{content:"";position:absolute;inset:-12px;border-radius:50%;border:1px solid var(--accent-line);}
+  .found-card{padding:12px;display:flex;gap:11px;align-items:center;margin-top:4px;}
+  .found-thumb{width:44px;height:44px;border-radius:11px;flex:none;border:1px solid var(--line-2);}
+  .field{border:1px solid var(--line-2);border-radius:12px;padding:11px 12px;font-size:12px;color:var(--text);
+    background:rgba(226,231,246,.03);display:flex;justify-content:space-between;align-items:center;}
+  .caret{width:1px;height:13px;background:var(--accent);}
+  .chips{display:flex;gap:7px;flex-wrap:wrap;}
+  .chip{font-size:10px;padding:7px 11px;border-radius:100px;border:1px solid var(--line-2);color:var(--text-dim);}
+  .chip.on{background:var(--accent-soft);border-color:var(--accent-line);color:var(--accent-2);}
+  .chip.add{border-style:dashed;color:var(--text-faint);}
+
+  /* dashboard room card with mini-controls */
+  .rcard{border-radius:16px;margin-bottom:10px;position:relative;overflow:hidden;border:1px solid var(--line-2);}
+  .rcard .bg{position:absolute;inset:0;z-index:0;}
+  .rcard .bg::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.25) 30%,rgba(0,0,0,.78));z-index:1;}
+  .rcard .inner{position:relative;z-index:3;padding:12px;}
+  .rcard-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:11px;}
+  .rcard-nm{font-family:var(--display);font-size:15px;color:#fff;}
+  .rcard-meta{font-size:8.5px;color:rgba(255,255,255,.72);margin-top:1px;}
+  .toggle{width:30px;height:17px;border-radius:100px;position:relative;flex:none;
+    background:var(--accent-soft);border:1px solid var(--accent-line);}
+  .toggle::after{content:"";position:absolute;width:13px;height:13px;border-radius:50%;background:var(--accent-2);right:2px;top:1.5px;}
+  .toggle.off{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.2);}
+  .toggle.off::after{background:rgba(255,255,255,.5);left:2px;right:auto;}
+  .mini-scenes{display:flex;gap:5px;margin-bottom:10px;}
+  .ms{width:34px;height:34px;border-radius:9px;border:1px solid rgba(255,255,255,.18);flex:none;}
+  .ms.on{border:1.5px solid #fff;}
+  .ms-more{width:34px;height:34px;border-radius:9px;border:1px dashed rgba(255,255,255,.3);flex:none;
+    display:grid;place-items:center;font-size:11px;color:rgba(255,255,255,.6);}
+  .mini-bri{display:flex;align-items:center;gap:8px;}
+  .mini-bri .ic{font-size:9px;color:rgba(255,255,255,.7);}
+  .mini-bri .track{flex:1;height:4px;border-radius:100px;background:rgba(255,255,255,.16);position:relative;}
+  .mini-bri .fill{position:absolute;left:0;top:0;height:4px;border-radius:100px;background:#fff;}
+  .mini-bri .knob{position:absolute;top:50%;transform:translate(-50%,-50%);width:11px;height:11px;border-radius:50%;background:#fff;}
+  .mini-bri .pct{font-size:8.5px;color:#fff;font-weight:600;}
+  .tap-hint{font-size:7.5px;color:rgba(255,255,255,.5);text-align:center;margin-top:9px;letter-spacing:.04em;}
+  .rcard.off-state .bg{filter:grayscale(.7) brightness(.5);}
+
+  /* legacy simple room card (system tour screen 5) */
+  .room-card{border-radius:16px;padding:13px;margin-bottom:9px;position:relative;overflow:hidden;
+    border:1px solid var(--line-2);min-height:74px;display:flex;flex-direction:column;justify-content:space-between;}
+  .room-top{display:flex;justify-content:space-between;align-items:flex-start;z-index:3;position:relative;}
+  .room-name{font-family:var(--display);font-size:15px;}
+  .room-meta{font-size:9px;color:var(--text-dim);margin-top:1px;}
+  .scene-pill{font-size:8.5px;align-self:flex-start;padding:3px 8px;border-radius:100px;
+    background:rgba(0,0,0,.4);color:var(--text);z-index:3;position:relative;}
+
+  /* navbar */
+  .navbar{display:flex;justify-content:space-around;padding:10px 2px 4px;margin:0 -15px;border-top:1px solid var(--line);}
+  .nav-i{font-size:7px;color:var(--text-faint);display:flex;flex-direction:column;align-items:center;gap:4px;}
+  .nav-i .ic{width:14px;height:14px;border-radius:5px;border:1.5px solid currentColor;}
+  .nav-i.on{color:var(--accent-2);}
+
+  /* room screen / group */
+  .sync-banner{display:flex;align-items:center;gap:7px;font-size:8.5px;color:var(--accent-2);
+    background:var(--accent-soft);border:1px solid var(--accent-line);padding:7px 9px;border-radius:9px;margin-bottom:12px;}
+  .sync-banner .d{width:5px;height:5px;border-radius:50%;background:var(--accent);flex:none;}
+  .row-lbl{display:flex;justify-content:space-between;font-size:9.5px;color:var(--text-dim);margin-bottom:7px;}
+  .row-lbl b{color:var(--text);font-weight:600;font-size:10.5px;}
+  .row-lbl .see{color:var(--accent-2);}
+  .wall-list{display:flex;flex-direction:column;gap:7px;margin-bottom:13px;}
+  .wall-row{display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:11px;
+    border:1px solid var(--line-2);background:rgba(226,231,246,.025);}
+  .wall-row.tappable{border-color:var(--accent-line);}
+  .wall-thumb{width:32px;height:32px;border-radius:8px;flex:none;border:1px solid var(--line-2);}
+  .wall-nm{font-size:10.5px;font-weight:600;}
+  .wall-st{font-size:8px;color:var(--text-dim);margin-top:1px;}
+  .wall-st .sync{color:var(--accent-2);}
+  .wall-go{margin-left:auto;font-size:13px;color:var(--accent-2);}
+  .mini-toggle{margin-left:auto;width:28px;height:16px;border-radius:100px;position:relative;flex:none;
+    background:var(--accent-soft);border:1px solid var(--accent-line);}
+  .mini-toggle::after{content:"";position:absolute;width:12px;height:12px;border-radius:50%;background:var(--accent-2);right:2px;top:1.5px;}
+  .mini-toggle.off{background:rgba(226,231,246,.06);border-color:var(--line-2);}
+  .mini-toggle.off::after{background:var(--text-faint);left:2px;right:auto;}
+  .moodgrid{display:grid;grid-template-columns:1fr 1fr;gap:7px;}
+  .mood{height:62px;border-radius:12px;border:1px solid var(--line-2);position:relative;overflow:hidden;padding:8px;display:flex;align-items:flex-end;}
+  .mood.on{border:1.5px solid var(--accent-2);}
+  .mood .nm{font-family:var(--display);font-size:10.5px;color:#fff;z-index:3;position:relative;}
+  .preview-strip{display:flex;gap:6px;margin-bottom:12px;}
+  .pv{flex:1;height:40px;border-radius:9px;border:1px solid var(--line-2);position:relative;overflow:hidden;}
+  .pv .pl{position:absolute;left:6px;bottom:4px;z-index:3;font-size:7.5px;color:#fff;}
+  .pv.dim{opacity:.4;}
+
+  /* wall control */
+  .hero{height:104px;border-radius:14px;position:relative;overflow:hidden;border:1px solid var(--line-2);}
+  .hero .meta{position:absolute;left:11px;bottom:9px;z-index:3;}
+  .hero .ico{position:absolute;top:10px;right:11px;z-index:3;width:18px;height:18px;border-radius:6px;
+    border:1px solid rgba(255,255,255,.3);background:rgba(0,0,0,.25);}
+  .qstrip{display:flex;gap:7px;}
+  .qs{width:58px;flex:none;}
+  .qs-sw{height:58px;border-radius:11px;border:1px solid var(--line-2);}
+  .qs-sw.on{border:1.5px solid var(--accent-2);}
+  .qs-cap{font-size:7.5px;color:var(--text-dim);margin-top:4px;text-align:center;}
+  .qs-cap.on{color:var(--text);}
+  .track2{height:5px;border-radius:100px;background:rgba(226,231,246,.09);position:relative;}
+  .fill2{position:absolute;left:0;top:0;height:5px;border-radius:100px;background:linear-gradient(90deg,#5d6fe0,#9aa8ff);}
+  .knob2{position:absolute;top:50%;transform:translate(-50%,-50%);width:13px;height:13px;border-radius:50%;background:var(--text);}
+
+  /* category gallery */
+  .catrow{display:flex;gap:6px;overflow:hidden;margin-bottom:12px;}
+  .cat{font-size:9.5px;padding:6px 11px;border-radius:100px;border:1px solid var(--line-2);color:var(--text-dim);white-space:nowrap;}
+  .cat.on{background:var(--accent-soft);border-color:var(--accent-line);color:var(--accent-2);}
+  .cat-h{font-family:var(--display);font-size:13px;margin:4px 0 8px;display:flex;align-items:baseline;gap:7px;}
+  .cat-h span{font-size:8.5px;color:var(--text-faint);font-family:var(--body);}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;}
+  .gcard{height:84px;border-radius:13px;border:1px solid var(--line-2);position:relative;overflow:hidden;
+    padding:8px;display:flex;flex-direction:column;justify-content:flex-end;}
+  .gcard.on{border:1.5px solid var(--accent-2);}
+  .gcard .nm{font-family:var(--display);font-size:11.5px;color:#fff;z-index:3;position:relative;}
+  .gcard .ds{font-size:7.5px;color:rgba(255,255,255,.7);z-index:3;position:relative;}
+  .gcard .badge{position:absolute;top:7px;right:7px;z-index:3;font-size:7px;padding:2px 6px;border-radius:100px;
+    background:var(--accent);color:#0a0c1a;font-weight:700;}
+
+  /* adjustment sheet */
+  .scrim{position:absolute;inset:0;background:rgba(0,0,0,.55);z-index:6;}
+  .sheet{position:absolute;left:0;right:0;bottom:0;z-index:7;background:var(--surface-2);
+    border-top:1px solid var(--line-2);border-radius:20px 20px 0 0;padding:14px 15px 16px;}
+  .grabber{width:34px;height:4px;border-radius:4px;background:var(--line-2);margin:0 auto 12px;}
+  .sheet-hero{height:64px;border-radius:11px;position:relative;overflow:hidden;border:1px solid var(--line-2);margin-bottom:13px;}
+  .sheet-hero .meta{position:absolute;left:10px;bottom:7px;z-index:3;}
+  .ctrl{margin-bottom:11px;}
+  .ctrl .cl{display:flex;justify-content:space-between;font-size:9px;color:var(--text-dim);margin-bottom:5px;}
+  .ctrl .cl b{color:var(--text);}
+  .track{height:5px;border-radius:100px;background:rgba(226,231,246,.09);position:relative;}
+  .fill{position:absolute;left:0;top:0;height:5px;border-radius:100px;background:linear-gradient(90deg,#5d6fe0,#9aa8ff);}
+  .knob{position:absolute;top:50%;transform:translate(-50%,-50%);width:13px;height:13px;border-radius:50%;background:var(--text);}
+
+  /* toast */
+  .toast{background:var(--surface-3);border:1px solid var(--accent-line);border-radius:13px;
+    padding:11px 13px;display:flex;align-items:center;gap:9px;}
+  .toast.float{position:absolute;left:15px;right:15px;bottom:16px;z-index:7;}
+  .toast .ck{width:20px;height:20px;border-radius:50%;background:var(--accent);flex:none;
+    display:grid;place-items:center;color:#0a0c1a;font-size:11px;font-weight:700;}
+  .toast .tt{font-size:10px;}
+  .toast .tt b{color:var(--text);font-weight:600;}
+  .toast .tt div{color:var(--text-dim);font-size:8.5px;}
+
+  .dest-flag{display:inline-flex;align-items:center;gap:6px;font-size:9px;color:#0a0c1a;font-weight:700;
+    background:var(--accent-2);padding:3px 9px;border-radius:100px;margin-bottom:10px;}
+
+  /* annotation */
+  .note dl{display:grid;grid-template-columns:auto 1fr;gap:5px 10px;}
+  .note dt{font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-2);font-weight:600;padding-top:2px;white-space:nowrap;}
+  .note dt.tech{color:var(--text-dim);}
+  .note dd{font-size:11.5px;color:var(--text-dim);line-height:1.5;}
+  .note dd b{color:var(--text);font-weight:600;}
+  .note dd .warn{color:#e8826b;font-weight:600;}
+  /* note inside grid7 card */
+  .card7 .note{width:auto;padding:18px 20px 21px;border-top:1px solid var(--line);}
+
+  /* edge callout */
+  .edge{margin-top:30px;border:1px solid var(--line);border-radius:16px;background:linear-gradient(160deg,var(--surface-2),var(--ink));padding:22px 26px;}
+  .edge h4{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent-2);margin-bottom:14px;}
+  .edge-rows{display:grid;grid-template-columns:1fr 1fr;gap:12px 34px;}
+  .edge-item{display:grid;grid-template-columns:auto 1fr;gap:10px;}
+  .edge-item .pin{width:7px;height:7px;border-radius:50%;background:var(--accent);margin-top:6px;flex:none;}
+  .edge-item p{font-size:12px;color:var(--text-dim);line-height:1.5;}
+  .edge-item p b{color:var(--text);font-weight:600;}
+
+  /* ledger */
+  .ledger{margin-top:24px;display:grid;grid-template-columns:1fr 1fr;gap:22px;
+    border:1px solid var(--line);border-radius:18px;padding:28px 32px;
+    background:linear-gradient(160deg,var(--surface-2),var(--ink));}
+  .ledger .col h4{font-size:11px;letter-spacing:.16em;text-transform:uppercase;margin-bottom:11px;}
+  .ledger .col.app h4{color:var(--accent-2);}
+  .ledger .col.fw h4{color:var(--text-faint);}
+  .ledger li{list-style:none;font-size:13px;color:var(--text-dim);padding:5px 0 5px 16px;position:relative;}
+  .ledger li::before{content:"";position:absolute;left:0;top:11px;width:5px;height:5px;border-radius:50%;}
+  .ledger .col.app li::before{background:var(--accent);}
+  .ledger .col.fw li::before{background:var(--text-faint);}
+
+  /* callout panel */
+  .panel{margin-top:30px;border:1px solid var(--line);border-radius:20px;padding:34px 38px;
+    background:radial-gradient(500px 320px at 88% 120%, rgba(124,142,245,.10), transparent),linear-gradient(160deg,var(--surface-2),var(--ink));}
+  .panel h3{font-family:var(--display);font-weight:400;font-size:24px;max-width:34ch;line-height:1.24;}
+  .panel h3 em{font-style:italic;color:var(--accent-2);}
+  .panel p{margin-top:13px;color:var(--text-dim);max-width:80ch;font-size:14px;}
+  .panel p b{color:var(--text);}
+
+  /* section divider rule */
+  .rule{height:1px;background:linear-gradient(90deg,transparent,var(--line-2),transparent);margin-top:96px;}
+
+  /* footer */
+  .foot{margin-top:96px;padding-top:30px;border-top:1px solid var(--line);
+    display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:12px;}
+  .foot .ft{font-family:var(--display);font-size:16px;color:var(--text-dim);}
+  .foot .fm{font-size:11px;color:var(--text-faint);letter-spacing:.04em;}
+
+  @media(max-width:1180px){
+    .arrow{display:none;}
+    .stepwrap{margin:0 22px 30px 0;}
+    .toc{grid-template-columns:1fr 1fr;}
+    .edge-rows{grid-template-columns:1fr;}
+  }
+  @media(max-width:820px){
+    .system{grid-template-columns:1fr;gap:30px;}
+    .analysis .rows{grid-template-columns:1fr;}
+    .toc{grid-template-columns:1fr;}
+    .ledger{grid-template-columns:1fr;}
+    .wrap{padding:0 18px;}
+  }
+
+  /* ---------- section 07: add-wall / add-room journey ---------- */
+  .map-note{margin-top:18px;font-size:12.5px;color:var(--text-dim);padding-top:16px;border-top:1px solid var(--line);}
+  .map-note b{color:var(--text);}
+  .node.shared{border-color:rgba(155,168,255,.55);background:rgba(124,142,245,.18);color:#fff;font-weight:600;}
+  .node.shared b{color:#fff;}
+  .node.shared small{color:rgba(255,255,255,.7);}
+  .subhead{margin:48px 0 26px;}
+  .subhead .st{display:flex;align-items:baseline;gap:14px;}
+  .subhead .sn{font-family:var(--display);font-size:30px;color:var(--accent-2);line-height:1;}
+  .subhead .stt{font-family:var(--display);font-size:25px;letter-spacing:-.01em;}
+  .subhead p{margin-top:9px;color:var(--text-dim);font-size:14.5px;max-width:78ch;padding-left:44px;}
+  .subhead p b{color:var(--text);}
+  .step-dot.shared{background:rgba(124,142,245,.22);border-color:rgba(155,168,255,.55);color:#fff;}
+  .shared-pill{font-size:7.5px;color:#0a0c1a;font-weight:700;background:var(--accent-2);
+    padding:2px 7px;border-radius:100px;margin-left:7px;vertical-align:middle;}
+  .topbar .x{margin-left:auto;font-size:13px;color:var(--text-dim);}
+  .dash-head{display:flex;justify-content:space-between;align-items:flex-start;padding:9px 0 13px;}
+  .add-btn{width:30px;height:30px;border-radius:9px;border:1px solid var(--accent-line);background:var(--accent-soft);
+    color:var(--accent-2);display:grid;place-items:center;font-size:17px;font-weight:300;flex:none;}
+  .rcard.flat{background:var(--surface-2);}
+  .rcard.flat .rcard-nm{color:var(--text-dim);}
+  .add-wall-row{display:flex;align-items:center;gap:9px;padding:11px 10px;border-radius:11px;
+    border:1px dashed var(--accent-line);background:var(--accent-soft);color:var(--accent-2);font-size:10.5px;font-weight:600;}
+  .add-wall-row .ic{width:20px;height:20px;border-radius:6px;border:1px solid var(--accent-line);
+    display:grid;place-items:center;font-size:13px;flex:none;}
+  .ctx-banner{display:flex;align-items:center;gap:8px;font-size:9px;color:var(--accent-2);
+    background:var(--accent-soft);border:1px solid var(--accent-line);padding:8px 10px;border-radius:10px;margin-bottom:14px;}
+  .ctx-banner .ic{font-size:10px;}
+  .ctx-banner b{color:var(--text);}
+  .field-lbl{font-size:9px;color:var(--text);font-weight:600;margin-bottom:7px;}
+  .field.focus{border-color:var(--accent-line);}
+  .chip.locked{background:var(--accent-soft);border-color:var(--accent-line);color:var(--accent-2);opacity:.75;}
+  .dialog{position:absolute;left:18px;right:18px;top:50%;transform:translateY(-50%);z-index:7;
+    background:var(--surface-2);border:1px solid var(--line-2);border-radius:18px;padding:18px 16px 16px;}
+  .dialog h4{font-family:var(--display);font-size:16px;margin-bottom:4px;}
+  .dialog p{font-size:9.5px;color:var(--text-dim);margin-bottom:14px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ================= COVER ================= -->
+  <header class="cover">
+    <div class="kicker">Living Wall · Phase 1 · Design Spec Lengkap</div>
+    <h1>Satu dokumen, <em>seluruh</em> alur produk.</h1>
+    <p class="sub">
+      Penyatuan tiga dokumen — sistem desain, peta navigasi, dan dua journey detail — menjadi satu
+      spesifikasi utuh untuk MVP <b>local-first</b>: tanpa akun, tanpa server, tanpa menyentuh firmware.
+      Aplikasi berbicara langsung ke wall lewat JSON API WLED; tugasnya menerjemahkan engine teknis
+      menjadi pengalaman emosional.
+    </p>
+    <div class="decisions">
+      <span class="dec">Palet: <b>true black + periwinkle</b></span>
+      <span class="dec">Penjelajahan scene: <b>kategori</b></span>
+      <span class="dec">Penyesuaian: <b>sheet</b></span>
+      <span class="dec">Grup: <b>per ruangan</b></span>
+      <span class="dec">Dashboard: <b>kartu ruangan + mini-kontrol</b></span>
+      <span class="dec">Tambah: <b>'+' ruangan di Dashboard, 'tambah wall' di dalam ruangan</b></span>
+    </div>
+
+    <!-- TOC -->
+    <nav class="toc">
+      <div class="toc-h">Isi dokumen</div>
+      <a href="#s1"><span class="toc-n">01</span><span><span class="toc-t">Sistem Desain</span><div class="toc-d">Palet, tipografi, aturan warna</div></span></a>
+      <a href="#s2"><span class="toc-n">02</span><span><span class="toc-t">Tur 7 Layar Inti</span><div class="toc-d">First-run sampai kontrol grup</div></span></a>
+      <a href="#s3"><span class="toc-n">03</span><span><span class="toc-t">Peta Navigasi</span><div class="toc-d">Jalur menuju layar kontrol</div></span></a>
+      <a href="#s4"><span class="toc-n">04</span><span><span class="toc-t">Journey: Navigasi ke Wall</span><div class="toc-d">Jalur A (1 wall) &amp; B (2+ wall)</div></span></a>
+      <a href="#s5"><span class="toc-n">05</span><span><span class="toc-t">Journey: Pilih Scene</span><div class="toc-d">Galeri kategori + sheet penyesuaian</div></span></a>
+      <a href="#s6"><span class="toc-n">06</span><span><span class="toc-t">Journey: Kontrol Grup</span><div class="toc-d">Per ruangan, kecualikan wall</div></span></a>
+      <a href="#s7"><span class="toc-n">07</span><span><span class="toc-t">Journey: Tambah Wall &amp; Ruangan</span><div class="toc-d">Setelah app sudah terisi</div></span></a>
+      <a href="#s8"><span class="toc-n">08</span><span><span class="toc-t">Aturan Pengikat</span><div class="toc-d">Garis app vs firmware</div></span></a>
+    </nav>
+  </header>
+
+  <!-- ================= 01 · DESIGN SYSTEM ================= -->
+  <section class="section" id="s1">
+    <div class="sec-tab"><span class="badge">01</span><span class="lbl">Sistem Desain</span></div>
+    <h2 class="sec-h">Cahaya adalah brand — <em>chrome</em> tetap tenang.</h2>
+    <p class="sec-intro">
+      Palet diturunkan dari referensi nyata: latar hitam mutlak, aksen periwinkle, thumbnail scene
+      fotografis. Aturan inti yang mengikat seluruh dokumen — <b>chrome aplikasi dingin &amp; netral,
+      representasi cahaya bebas berwarna</b>.
+    </p>
+
+    <div class="analysis">
+      <div class="blk-h">Yang dibaca dari referensi</div>
+      <div class="rows">
+        <div class="aread"><div class="mark m-black"></div><p><b>Latar hitam mutlak.</b> #000 murni, bukan hitam kehangatan. Kartu memakai abu-abu dingin sangat gelap.</p></div>
+        <div class="aread"><div class="mark m-accent"></div><p><b>Aksen periwinkle.</b> Tab aktif, ikon terpilih — biru lembut kebiruan-ungu. Satu-satunya warna chrome.</p></div>
+        <div class="aread"><div class="mark m-photo"></div><p><b>Thumbnail fotografis.</b> Gambar atmosferik berlapis, bukan blok warna datar. Inilah "cahaya".</p></div>
+        <div class="aread"><div class="mark m-warm"></div><p><b>Scene hangat tetap boleh.</b> Amber sah untuk <i>scene</i> yang merepresentasikan cahaya hangat — dilarang hanya untuk chrome.</p></div>
+      </div>
+    </div>
+
+    <div class="system">
+      <div>
+        <div class="blk-h muted">Palet chrome — dingin &amp; netral</div>
+        <div class="swatches">
+          <div class="sw ink"><span>Ink #000</span></div>
+          <div class="sw surf"><span>Surface</span></div>
+          <div class="sw acc"><span>Accent</span></div>
+          <div class="sw acc2"><span>Deep</span></div>
+          <div class="sw txt"><span>Text</span></div>
+          <div class="sw dim"><span>Dim</span></div>
+        </div>
+        <p class="principle" style="margin-top:34px;">
+          Tombol, tab aktif, slider, border terpilih, kicker — semua periwinkle.
+          <b>Nol amber</b> di lapisan UI.
+        </p>
+      </div>
+      <div>
+        <div class="blk-h muted">Tipografi</div>
+        <div class="type-row">
+          <div class="lbl">Display — Fraunces</div>
+          <div class="type-display">Tokyo&nbsp;Rain</div>
+        </div>
+        <div class="type-row">
+          <div class="lbl">Body — Hanken Grotesk</div>
+          <div class="type-body">Ambient Scene · 2 wall tersinkron</div>
+        </div>
+        <p class="principle" style="margin-top:18px;">
+          Serif optik hangat untuk <span class="em">nama &amp; mood</span>; grotesk bersih untuk fungsi.
+          Karakter inilah yang membedakan dari app RGB generik.
+        </p>
+      </div>
+      <div>
+        <div class="blk-h muted">Aturan warna</div>
+        <p class="principle">
+          <span class="em">Chrome dingin, scene bebas.</span><br><br>
+          Tanya tiap elemen: <b>UI aplikasi</b> (tombol, nav, slider, teks) → periwinkle/netral.
+          Atau <b>representasi cahaya</b> (thumbnail, preview, glow) → warna kaya sesuai mood, termasuk hangat.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <div class="rule"></div>
+
+  <!-- ================= 02 · 7-SCREEN TOUR ================= -->
+  <section class="section" id="s2">
+    <div class="sec-tab"><span class="badge">02</span><span class="lbl">Tur 7 Layar Inti</span></div>
+    <h2 class="sec-h">Dari kardus ke <em>"ruangan saya terasa hidup"</em>.</h2>
+    <p class="sec-intro">
+      Gambaran menyeluruh tujuh layar utama Phase 1. Tiga pertama adalah <b>onboarding</b> — termasuk
+      segmen captive portal WLED yang tidak bisa dihapus, hanya dibungkus. Empat terakhir adalah
+      <b>penggunaan harian</b>. Bagian 04–06 nanti memperdalam layar-layar kunci ini langkah demi langkah.
+    </p>
+
+    <div class="grid7" style="margin-top:34px;">
+
+      <!-- screen 1 -->
+      <article class="card7">
+        <div class="card7-bar"><div class="card7-num">01</div>
+          <div><div class="card7-name">First Run · Empty State</div><div class="card7-sub">Layar pertama setelah install</div></div></div>
+        <div class="card7-stage">
+          <div class="phone"><div class="notch"></div>
+            <div class="scr">
+              <div class="glow g-accent" style="width:280px;height:280px;left:-30px;bottom:-90px;"></div>
+              <div class="statusbar"><span>9.01</span><span>WiFi · 100%</span></div>
+              <div class="scr-body" style="justify-content:flex-end;padding-bottom:24px;">
+                <div class="p-word" style="position:absolute;top:34px;left:15px;">Living Wall</div>
+                <h2 class="p-h xl" style="margin-bottom:8px;">Mari hubungkan<br>wall pertamamu.</h2>
+                <p class="p-sub" style="margin-bottom:16px;">Pastikan wall sudah terpasang dan menyala. Prosesnya butuh sekitar dua menit.</p>
+                <div class="p-btn">Tambah Wall</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note">
+          <dl>
+            <dt>Konteks</dt><dd>Belum ada wall terdaftar — sebuah <b>undangan</b>, bukan dashboard kosong.</dd>
+            <dt>User</dt><dd>Tap satu tombol: <b>Tambah Wall</b>.</dd>
+            <dt class="tech">Teknis</dt><dd>App mengecek device WLED di jaringan. Belum ada → panduan WiFi.</dd>
+          </dl>
+        </div>
+      </article>
+
+      <!-- screen 2 -->
+      <article class="card7">
+        <div class="card7-bar"><div class="card7-num">02</div>
+          <div><div class="card7-name">Panduan WiFi</div><div class="card7-sub">Captive portal WLED — dibungkus</div></div></div>
+        <div class="card7-stage">
+          <div class="phone"><div class="notch"></div>
+            <div class="scr">
+              <div class="statusbar"><span>9.02</span><span>WiFi · 100%</span></div>
+              <div class="scr-body">
+                <div class="topbar"><span class="chevron">‹</span><span class="t">Hubungkan ke WiFi</span></div>
+                <div class="stepper"><i class="on"></i><i></i><i></i></div>
+                <div class="guide-ill">
+                  <div class="wifi-rows">
+                    <div class="wifi-r sel"><span>WLED-AP</span><span class="dot a"></span></div>
+                    <div class="wifi-r"><span>Rumah-2.4G</span><span class="dot"></span></div>
+                    <div class="wifi-r"><span>Tetangga_5G</span><span class="dot"></span></div>
+                  </div>
+                </div>
+                <h3 class="p-h md" style="margin-bottom:6px;">Langkah 1 dari 3</h3>
+                <p class="p-sub" style="margin-bottom:14px;">Buka <b style="color:var(--text)">Pengaturan WiFi</b> dan pilih jaringan <b style="color:var(--accent-2)">WLED-AP</b>. Kami pandu sisanya.</p>
+                <div class="p-btn" style="margin-bottom:8px;">Buka Pengaturan WiFi</div>
+                <div class="p-btn ghost">Saya sudah selesai →</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note">
+          <dl>
+            <dt>Konteks</dt><dd>Stock WLED <b>tidak bisa</b> menerima kredensial dari app. Bagian ini wajib ada.</dd>
+            <dt>User</dt><dd>Ikuti 3 langkah bergambar, kembali, tap <b>"Saya sudah selesai"</b>.</dd>
+            <dt class="tech">Teknis</dt><dd>App hanya menampilkan instruksi. <span class="warn">Wajib diuji di iPhone</span> (bug captive portal iOS).</dd>
+          </dl>
+        </div>
+      </article>
+
+      <!-- screen 3 -->
+      <article class="card7">
+        <div class="card7-bar"><div class="card7-num">03</div>
+          <div><div class="card7-name">Discovery</div><div class="card7-sub">Segmen milik aplikasi dimulai</div></div></div>
+        <div class="card7-stage">
+          <div class="phone"><div class="notch"></div>
+            <div class="scr">
+              <div class="glow g-accent" style="width:200px;height:200px;right:-70px;bottom:-70px;"></div>
+              <div class="statusbar"><span>9.04</span><span>WiFi · 100%</span></div>
+              <div class="scr-body">
+                <div class="topbar"><span class="chevron">‹</span><span class="t">Mencari wall</span></div>
+                <div class="stepper"><i class="on"></i><i class="on"></i><i></i></div>
+                <div class="pulse"></div>
+                <h3 class="p-h lg" style="text-align:center;margin-bottom:5px;">Satu wall ditemukan</h3>
+                <p class="p-sub" style="text-align:center;margin-bottom:14px;">Terhubung di jaringan rumahmu dan siap diklaim.</p>
+                <div class="p-card found-card">
+                  <div class="found-thumb ph sc-ocean"></div>
+                  <div><div style="font-size:11.5px;font-weight:600;">Wall baru</div><div class="p-sub">Belum diberi nama · Online</div></div>
+                </div>
+                <div style="flex:1;"></div>
+                <div class="p-btn" style="margin-bottom:16px;">Klaim wall ini</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note">
+          <dl>
+            <dt>Konteks</dt><dd>App menemukan wall. <b>IP tidak pernah ditampilkan</b> — hanya "Wall baru".</dd>
+            <dt>User</dt><dd>Mengenali wall-nya, tap <b>Klaim wall ini</b>.</dd>
+            <dt class="tech">Teknis</dt><dd>mDNS scan dengan <b>fallback scan subnet</b>.</dd>
+          </dl>
+        </div>
+      </article>
+
+      <!-- screen 4 -->
+      <article class="card7">
+        <div class="card7-bar"><div class="card7-num">04</div>
+          <div><div class="card7-name">Beri Nama &amp; Tempatkan</div><div class="card7-sub">Hierarki yang WLED tak punya</div></div></div>
+        <div class="card7-stage">
+          <div class="phone"><div class="notch"></div>
+            <div class="scr">
+              <div class="glow g-accent" style="width:180px;height:180px;left:-60px;top:60px;"></div>
+              <div class="statusbar"><span>9.05</span><span>WiFi · 100%</span></div>
+              <div class="scr-body">
+                <div class="topbar"><span class="chevron">‹</span><span class="t">Atur wall</span></div>
+                <div class="stepper"><i class="on"></i><i class="on"></i><i class="on"></i></div>
+                <h3 class="p-h lg" style="margin:6px 0 4px;">Beri nama wall-mu</h3>
+                <p class="p-sub" style="margin-bottom:10px;">Nama yang mudah kamu kenali.</p>
+                <div class="field" style="margin-bottom:18px;"><span>Wall Ruang Tamu</span><span class="caret"></span></div>
+                <p class="p-sub" style="margin-bottom:9px;color:var(--text);font-weight:600;">Letakkan di ruangan</p>
+                <div class="chips" style="margin-bottom:auto;">
+                  <span class="chip on">Ruang Tamu</span><span class="chip">Kamar</span><span class="chip">Studio</span><span class="chip add">+ Ruangan baru</span>
+                </div>
+                <div class="p-btn" style="margin-bottom:16px;">Lanjut</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note">
+          <dl>
+            <dt>Konteks</dt><dd>App menciptakan konsep <b>Rumah → Ruangan → Wall</b>.</dd>
+            <dt>User</dt><dd>Ketik nama, pilih/buat ruangan, tap <b>Lanjut</b>.</dd>
+            <dt class="tech">Teknis</dt><dd>Buat record <b>Wall</b> (nama, IP, ID, ruangan) di storage lokal.</dd>
+          </dl>
+        </div>
+      </article>
+
+      <!-- screen 5 -->
+      <article class="card7">
+        <div class="card7-bar"><div class="card7-num">05</div>
+          <div><div class="card7-name">Home · Dashboard</div><div class="card7-sub">Layar utama harian</div></div></div>
+        <div class="card7-stage">
+          <div class="phone"><div class="notch"></div>
+            <div class="scr">
+              <div class="statusbar"><span>9.30</span><span>WiFi · 100%</span></div>
+              <div class="scr-body">
+                <div style="padding:10px 0 14px;">
+                  <div class="p-word" style="margin-bottom:3px;">Selamat malam</div>
+                  <h3 class="p-h lg">Rumah Saya</h3>
+                </div>
+                <div class="room-card ph sc-ocean">
+                  <div class="room-top"><div><div class="room-name">Ruang Tamu</div><div class="room-meta">2 wall · tersinkron</div></div><div class="toggle"></div></div>
+                  <div class="scene-pill">Ocean</div>
+                </div>
+                <div class="room-card ph sc-candle">
+                  <div class="room-top"><div><div class="room-name">Kamar</div><div class="room-meta">1 wall</div></div><div class="toggle"></div></div>
+                  <div class="scene-pill">Candlelight</div>
+                </div>
+                <div class="room-card" style="background:var(--surface-2);min-height:62px;">
+                  <div class="room-top"><div><div class="room-name" style="color:var(--text-dim);">Studio</div><div class="room-meta">1 wall · mati</div></div><div class="toggle off"></div></div>
+                </div>
+                <div style="flex:1;"></div>
+                <div class="navbar">
+                  <div class="nav-i on"><div class="ic"></div>Beranda</div>
+                  <div class="nav-i"><div class="ic"></div>Scene</div>
+                  <div class="nav-i"><div class="ic"></div>Musik</div>
+                  <div class="nav-i"><div class="ic"></div>Jadwal</div>
+                  <div class="nav-i"><div class="ic"></div>Setelan</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note">
+          <dl>
+            <dt>Konteks</dt><dd>Satu pandangan = status seluruh rumah. Versi penuh dengan mini-kontrol dibahas di bagian 04.</dd>
+            <dt>User</dt><dd>Toggle cepat per ruangan, atau tap kartu untuk masuk lebih dalam.</dd>
+            <dt class="tech">Teknis</dt><dd>Status realtime via <b>WebSocket</b>; model data dari storage lokal.</dd>
+          </dl>
+        </div>
+      </article>
+
+      <!-- screen 6 -->
+      <article class="card7">
+        <div class="card7-bar"><div class="card7-num">06</div>
+          <div><div class="card7-name">Kontrol Wall · Pilih Scene</div><div class="card7-sub">Hero fotografis + grid + brightness</div></div></div>
+        <div class="card7-stage">
+          <div class="phone"><div class="notch"></div>
+            <div class="scr">
+              <div class="statusbar"><span>9.32</span><span>WiFi · 100%</span></div>
+              <div class="scr-body">
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0 12px;">
+                  <h3 class="p-h lg">Wall Ruang Tamu</h3><span style="color:var(--text-dim);font-size:14px;">···</span>
+                </div>
+                <div class="hero ph sc-tokyo">
+                  <div class="ico"></div>
+                  <div class="meta"><div class="p-h md" style="color:#fff;">Tokyo Rain</div><div style="font-size:9px;color:rgba(255,255,255,.7);">Ambient Scene</div></div>
+                </div>
+                <div class="row-lbl" style="margin:11px 0 8px;"><b>Quick Scenes</b><span></span></div>
+                <div class="qstrip" style="margin-bottom:9px;">
+                  <div class="qs"><div class="qs-sw ph sc-focus"></div><div class="qs-cap">Focus</div></div>
+                  <div class="qs"><div class="qs-sw ph sc-sunset"></div><div class="qs-cap">Sunset</div></div>
+                  <div class="qs"><div class="qs-sw ph sc-ocean on"></div><div class="qs-cap on">Ocean</div></div>
+                </div>
+                <div class="qstrip">
+                  <div class="qs"><div class="qs-sw ph sc-forest"></div><div class="qs-cap">Forest</div></div>
+                  <div class="qs"><div class="qs-sw ph sc-rain"></div><div class="qs-cap">Rain</div></div>
+                  <div class="qs"><div class="qs-sw ph sc-party"></div><div class="qs-cap">Party</div></div>
+                </div>
+                <div style="flex:1;"></div>
+                <div class="row-lbl"><span>Brightness</span><b>80%</b></div>
+                <div class="track2" style="margin-bottom:16px;"><div class="fill2" style="width:80%;"></div><div class="knob2" style="left:80%;"></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note">
+          <dl>
+            <dt>Konteks</dt><dd>Dari ratusan efek WLED, kamu <b>kurasi 15–20</b>, beri nama manusiawi + thumbnail.</dd>
+            <dt>User</dt><dd>Tap hero atau Quick Scene; geser brightness. Alur lengkap di bagian 05.</dd>
+            <dt class="tech">Teknis</dt><dd>Tiap scene = sekumpulan <b>JSON API call</b>; definisi tersimpan di app.</dd>
+          </dl>
+        </div>
+      </article>
+
+      <!-- screen 7 -->
+      <article class="card7">
+        <div class="card7-bar"><div class="card7-num">07</div>
+          <div><div class="card7-name">Kontrol Grup · Satu Ruangan</div><div class="card7-sub">Fitur ekosistem — config + API</div></div></div>
+        <div class="card7-stage">
+          <div class="phone"><div class="notch"></div>
+            <div class="scr">
+              <div class="glow g-accent" style="width:180px;height:180px;right:-60px;top:40px;"></div>
+              <div class="statusbar"><span>9.34</span><span>WiFi · 100%</span></div>
+              <div class="scr-body">
+                <div class="topbar"><span class="chevron">‹</span><span class="t">Ruang Tamu</span></div>
+                <h3 class="p-h lg" style="margin:4px 0 10px;">Atur seluruh ruangan</h3>
+                <div class="sync-banner"><span class="d"></span>Wall A &amp; Wall B tersinkron — berubah bersamaan</div>
+                <div class="row-lbl"><b>Pilih mood</b><span></span></div>
+                <div class="moodgrid">
+                  <div class="mood ph sc-ocean on" style="height:78px;"><div class="nm">Ocean</div></div>
+                  <div class="mood ph sc-sunset" style="height:78px;"><div class="nm">Sunset</div></div>
+                  <div class="mood ph sc-rain" style="height:78px;"><div class="nm">Movie Night</div></div>
+                  <div class="mood ph sc-candle" style="height:78px;"><div class="nm">Dinner</div></div>
+                </div>
+                <div style="flex:1;"></div>
+                <div class="p-btn" style="margin-bottom:16px;">Terapkan ke ruangan</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note">
+          <dl>
+            <dt>Konteks</dt><dd>WLED hanya kenal "satu device". Konsep <b>ruangan berubah serempak</b> milikmu.</dd>
+            <dt>User</dt><dd>Pilih mood, tap <b>Terapkan</b>. Alur lengkap di bagian 06.</dd>
+            <dt class="tech">Teknis</dt><dd>App memetakan ruangan → <b>UDP sync group</b> WLED.</dd>
+          </dl>
+        </div>
+      </article>
+
+    </div>
+  </section>
+
+  <div class="rule"></div>
+
+  <!-- ================= 03 · NAV MAP ================= -->
+  <section class="section" id="s3">
+    <div class="sec-tab"><span class="badge">03</span><span class="lbl">Peta Navigasi</span></div>
+    <h2 class="sec-h">Tiga jalur, satu <em>tujuan</em>.</h2>
+    <p class="sec-intro">
+      Sebelum journey detail, perlu jelas: bagaimana user sampai ke layar-layar kunci itu. Semua jalur
+      berawal dari <b>Dashboard</b> dan bercabang berdasarkan <b>jumlah wall di ruangan</b>. Bagian 04
+      menjabarkan dua jalur utama langkah demi langkah.
+    </p>
+
+    <div class="mapbox">
+      <div class="map-rows">
+        <div class="nodes">
+          <div class="node start"><b>Dashboard</b><small>Tap badan kartu ruangan</small></div>
+          <span class="conn">→</span>
+          <div class="branch"><span class="l">ruangan 1 wall</span><span>lewati layar ruangan</span></div>
+          <span class="conn">→</span>
+          <div class="node dest"><b>Layar Kontrol Wall</b><small>Tujuan</small></div>
+        </div>
+        <div class="nodes">
+          <div class="node start"><b>Dashboard</b><small>Tap badan kartu ruangan</small></div>
+          <span class="conn">→</span>
+          <div class="branch"><span class="l">ruangan 2+ wall</span><span>masuk layar ruangan</span></div>
+          <span class="conn">→</span>
+          <div class="node"><b>Layar Ruangan</b><small>Tap satu wall di daftar anggota</small></div>
+          <span class="conn">→</span>
+          <div class="node dest"><b>Layar Kontrol Wall</b><small>Tujuan</small></div>
+        </div>
+        <div class="nodes">
+          <div class="node start"><b>Onboarding selesai</b><small>"Momen wow" — wall baru diklaim</small></div>
+          <span class="conn">→</span>
+          <div class="branch"><span class="l">otomatis</span><span>tanpa tap</span></div>
+          <span class="conn">→</span>
+          <div class="node dest"><b>Layar Kontrol Wall</b><small>Tujuan</small></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="rule"></div>
+
+  <!-- ================= 04 · NAVIGATION JOURNEY ================= -->
+  <section class="section" id="s4">
+    <div class="sec-tab"><span class="badge">04</span><span class="lbl">Journey · Navigasi ke Wall</span></div>
+    <h2 class="sec-h">Apa yang user <em>tap</em> sebelum sampai ke kontrol wall.</h2>
+    <p class="sec-intro">
+      Dua jalur konkret dari Dashboard. Kunci desainnya: <b>mini-kontrol di kartu Dashboard</b> menyerap
+      80% aksi harian, sehingga navigasi penuh hanya terjadi saat user benar-benar ingin menjelajah.
+    </p>
+
+    <!-- Jalur A -->
+    <div class="subhead">
+      <div class="st"><span class="sn">A</span><span class="stt">Ruangan dengan 1 Wall · Jalur Tercepat</span></div>
+      <p>Karena ruangan hanya punya satu wall, <b>tidak ada layar ruangan perantara</b> — tap badan kartu langsung membuka kontrol wall.</p>
+    </div>
+    <div class="rail">
+      <!-- A.1 -->
+      <div class="stepwrap">
+        <div>
+          <div class="step">
+            <div class="step-tag"><div class="step-dot">1</div>
+              <div><div class="step-label">Dashboard · Kartu Ruangan</div><div class="step-micro">Titik awal semua navigasi</div></div></div>
+            <div class="phone"><div class="notch"></div>
+              <div class="scr">
+                <div class="statusbar"><span>19.50</span><span>WiFi · 100%</span></div>
+                <div class="scr-body">
+                  <div style="padding:9px 0 12px;"><div class="p-word" style="margin-bottom:3px;">Selamat malam</div><div class="p-h lg">Rumah Saya</div></div>
+                  <div class="rcard">
+                    <div class="bg ph sc-candle"></div>
+                    <div class="inner">
+                      <div class="rcard-top"><div><div class="rcard-nm">Kamar</div><div class="rcard-meta">1 wall · Candlelight</div></div><div class="toggle"></div></div>
+                      <div class="mini-scenes"><div class="ms ph sc-candle on"></div><div class="ms ph sc-ocean"></div><div class="ms ph sc-focus"></div><div class="ms-more">···</div></div>
+                      <div class="mini-bri"><span class="ic">☀</span><div class="track"><div class="fill" style="width:55%;"></div><div class="knob" style="left:55%;"></div></div><span class="pct">55%</span></div>
+                      <div class="tap-hint">Tap kartu untuk kontrol penuh</div>
+                    </div>
+                  </div>
+                  <div class="rcard off-state">
+                    <div class="bg ph sc-forest"></div>
+                    <div class="inner"><div class="rcard-top"><div><div class="rcard-nm" style="color:rgba(255,255,255,.7);">Studio</div><div class="rcard-meta">1 wall · mati</div></div><div class="toggle off"></div></div></div>
+                  </div>
+                  <div style="flex:1;"></div>
+                  <div class="navbar">
+                    <div class="nav-i on"><div class="ic"></div>Beranda</div><div class="nav-i"><div class="ic"></div>Scene</div>
+                    <div class="nav-i"><div class="ic"></div>Musik</div><div class="nav-i"><div class="ic"></div>Jadwal</div><div class="nav-i"><div class="ic"></div>Setelan</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="note">
+            <dl>
+              <dt>Konteks</dt><dd>Kartu ruangan punya <b>mini-kontrol</b>: toggle, 3 scene cepat, slider brightness. 80% aksi harian selesai di sini.</dd>
+              <dt>User</dt><dd>Aksi cepat → tap di dalam kartu. <b>Kontrol penuh</b> → tap badan kartu.</dd>
+              <dt class="tech">Teknis</dt><dd>Mini-kontrol mengirim <b>JSON API call</b> langsung tanpa pindah layar.</dd>
+            </dl>
+          </div>
+        </div>
+        <div class="arrow">→<span class="lbl">tap badan kartu</span></div>
+      </div>
+      <!-- A.2 -->
+      <div class="stepwrap">
+        <div>
+          <div class="step">
+            <div class="step-tag"><div class="step-dot">2</div>
+              <div><div class="step-label">Layar Kontrol Wall</div><div class="step-micro">Tujuan — langsung, tanpa perantara</div></div></div>
+            <div class="phone"><div class="notch"></div>
+              <div class="scr">
+                <div class="statusbar"><span>19.50</span><span>WiFi · 100%</span></div>
+                <div class="scr-body">
+                  <div class="dest-flag" style="margin-top:8px;">◆ Tujuan tercapai</div>
+                  <div class="topbar" style="padding-top:0;"><span class="chevron">‹</span><span class="t">Wall Kamar</span><span class="r">···</span></div>
+                  <div class="hero ph sc-candle"><div class="meta"><div class="p-h md" style="color:#fff;">Candlelight</div><div style="font-size:8px;color:rgba(255,255,255,.7);">Aktif sekarang · 55%</div></div></div>
+                  <div class="row-lbl" style="margin-top:13px;"><b>Quick Scenes</b><span class="see">Lihat semua →</span></div>
+                  <div class="qstrip" style="margin-bottom:8px;">
+                    <div class="qs"><div class="qs-sw ph sc-candle on"></div><div class="qs-cap on">Candle</div></div>
+                    <div class="qs"><div class="qs-sw ph sc-ocean"></div><div class="qs-cap">Ocean</div></div>
+                    <div class="qs"><div class="qs-sw ph sc-focus"></div><div class="qs-cap">Focus</div></div>
+                  </div>
+                  <div style="flex:1;"></div>
+                  <div class="row-lbl"><span>Brightness</span><b style="font-size:9.5px;">55%</b></div>
+                  <div class="track2" style="margin-bottom:13px;"><div class="fill2" style="width:55%;"></div><div class="knob2" style="left:55%;"></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="note">
+            <dl>
+              <dt>Konteks</dt><dd>Inilah layar yang jadi <b>titik awal Journey "Pilih Scene"</b> (bagian 05).</dd>
+              <dt>User</dt><dd>Lanjut menjelajah scene, atau <b>‹</b> kembali ke Dashboard.</dd>
+              <dt class="tech">Teknis</dt><dd>Ruangan 1 wall → layar ruangan <b>di-skip</b>.</dd>
+            </dl>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Jalur B -->
+    <div class="subhead">
+      <div class="st"><span class="sn">B</span><span class="stt">Ruangan dengan 2+ Wall · Lewat Layar Ruangan</span></div>
+      <p>Tap kartu membuka <b>Layar Ruangan</b> dulu — karena ada percabangan: kontrol <b>seluruh grup</b>, atau masuk ke <b>satu wall</b> saja.</p>
+    </div>
+    <div class="rail">
+      <!-- B.1 -->
+      <div class="stepwrap">
+        <div>
+          <div class="step">
+            <div class="step-tag"><div class="step-dot">1</div>
+              <div><div class="step-label">Dashboard · Kartu Ruang Tamu</div><div class="step-micro">Ruangan dengan 2 wall</div></div></div>
+            <div class="phone"><div class="notch"></div>
+              <div class="scr">
+                <div class="statusbar"><span>19.52</span><span>WiFi · 100%</span></div>
+                <div class="scr-body">
+                  <div style="padding:9px 0 12px;"><div class="p-word" style="margin-bottom:3px;">Selamat malam</div><div class="p-h lg">Rumah Saya</div></div>
+                  <div class="rcard">
+                    <div class="bg ph sc-ocean"></div>
+                    <div class="inner">
+                      <div class="rcard-top"><div><div class="rcard-nm">Ruang Tamu</div><div class="rcard-meta">2 wall · tersinkron · Ocean Drift</div></div><div class="toggle"></div></div>
+                      <div class="mini-scenes"><div class="ms ph sc-ocean on"></div><div class="ms ph sc-sunset"></div><div class="ms ph sc-candle"></div><div class="ms-more">···</div></div>
+                      <div class="mini-bri"><span class="ic">☀</span><div class="track"><div class="fill" style="width:70%;"></div><div class="knob" style="left:70%;"></div></div><span class="pct">70%</span></div>
+                      <div class="tap-hint">Tap kartu untuk lihat 2 wall &amp; kontrol grup</div>
+                    </div>
+                  </div>
+                  <div class="rcard off-state">
+                    <div class="bg ph sc-candle"></div>
+                    <div class="inner"><div class="rcard-top"><div><div class="rcard-nm" style="color:rgba(255,255,255,.7);">Kamar</div><div class="rcard-meta">1 wall · mati</div></div><div class="toggle off"></div></div></div>
+                  </div>
+                  <div style="flex:1;"></div>
+                  <div class="navbar">
+                    <div class="nav-i on"><div class="ic"></div>Beranda</div><div class="nav-i"><div class="ic"></div>Scene</div>
+                    <div class="nav-i"><div class="ic"></div>Musik</div><div class="nav-i"><div class="ic"></div>Jadwal</div><div class="nav-i"><div class="ic"></div>Setelan</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="note">
+            <dl>
+              <dt>Konteks</dt><dd>Mini-kontrol di kartu <b>2+ wall</b> menyasar <b>seluruh grup</b> sekaligus.</dd>
+              <dt>User</dt><dd>Untuk masuk lebih dalam (lihat tiap wall, kecualikan satu) → tap badan kartu.</dd>
+              <dt class="tech">Teknis</dt><dd>Hint teks menyesuaikan jumlah wall di ruangan.</dd>
+            </dl>
+          </div>
+        </div>
+        <div class="arrow">→<span class="lbl">tap badan kartu</span></div>
+      </div>
+      <!-- B.2 -->
+      <div class="stepwrap">
+        <div>
+          <div class="step">
+            <div class="step-tag"><div class="step-dot">2</div>
+              <div><div class="step-label">Layar Ruangan · Percabangan</div><div class="step-micro">Kontrol grup ATAU pilih satu wall</div></div></div>
+            <div class="phone"><div class="notch"></div>
+              <div class="scr">
+                <div class="statusbar"><span>19.52</span><span>WiFi · 100%</span></div>
+                <div class="scr-body">
+                  <div class="topbar"><span class="chevron">‹</span><span class="t">Ruang Tamu</span></div>
+                  <div class="sync-banner"><span class="d"></span>2 wall di ruangan ini berubah bersamaan</div>
+                  <div class="row-lbl"><b>Wall di ruangan ini</b><span style="font-size:8px;">tap untuk kontrol satuan</span></div>
+                  <div class="wall-list">
+                    <div class="wall-row tappable"><div class="wall-thumb ph sc-ocean"></div><div><div class="wall-nm">Wall A</div><div class="wall-st"><span class="sync">Tersinkron</span> · Ocean Drift</div></div><div class="wall-go">›</div></div>
+                    <div class="wall-row tappable"><div class="wall-thumb ph sc-ocean"></div><div><div class="wall-nm">Wall B</div><div class="wall-st"><span class="sync">Tersinkron</span> · Ocean Drift</div></div><div class="wall-go">›</div></div>
+                  </div>
+                  <div class="row-lbl"><b>Mood ruangan</b><span class="see">Lihat semua →</span></div>
+                  <div class="moodgrid">
+                    <div class="mood ph sc-ocean on"><div class="nm">Ocean</div></div>
+                    <div class="mood ph sc-sunset"><div class="nm">Sunset</div></div>
+                    <div class="mood ph sc-candle"><div class="nm">Dinner</div></div>
+                    <div class="mood ph sc-tokyo"><div class="nm">Movie Night</div></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="note">
+            <dl>
+              <dt>Konteks</dt><dd>Menyajikan <b>dua arah</b>: galeri mood (grup) di bawah, daftar wall (satuan) di atas.</dd>
+              <dt>User</dt><dd>Kontrol satu wall → tap baris wall (tanda <b>›</b>). Kontrol grup → pilih mood.</dd>
+              <dt class="tech">Teknis</dt><dd>Layar yang sama dengan titik awal <b>Journey "Kontrol Grup"</b> (bagian 06).</dd>
+            </dl>
+          </div>
+        </div>
+        <div class="arrow">→<span class="lbl">tap baris Wall A</span></div>
+      </div>
+      <!-- B.3 -->
+      <div class="stepwrap">
+        <div>
+          <div class="step">
+            <div class="step-tag"><div class="step-dot">3</div>
+              <div><div class="step-label">Layar Kontrol Wall A</div><div class="step-micro">Tujuan — kontrol satu wall</div></div></div>
+            <div class="phone"><div class="notch"></div>
+              <div class="scr">
+                <div class="statusbar"><span>19.53</span><span>WiFi · 100%</span></div>
+                <div class="scr-body">
+                  <div class="dest-flag" style="margin-top:8px;">◆ Tujuan tercapai</div>
+                  <div class="topbar" style="padding-top:0;"><span class="chevron">‹</span><span class="t">Wall A · Ruang Tamu</span><span class="r">···</span></div>
+                  <div class="hero ph sc-ocean"><div class="meta"><div class="p-h md" style="color:#fff;">Ocean Drift</div><div style="font-size:8px;color:rgba(255,255,255,.7);">Aktif · tersinkron dengan Wall B</div></div></div>
+                  <div class="row-lbl" style="margin-top:13px;"><b>Quick Scenes</b><span class="see">Lihat semua →</span></div>
+                  <div class="qstrip" style="margin-bottom:8px;">
+                    <div class="qs"><div class="qs-sw ph sc-ocean on"></div><div class="qs-cap on">Ocean</div></div>
+                    <div class="qs"><div class="qs-sw ph sc-sunset"></div><div class="qs-cap">Sunset</div></div>
+                    <div class="qs"><div class="qs-sw ph sc-focus"></div><div class="qs-cap">Focus</div></div>
+                  </div>
+                  <div style="flex:1;"></div>
+                  <div class="row-lbl"><span>Brightness</span><b style="font-size:9.5px;">70%</b></div>
+                  <div class="track2" style="margin-bottom:13px;"><div class="fill2" style="width:70%;"></div><div class="knob2" style="left:70%;"></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="note">
+            <dl>
+              <dt>Konteks</dt><dd>Judul menyebut ruangan asal; ada catatan "tersinkron".</dd>
+              <dt>User</dt><dd>Mengubah scene di sini <b>memengaruhi Wall B juga</b> selama tersinkron.</dd>
+              <dt class="tech">Teknis</dt><dd>Tombol <b>‹</b> kembali ke Layar Ruangan, bukan Dashboard.</dd>
+            </dl>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="edge">
+      <h4>Skenario tepi — Navigasi</h4>
+      <div class="edge-rows">
+        <div class="edge-item"><div class="pin"></div><p><b>Setelah onboarding (momen wow).</b> Wall baru diklaim → app <b>otomatis</b> melempar ke Layar Kontrol Wall tanpa tap. ‹ dari sini menuju Dashboard.</p></div>
+        <div class="edge-item"><div class="pin"></div><p><b>Belum ada wall sama sekali.</b> Dashboard menampilkan empty state ("Tambah Wall"), bukan daftar ruangan kosong.</p></div>
+        <div class="edge-item"><div class="pin"></div><p><b>Konsistensi tombol kembali.</b> Ruangan 1 wall: ‹ → Dashboard. Ruangan 2+ wall: ‹ → Layar Ruangan. Jejak navigasi jujur sesuai rute masuk.</p></div>
+        <div class="edge-item"><div class="pin"></div><p><b>Tab "Scene" di navbar.</b> Membuka galeri scene global; untuk menerapkan user tetap perlu memilih wall/ruangan tujuan dulu.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="rule"></div>
+
+  <!-- ================= 05 · PILIH SCENE ================= -->
+  <section class="section" id="s5">
+    <div class="sec-tab"><span class="badge">05</span><span class="lbl">Journey · Pilih Scene</span></div>
+    <h2 class="sec-h">Dari quick scene ke galeri berkategori, lalu <em>sheet penyesuaian</em>.</h2>
+    <p class="sec-intro">
+      Titik masuk journey ini = Layar Kontrol Wall (tujuan bagian 04). <b>Quick scenes</b> menangani 80%
+      kasus harian; <b>galeri berkategori</b> untuk menjelajah; <b>sheet penyesuaian</b> muncul saat user
+      ingin mengubah brightness, speed, atau intensity sebelum menerapkan.
+    </p>
+
+    <div class="rail" style="margin-top:30px;">
+      <!-- 1 -->
+      <div class="stepwrap">
+        <div>
+          <div class="step">
+            <div class="step-tag"><div class="step-dot">1</div>
+              <div><div class="step-label">Layar Kontrol Wall</div><div class="step-micro">Titik masuk · quick scenes</div></div></div>
+            <div class="phone"><div class="notch"></div>
+              <div class="scr">
+                <div class="statusbar"><span>20.14</span><span>WiFi · 100%</span></div>
+                <div class="scr-body">
+                  <div class="topbar"><span class="chevron">‹</span><span class="t">Wall Ruang Tamu</span><span class="r">···</span></div>
+                  <div class="hero ph sc-ocean"><div class="meta"><div class="p-h md" style="color:#fff;">Ocean Drift</div><div style="font-size:8px;color:rgba(255,255,255,.7);">Aktif sekarang</div></div></div>
+                  <div class="row-lbl" style="margin-top:13px;"><b>Quick Scenes</b><span class="see">Lihat semua →</span></div>
+                  <div class="qstrip" style="margin-bottom:8px;">
+                    <div class="qs"><div class="qs-sw ph sc-ocean on"></div><div class="qs-cap on">Ocean</div></div>
+                    <div class="qs"><div class="qs-sw ph sc-focus"></div><div class="qs-cap">Focus</div></div>
+                    <div class="qs"><div class="qs-sw ph sc-candle"></div><div class="qs-cap">Candle</div></div>
+                  </div>
+                  <div class="qstrip">
+                    <div class="qs"><div class="qs-sw ph sc-sunset"></div><div class="qs-cap">Sunset</div></div>
+                    <div class="qs"><div class="qs-sw ph sc-forest"></div><div class="qs-cap">Forest</div></div>
+                    <div class="qs"><div class="qs-sw ph sc-rain"></div><div class="qs-cap">Rain</div></div>
+                  </div>
+                  <div style="flex:1;"></div>
+                  <div class="row-lbl"><span>Brightness</span><b style="font-size:9.5px;">72%</b></div>
+                  <div class="track2" style="margin-bottom:13px;"><div class="fill2" style="width:72%;"></div><div class="knob2" style="left:72%;"></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="note">
+            <dl>
+              <dt>Konteks</dt><dd>6 quick scene = favorit. Tap salah satunya → <b>langsung terap</b> tanpa sheet.</dd>
+              <dt>User</dt><dd>Tap quick scene untuk kasus cepat, atau <b>"Lihat semua"</b> untuk menjelajah.</dd>
+              <dt class="tech">Teknis</dt><dd>Tap quick scene = <b>satu set JSON API call</b> ke wall ini.</dd>
+            </dl>
+          </div>
+        </div>
+        <div class="arrow">→</div>
+      </div>
+      <!-- 2 -->
+      <div class="stepwrap">
+        <div>
+          <div class="step">
+            <div class="step-tag"><div class="step-dot">2</div>
+              <div><div class="step-label">Galeri Scene Berkategori</div><div class="step-micro">Layar browse terpisah</div></div></div>
+            <div class="phone"><div class="notch"></div>
+              <div class="scr">
+                <div class="statusbar"><span>20.14</span><span>WiFi · 100%</span></div>
+                <div class="scr-body">
+                  <div class="topbar"><span class="chevron">‹</span><span class="t">Pilih Scene</span></div>
+                  <div class="catrow">
+                    <span class="cat on">Semua</span><span class="cat">Tenang</span><span class="cat">Fokus</span><span class="cat">Sosial</span><span class="cat">Dinamis</span>
+                  </div>
+                  <div class="cat-h">Tenang <span>4 scene</span></div>
+                  <div class="grid2">
+                    <div class="gcard ph sc-ocean on"><div class="badge">Aktif</div><div class="nm">Ocean Drift</div><div class="ds">Biru perlahan</div></div>
+                    <div class="gcard ph sc-candle"><div class="nm">Candlelight</div><div class="ds">Hangat berkedip</div></div>
+                    <div class="gcard ph sc-dawn"><div class="nm">Wind Down</div><div class="ds">Senja meredup</div></div>
+                    <div class="gcard ph sc-rain"><div class="nm">Rain</div><div class="ds">Kelabu lembut</div></div>
+                  </div>
+                  <div class="cat-h">Fokus <span>3 scene</span></div>
+                  <div class="grid2">
+                    <div class="gcard ph sc-focus"><div class="nm">Focus</div><div class="ds">Sejuk stabil</div></div>
+                    <div class="gcard ph sc-forest"><div class="nm">Forest</div><div class="ds">Hijau teduh</div></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="note">
+            <dl>
+              <dt>Konteks</dt><dd>Scene dikelompokkan per <b>mood</b>: Tenang, Fokus, Sosial, Dinamis. Chip kategori memfilter.</dd>
+              <dt>User</dt><dd>Scroll, filter lewat chip, tap kartu scene yang diinginkan.</dd>
+              <dt class="tech">Teknis</dt><dd>Daftar scene + kategori + thumbnail = <b>data statis di app</b>.</dd>
+            </dl>
+          </div>
+        </div>
+        <div class="arrow">→</div>
+      </div>
+      <!-- 3 -->
+      <div class="stepwrap">
+        <div>
+          <div class="step">
+            <div class="step-tag"><div class="step-dot">3</div>
+              <div><div class="step-label">Sheet Penyesuaian</div><div class="step-micro">Muncul dari bawah saat scene ditap</div></div></div>
+            <div class="phone"><div class="notch"></div>
+              <div class="scr">
+                <div class="statusbar"><span>20.15</span><span>WiFi · 100%</span></div>
+                <div class="scr-body">
+                  <div class="topbar"><span class="chevron">‹</span><span class="t">Pilih Scene</span></div>
+                  <div class="catrow"><span class="cat on">Semua</span><span class="cat">Tenang</span><span class="cat">Fokus</span><span class="cat">Sosial</span></div>
+                  <div class="cat-h">Tenang <span>4 scene</span></div>
+                  <div class="grid2">
+                    <div class="gcard ph sc-ocean"><div class="nm">Ocean Drift</div></div>
+                    <div class="gcard ph sc-candle"><div class="nm">Candlelight</div></div>
+                  </div>
+                </div>
+                <div class="scrim"></div>
+                <div class="sheet">
+                  <div class="grabber"></div>
+                  <div class="sheet-hero ph sc-candle"><div class="meta"><div class="p-h sm" style="color:#fff;">Candlelight</div><div style="font-size:7.5px;color:rgba(255,255,255,.7);">Tenang · hangat berkedip</div></div></div>
+                  <div class="ctrl"><div class="cl"><span>Brightness</span><b>60%</b></div><div class="track"><div class="fill" style="width:60%;"></div><div class="knob" style="left:60%;"></div></div></div>
+                  <div class="ctrl"><div class="cl"><span>Speed</span><b>Lambat</b></div><div class="track"><div class="fill" style="width:28%;"></div><div class="knob" style="left:28%;"></div></div></div>
+                  <div class="ctrl" style="margin-bottom:13px;"><div class="cl"><span>Intensity</span><b>45%</b></div><div class="track"><div class="fill" style="width:45%;"></div><div class="knob" style="left:45%;"></div></div></div>
+                  <div class="p-btn">Terapkan ke Wall Ruang Tamu</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="note">
+            <dl>
+              <dt>Konteks</dt><dd>Tap scene tidak langsung terap — buka <b>sheet</b> berisi 3 kontrol: brightness, speed, intensity.</dd>
+              <dt>User</dt><dd>Geser yang perlu (atau biarkan default), tap <b>Terapkan</b>. Tarik turun = batal.</dd>
+              <dt class="tech">Teknis</dt><dd>Tiap slider memetakan ke parameter <b>JSON API WLED</b> (bri, sx, ix).</dd>
+            </dl>
+          </div>
+        </div>
+        <div class="arrow">→</div>
+      </div>
+      <!-- 4 -->
+      <div class="stepwrap">
+        <div>
+          <div class="step">
+            <div class="step-tag"><div class="step-dot">4</div>
+              <div><div class="step-label">Diterapkan · Kembali ke Kontrol</div><div class="step-micro">Konfirmasi + state baru</div></div></div>
+            <div class="phone"><div class="notch"></div>
+              <div class="scr">
+                <div class="statusbar"><span>20.15</span><span>WiFi · 100%</span></div>
+                <div class="scr-body">
+                  <div class="topbar"><span class="chevron">‹</span><span class="t">Wall Ruang Tamu</span><span class="r">···</span></div>
+                  <div class="hero ph sc-candle"><div class="meta"><div class="p-h md" style="color:#fff;">Candlelight</div><div style="font-size:8px;color:rgba(255,255,255,.7);">Aktif sekarang · 60%</div></div></div>
+                  <div class="row-lbl" style="margin-top:13px;"><b>Quick Scenes</b><span class="see">Lihat semua →</span></div>
+                  <div class="qstrip" style="margin-bottom:8px;">
+                    <div class="qs"><div class="qs-sw ph sc-candle on"></div><div class="qs-cap on">Candle</div></div>
+                    <div class="qs"><div class="qs-sw ph sc-ocean"></div><div class="qs-cap">Ocean</div></div>
+                    <div class="qs"><div class="qs-sw ph sc-focus"></div><div class="qs-cap">Focus</div></div>
+                  </div>
+                  <div style="flex:1;"></div>
+                  <div class="toast float"><div class="ck">✓</div><div class="tt"><b>Candlelight diterapkan</b><div>Wall Ruang Tamu · brightness 60%</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="note">
+            <dl>
+              <dt>Konteks</dt><dd>Kembali ke layar kontrol. Hero + quick scene aktif kini <b>Candlelight</b>; toast konfirmasi singkat.</dd>
+              <dt>User</dt><dd>Tidak perlu aksi — toast hilang sendiri. Wall fisik sudah berubah saat tombol ditekan.</dd>
+              <dt class="tech">Teknis</dt><dd>App memperbarui state lokal wall + simpan ke storage. <b>WebSocket</b> mengonfirmasi.</dd>
+            </dl>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="edge">
+      <h4>Skenario tepi — Pilih Scene</h4>
+      <div class="edge-rows">
+        <div class="edge-item"><div class="pin"></div><p><b>Wall offline saat menerapkan.</b> Tombol Terapkan jadi state "Wall tidak terjangkau" — sheet tetap terbuka, perubahan tidak hilang.</p></div>
+        <div class="edge-item"><div class="pin"></div><p><b>Sheet ditutup tanpa menerapkan.</b> Tidak ada yang dikirim. Scene aktif tetap yang lama — tidak ada perubahan diam-diam.</p></div>
+        <div class="edge-item"><div class="pin"></div><p><b>Tap quick scene langsung.</b> Lewati galeri &amp; sheet — terap dengan parameter default. Penyesuaian lewat "Lihat semua".</p></div>
+        <div class="edge-item"><div class="pin"></div><p><b>Kategori kosong.</b> Sembunyikan header-nya — jangan tampilkan section kosong.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="rule"></div>
+
+  <!-- ================= 06 · KONTROL GRUP ================= -->
+  <section class="section" id="s6">
+    <div class="sec-tab"><span class="badge">06</span><span class="lbl">Journey · Kontrol Grup</span></div>
+    <h2 class="sec-h">Ruangan <em>otomatis</em> menjadi grup.</h2>
+    <p class="sec-intro">
+      Titik masuk = Layar Ruangan (tujuan bagian 04, jalur B). Tidak ada UI manajemen grup yang perlu
+      dibangun — keanggotaan ruangan = keanggotaan grup. Satu wall bisa <b>dikecualikan sementara</b>
+      tanpa membongkar struktur.
+    </p>
+
+    <div class="rail" style="margin-top:30px;">
+      <!-- 1 -->
+      <div class="stepwrap">
+        <div>
+          <div class="step">
+            <div class="step-tag"><div class="step-dot">1</div>
+              <div><div class="step-label">Layar Ruangan · Anggota Grup</div><div class="step-micro">Lihat wall yang tergabung</div></div></div>
+            <div class="phone"><div class="notch"></div>
+              <div class="scr">
+                <div class="statusbar"><span>20.40</span><span>WiFi · 100%</span></div>
+                <div class="scr-body">
+                  <div class="topbar"><span class="chevron">‹</span><span class="t">Ruang Tamu</span></div>
+                  <div class="sync-banner"><span class="d"></span>2 wall di ruangan ini berubah bersamaan</div>
+                  <div class="row-lbl"><b>Wall di ruangan ini</b><span></span></div>
+                  <div class="wall-list">
+                    <div class="wall-row"><div class="wall-thumb ph sc-ocean"></div><div><div class="wall-nm">Wall A</div><div class="wall-st"><span class="sync">Tersinkron</span> · Ocean Drift</div></div><div class="mini-toggle"></div></div>
+                    <div class="wall-row"><div class="wall-thumb ph sc-ocean"></div><div><div class="wall-nm">Wall B</div><div class="wall-st"><span class="sync">Tersinkron</span> · Ocean Drift</div></div><div class="mini-toggle"></div></div>
+                  </div>
+                  <div class="row-lbl"><b>Mood ruangan</b><span class="see">Lihat semua →</span></div>
+                  <div class="moodgrid">
+                    <div class="mood ph sc-ocean on"><div class="nm">Ocean</div></div>
+                    <div class="mood ph sc-sunset"><div class="nm">Sunset</div></div>
+                    <div class="mood ph sc-rain"><div class="nm">Movie Night</div></div>
+                    <div class="mood ph sc-candle"><div class="nm">Dinner</div></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="note">
+            <dl>
+              <dt>Konteks</dt><dd>Daftar wall anggota grup + galeri <b>mood ruangan</b>. Tiap wall punya mini-toggle untuk ikut/tidak.</dd>
+              <dt>User</dt><dd>Lihat anggota grup, lalu tap salah satu mood ruangan.</dd>
+              <dt class="tech">Teknis</dt><dd>Galeri mood = scene yang sama, tapi menyasar <b>seluruh sync group</b>.</dd>
+            </dl>
+          </div>
+        </div>
+        <div class="arrow">→</div>
+      </div>
+      <!-- 2 -->
+      <div class="stepwrap">
+        <div>
+          <div class="step">
+            <div class="step-tag"><div class="step-dot">2</div>
+              <div><div class="step-label">Kecualikan Satu Wall (Opsional)</div><div class="step-micro">Tanpa membongkar grup</div></div></div>
+            <div class="phone"><div class="notch"></div>
+              <div class="scr">
+                <div class="statusbar"><span>20.41</span><span>WiFi · 100%</span></div>
+                <div class="scr-body">
+                  <div class="topbar"><span class="chevron">‹</span><span class="t">Ruang Tamu</span></div>
+                  <div class="sync-banner" style="color:var(--text-dim);background:rgba(226,231,246,.04);border-color:var(--line-2);">
+                    <span class="d" style="background:var(--text-faint);"></span>1 dari 2 wall sedang dikecualikan
+                  </div>
+                  <div class="row-lbl"><b>Wall di ruangan ini</b><span></span></div>
+                  <div class="wall-list">
+                    <div class="wall-row"><div class="wall-thumb ph sc-ocean"></div><div><div class="wall-nm">Wall A</div><div class="wall-st"><span class="sync">Tersinkron</span> · Ocean Drift</div></div><div class="mini-toggle"></div></div>
+                    <div class="wall-row" style="opacity:.6;"><div class="wall-thumb ph sc-ocean" style="filter:grayscale(.6);"></div><div><div class="wall-nm">Wall B</div><div class="wall-st">Dikecualikan · kontrol sendiri</div></div><div class="mini-toggle off"></div></div>
+                  </div>
+                  <div class="row-lbl"><b>Mood ruangan</b><span class="see">Lihat semua →</span></div>
+                  <div class="moodgrid">
+                    <div class="mood ph sc-ocean"><div class="nm">Ocean</div></div>
+                    <div class="mood ph sc-sunset on"><div class="nm">Sunset</div></div>
+                    <div class="mood ph sc-rain"><div class="nm">Movie Night</div></div>
+                    <div class="mood ph sc-candle"><div class="nm">Dinner</div></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="note">
+            <dl>
+              <dt>Konteks</dt><dd>User mematikan toggle <b>Wall B</b> — ia keluar grup <b>sementara</b>. Banner berubah netral.</dd>
+              <dt>User</dt><dd>Pilih mood "Sunset"; hanya menyasar Wall A. Wall B tetap di scene-nya sendiri.</dd>
+              <dt class="tech">Teknis</dt><dd>App melepas Wall B dari sync group via API. Keanggotaan ruangan <b>tidak berubah</b>.</dd>
+            </dl>
+          </div>
+        </div>
+        <div class="arrow">→</div>
+      </div>
+      <!-- 3 -->
+      <div class="stepwrap">
+        <div>
+          <div class="step">
+            <div class="step-tag"><div class="step-dot">3</div>
+              <div><div class="step-label">Mood Diterapkan ke Grup</div><div class="step-micro">Konfirmasi sinkron</div></div></div>
+            <div class="phone"><div class="notch"></div>
+              <div class="scr">
+                <div class="statusbar"><span>20.41</span><span>WiFi · 100%</span></div>
+                <div class="scr-body">
+                  <div class="topbar"><span class="chevron">‹</span><span class="t">Ruang Tamu</span></div>
+                  <div class="hero ph sc-sunset" style="height:80px;"><div class="meta"><div class="p-h md" style="color:#fff;">Sunset Mode</div><div style="font-size:8px;color:rgba(255,255,255,.78);">Diterapkan ke 1 wall · Wall B dikecualikan</div></div></div>
+                  <div class="row-lbl" style="margin-top:12px;"><b>Pratinjau per wall</b><span></span></div>
+                  <div class="preview-strip">
+                    <div class="pv ph sc-sunset"><div class="pl">Wall A</div></div>
+                    <div class="pv ph sc-ocean dim"><div class="pl">Wall B</div></div>
+                  </div>
+                  <div class="toast" style="margin-top:4px;"><div class="ck">✓</div><div class="tt"><b>Sunset Mode diterapkan</b><div>Wall A · Wall B tetap di Ocean Drift</div></div></div>
+                  <div style="flex:1;"></div>
+                  <div class="p-btn ghost" style="margin-bottom:13px;">Sertakan kembali Wall B</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="note">
+            <dl>
+              <dt>Konteks</dt><dd>Banner ruangan kini "Sunset Mode". <b>Pratinjau per wall</b> jujur menunjukkan Wall B berbeda.</dd>
+              <dt>User</dt><dd>Selesai — atau tap <b>"Sertakan kembali Wall B"</b> untuk menyatukan grup lagi.</dd>
+              <dt class="tech">Teknis</dt><dd>App kirim scene ke wall yang masih di grup. State per-wall disimpan lokal.</dd>
+            </dl>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="edge">
+      <h4>Skenario tepi — Kontrol Grup</h4>
+      <div class="edge-rows">
+        <div class="edge-item"><div class="pin"></div><p><b>Ruangan hanya 1 wall.</b> Tidak ada banner sync atau daftar anggota — layar ruangan = layar kontrol wall biasa. Grup muncul saat wall ke-2 ditambahkan.</p></div>
+        <div class="edge-item"><div class="pin"></div><p><b>Satu wall di grup offline.</b> Tampilkan dengan label "Tidak terjangkau". Mood tetap diterapkan ke wall online; yang offline menyusul saat kembali.</p></div>
+        <div class="edge-item"><div class="pin"></div><p><b>Semua wall dikecualikan.</b> Galeri mood di-disable dengan pesan "Aktifkan minimal satu wall".</p></div>
+        <div class="edge-item"><div class="pin"></div><p><b>Wall dipindah ke ruangan lain.</b> Otomatis keluar sync group lama, masuk yang baru — keanggotaan ruangan = keanggotaan grup.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="rule"></div>
+
+  <!-- ================= 07 · TAMBAH WALL & RUANGAN ================= -->
+  <section class="section" id="s7">
+    <div class="sec-tab"><span class="badge">07</span><span class="lbl">Journey · Tambah Wall &amp; Ruangan</span></div>
+    <h2 class="sec-h">Dua aksi berbeda sifat — tapi <em>satu</em> bermuara ke yang lain.</h2>
+    <p class="sec-intro">
+      <b>Tambah Wall</b> menyentuh hardware &amp; jaringan — mirip onboarding, tapi lebih singkat karena app sudah terisi.
+      <b>Tambah Ruangan</b> murni organisasi data — tidak menyentuh perangkat, lalu langsung mengalir ke Tambah Wall.
+      Itu sebabnya keduanya dibahas bersama. Tiga keputusan kunci: <b>entry per konteks</b>, wall baru <b>wajib punya ruangan</b>,
+      ruangan baru <b>langsung diisi wall</b>.
+    </p>
+
+    <!-- relationship map -->
+    <div class="mapbox" style="margin-top:34px;">
+      <div class="blk-h">Hubungan dua journey</div>
+      <div class="map-rows">
+        <div class="nodes">
+          <div class="node start"><b>Di dalam Layar Ruangan</b><small>Tap "Tambah Wall"</small></div>
+          <span class="conn">→</span>
+          <div class="node shared"><b>Alur Tambah Wall</b><small>Hubungkan · discovery · beri nama</small></div>
+          <span class="conn">→</span>
+          <div class="node dest"><b>Wall muncul di ruangan</b><small>Selesai</small></div>
+        </div>
+        <div class="nodes">
+          <div class="node start"><b>Dashboard · tombol "+"</b><small>Tap "Ruangan baru"</small></div>
+          <span class="conn">→</span>
+          <div class="node"><b>Beri nama ruangan</b><small>Dialog singkat</small></div>
+          <span class="conn">→</span>
+          <div class="node shared"><b>Alur Tambah Wall</b><small>Komponen yang sama</small></div>
+          <span class="conn">→</span>
+          <div class="node dest"><b>Ruangan + wall pertamanya</b><small>Selesai</small></div>
+        </div>
+      </div>
+      <div class="map-note">
+        Perhatikan kotak <b style="color:#fff;">terang</b> di tengah — <b>Alur Tambah Wall adalah komponen yang sama</b>,
+        dipakai dua entry point. Journey 2 hanya menambahkan satu langkah "beri nama ruangan" di depan, lalu menyerahkan ke Journey 1.
+      </div>
+    </div>
+
+    <!-- ====== Sub-journey A: Tambah Wall ====== -->
+    <div class="subhead">
+      <div class="st"><span class="sn">A</span><span class="stt">Tambah Wall ke Ruangan yang Ada</span></div>
+      <p>Dimulai dari <b>dalam Layar Ruangan</b> — sehingga ruangan tujuan sudah otomatis diketahui. Alurnya mirip onboarding tapi <b>lebih ringkas</b>: langkah WiFi sering bisa dilewati saat wall sudah di jaringan.</p>
+    </div>
+
+    <div class="rail">
+
+      <!-- A.1 -->
+      <div class="stepwrap">
+        <div>
+          <div class="step">
+            <div class="step-tag"><div class="step-dot">1</div>
+              <div><div class="step-label">Layar Ruangan · Tombol Tambah</div><div class="step-micro">Entry — konteks ruangan otomatis</div></div></div>
+            <div class="phone"><div class="notch"></div>
+              <div class="scr">
+                <div class="statusbar"><span>10.20</span><span>WiFi · 100%</span></div>
+                <div class="scr-body">
+                  <div class="topbar"><span class="chevron">‹</span><span class="t">Ruang Tamu</span></div>
+                  <div class="sync-banner"><span class="d"></span>1 wall di ruangan ini</div>
+                  <div class="row-lbl"><b>Wall di ruangan ini</b><span></span></div>
+                  <div class="wall-list">
+                    <div class="wall-row"><div class="wall-thumb ph sc-ocean"></div><div><div class="wall-nm">Wall A</div><div class="wall-st">Ocean Drift · online</div></div><div class="wall-go">›</div></div>
+                    <div class="add-wall-row"><div class="ic">+</div>Tambah wall ke ruangan ini</div>
+                  </div>
+                  <div class="row-lbl"><b>Mood ruangan</b><span style="color:var(--accent-2);">Lihat semua →</span></div>
+                  <div class="moodgrid">
+                    <div class="mood ph sc-ocean on"><div class="nm">Ocean</div></div>
+                    <div class="mood ph sc-sunset"><div class="nm">Sunset</div></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="note">
+            <dl>
+              <dt>Konteks</dt><dd>Tombol <b>"Tambah wall"</b> ada di dalam daftar wall ruangan — bukan global. Konteks ruangan otomatis terbawa.</dd>
+              <dt>User</dt><dd>Tap <b>"+ Tambah wall ke ruangan ini"</b>.</dd>
+              <dt class="tech">Teknis</dt><dd>Ruangan tujuan sudah pasti — tidak ada langkah "pilih ruangan".</dd>
+            </dl>
+          </div>
+        </div>
+        <div class="arrow">→<span class="lbl">tap "+ Tambah wall"</span></div>
+      </div>
+
+      <!-- A.2 -->
+      <div class="stepwrap">
+        <div>
+          <div class="step">
+            <div class="step-tag"><div class="step-dot shared">2</div>
+              <div><div class="step-label">Hubungkan ke WiFi <span class="shared-pill">BERSAMA</span></div><div class="step-micro">Sering bisa dilewati</div></div></div>
+            <div class="phone"><div class="notch"></div>
+              <div class="scr">
+                <div class="statusbar"><span>10.20</span><span>WiFi · 100%</span></div>
+                <div class="scr-body">
+                  <div class="topbar"><span class="chevron">‹</span><span class="t">Tambah Wall</span><span class="x">✕</span></div>
+                  <div class="ctx-banner"><span class="ic">⌂</span>Wall baru akan masuk ke <b>Ruang Tamu</b></div>
+                  <div class="stepper"><i class="on"></i><i></i><i></i></div>
+                  <div class="guide-ill">
+                    <div class="wifi-rows">
+                      <div class="wifi-r sel"><span>WLED-AP</span><span class="dot a"></span></div>
+                      <div class="wifi-r"><span>Rumah-2.4G</span><span class="dot"></span></div>
+                    </div>
+                  </div>
+                  <h3 class="p-h md" style="margin-bottom:6px;">Nyalakan wall barumu</h3>
+                  <p class="p-sub" style="margin-bottom:12px;">Jika wall sudah pernah disetel, kami mungkin langsung menemukannya — lewati langkah ini.</p>
+                  <div class="p-btn" style="margin-bottom:8px;">Buka Pengaturan WiFi</div>
+                  <div class="p-btn ghost">Wall sudah di jaringan — cari sekarang</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="note">
+            <dl>
+              <dt>Konteks</dt><dd>Identik dengan onboarding. Bedanya: <b>banner konteks</b> "akan masuk ke Ruang Tamu" + tombol ✕.</dd>
+              <dt>User</dt><dd>Wall sudah di WiFi yang sama → <b>"cari sekarang"</b>. Benar-benar baru → ikuti panduan.</dd>
+              <dt class="tech">Teknis</dt><dd>App tidak menyimpan kredensial WiFi user — tapi wall yang sudah online langsung muncul di discovery.</dd>
+            </dl>
+          </div>
+        </div>
+        <div class="arrow">→</div>
+      </div>
+
+      <!-- A.3 -->
+      <div class="stepwrap">
+        <div>
+          <div class="step">
+            <div class="step-tag"><div class="step-dot shared">3</div>
+              <div><div class="step-label">Discovery <span class="shared-pill">BERSAMA</span></div><div class="step-micro">Abaikan yang sudah terdaftar</div></div></div>
+            <div class="phone"><div class="notch"></div>
+              <div class="scr">
+                <div class="glow g-accent" style="width:190px;height:190px;right:-66px;bottom:-66px;"></div>
+                <div class="statusbar"><span>10.21</span><span>WiFi · 100%</span></div>
+                <div class="scr-body">
+                  <div class="topbar"><span class="chevron">‹</span><span class="t">Tambah Wall</span><span class="x">✕</span></div>
+                  <div class="ctx-banner"><span class="ic">⌂</span>Wall baru akan masuk ke <b>Ruang Tamu</b></div>
+                  <div class="stepper"><i class="on"></i><i class="on"></i><i></i></div>
+                  <div class="pulse"></div>
+                  <h3 class="p-h md" style="text-align:center;margin-bottom:4px;">Satu wall baru ditemukan</h3>
+                  <p class="p-sub" style="text-align:center;margin-bottom:12px;">Wall yang sudah terdaftar tidak ditampilkan.</p>
+                  <div class="p-card found-card">
+                    <div class="found-thumb ph sc-focus"></div>
+                    <div><div style="font-size:11px;font-weight:600;">Wall baru</div><div class="p-sub">Belum diberi nama · Online</div></div>
+                  </div>
+                  <div style="flex:1;"></div>
+                  <div class="p-btn" style="margin-bottom:16px;">Pilih wall ini</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="note">
+            <dl>
+              <dt>Konteks</dt><dd>Sama seperti onboarding — tapi <b>menyaring wall yang sudah terdaftar</b>.</dd>
+              <dt>User</dt><dd>Pilih wall baru.</dd>
+              <dt class="tech">Teknis</dt><dd>Filter berdasarkan device ID yang sudah ada di storage — mencegah menambah wall yang sama dua kali.</dd>
+            </dl>
+          </div>
+        </div>
+        <div class="arrow">→</div>
+      </div>
+
+      <!-- A.4 -->
+      <div class="stepwrap">
+        <div>
+          <div class="step">
+            <div class="step-tag"><div class="step-dot shared">4</div>
+              <div><div class="step-label">Beri Nama <span class="shared-pill">BERSAMA</span></div><div class="step-micro">Ruangan sudah terkunci</div></div></div>
+            <div class="phone"><div class="notch"></div>
+              <div class="scr">
+                <div class="glow g-accent" style="width:170px;height:170px;left:-56px;top:64px;"></div>
+                <div class="statusbar"><span>10.21</span><span>WiFi · 100%</span></div>
+                <div class="scr-body">
+                  <div class="topbar"><span class="chevron">‹</span><span class="t">Tambah Wall</span><span class="x">✕</span></div>
+                  <div class="stepper"><i class="on"></i><i class="on"></i><i class="on"></i></div>
+                  <h3 class="p-h lg" style="margin:6px 0 4px;">Beri nama wall ini</h3>
+                  <p class="p-sub" style="margin-bottom:10px;">Nama yang mudah kamu kenali.</p>
+                  <div class="field focus" style="margin-bottom:16px;"><span>Wall B</span><span class="caret"></span></div>
+                  <div class="field-lbl">Ruangan</div>
+                  <div class="chips" style="margin-bottom:auto;">
+                    <span class="chip locked">⌂ Ruang Tamu &nbsp;·&nbsp; terkunci</span>
+                  </div>
+                  <p class="p-sub" style="margin-bottom:10px;">Wall ditambahkan dari dalam Ruang Tamu, jadi langsung masuk ke sana. Bisa dipindah nanti lewat pengaturan wall.</p>
+                  <div class="p-btn" style="margin-bottom:16px;">Selesai</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="note">
+            <dl>
+              <dt>Konteks</dt><dd>Beda dari onboarding: chip ruangan <b>terkunci</b> ke "Ruang Tamu" — bukan pilihan.</dd>
+              <dt>User</dt><dd>Ketik nama wall, tap <b>Selesai</b>.</dd>
+              <dt class="tech">Teknis</dt><dd>Record <b>Wall</b> dibuat dengan roomId yang sudah ditentukan. Tidak ada state "tanpa ruangan".</dd>
+            </dl>
+          </div>
+        </div>
+        <div class="arrow">→</div>
+      </div>
+
+      <!-- A.5 -->
+      <div class="stepwrap">
+        <div>
+          <div class="step">
+            <div class="step-tag"><div class="step-dot">5</div>
+              <div><div class="step-label">Kembali ke Layar Ruangan</div><div class="step-micro">Wall baru muncul · sync otomatis</div></div></div>
+            <div class="phone"><div class="notch"></div>
+              <div class="scr">
+                <div class="statusbar"><span>10.22</span><span>WiFi · 100%</span></div>
+                <div class="scr-body">
+                  <div class="dest-flag" style="margin-top:8px;">◆ Wall ditambahkan</div>
+                  <div class="topbar" style="padding-top:0;"><span class="chevron">‹</span><span class="t">Ruang Tamu</span></div>
+                  <div class="sync-banner"><span class="d"></span>2 wall di ruangan ini berubah bersamaan</div>
+                  <div class="row-lbl"><b>Wall di ruangan ini</b><span></span></div>
+                  <div class="wall-list">
+                    <div class="wall-row"><div class="wall-thumb ph sc-ocean"></div><div><div class="wall-nm">Wall A</div><div class="wall-st">Ocean Drift · online</div></div><div class="wall-go">›</div></div>
+                    <div class="wall-row"><div class="wall-thumb ph sc-focus"></div><div><div class="wall-nm">Wall B</div><div class="wall-st">Baru ditambahkan · online</div></div><div class="wall-go">›</div></div>
+                    <div class="add-wall-row"><div class="ic">+</div>Tambah wall ke ruangan ini</div>
+                  </div>
+                  <div style="flex:1;"></div>
+                  <div class="toast float"><div class="ck">✓</div><div class="tt"><b>Wall B ditambahkan</b><div>Ruang Tamu · kini tersinkron</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="note">
+            <dl>
+              <dt>Konteks</dt><dd>Wall B muncul di daftar. Karena ruangan kini punya 2 wall, <b>banner sync otomatis aktif</b>.</dd>
+              <dt>User</dt><dd>Selesai. Bisa langsung tap Wall B atau pilih mood ruangan.</dd>
+              <dt class="tech">Teknis</dt><dd>App otomatis memasukkan Wall B ke <b>UDP sync group</b> ruangan via API — keanggotaan ruangan = keanggotaan grup.</dd>
+            </dl>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="edge">
+      <h4>Skenario tepi — Tambah Wall</h4>
+      <div class="edge-rows">
+        <div class="edge-item"><div class="pin"></div><p><b>Wall sudah terdaftar.</b> Jika discovery menemukan device yang ID-nya sudah ada di app, tampilkan label "Sudah ada di [nama ruangan]" — jangan biarkan ditambahkan dua kali.</p></div>
+        <div class="edge-item"><div class="pin"></div><p><b>Tidak ada wall baru ditemukan.</b> Tampilkan layar bantuan: cek wall menyala, cek di jaringan yang sama, tombol "Coba lagi". Jangan biarkan spinner berputar tanpa akhir.</p></div>
+        <div class="edge-item"><div class="pin"></div><p><b>User tap ✕ di tengah alur.</b> Konfirmasi singkat ("Batalkan menambah wall?"). Jika ya, tidak ada record dibuat — kembali ke Layar Ruangan apa adanya.</p></div>
+        <div class="edge-item"><div class="pin"></div><p><b>Beberapa wall baru ditemukan sekaligus.</b> Tampilkan sebagai daftar pilih-satu. Phase 1 menambah satu per satu — multi-add ditunda.</p></div>
+      </div>
+    </div>
+
+    <!-- ====== Sub-journey B: Tambah Ruangan ====== -->
+    <div class="subhead">
+      <div class="st"><span class="sn">B</span><span class="stt">Tambah Ruangan Baru</span></div>
+      <p>Dimulai dari tombol <b>"+"</b> di Dashboard. Ruangan kosong tidak ada gunanya — jadi setelah diberi nama, alur <b>langsung menyerahkan ke Sub-journey A</b> untuk mengisi wall pertamanya.</p>
+    </div>
+
+    <div class="rail">
+
+      <!-- B.1 -->
+      <div class="stepwrap">
+        <div>
+          <div class="step">
+            <div class="step-tag"><div class="step-dot">1</div>
+              <div><div class="step-label">Dashboard · Tombol "+"</div><div class="step-micro">Entry level-Dashboard</div></div></div>
+            <div class="phone"><div class="notch"></div>
+              <div class="scr">
+                <div class="statusbar"><span>10.30</span><span>WiFi · 100%</span></div>
+                <div class="scr-body">
+                  <div class="dash-head">
+                    <div><div class="p-word" style="margin-bottom:3px;">Selamat pagi</div><div class="p-h lg">Rumah Saya</div></div>
+                    <div class="add-btn">+</div>
+                  </div>
+                  <div class="rcard"><div class="bg ph sc-ocean"></div><div class="inner"><div class="rcard-nm">Ruang Tamu</div><div class="rcard-meta">2 wall · tersinkron</div></div></div>
+                  <div class="rcard"><div class="bg ph sc-candle"></div><div class="inner"><div class="rcard-nm">Kamar</div><div class="rcard-meta">1 wall</div></div></div>
+                  <div class="rcard flat"><div class="inner"><div class="rcard-nm">Studio</div><div class="rcard-meta">1 wall · mati</div></div></div>
+                  <div style="flex:1;"></div>
+                  <p class="p-sub" style="text-align:center;margin-bottom:8px;">Tap <b style="color:var(--accent-2);">+</b> di atas untuk menambah ruangan</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="note">
+            <dl>
+              <dt>Konteks</dt><dd>Tombol <b>"+"</b> di pojok Dashboard = satu-satunya pintu "tambah ruangan". Tidak ada FAB global yang mencampur dua aksi.</dd>
+              <dt>User</dt><dd>Tap <b>"+"</b>.</dd>
+              <dt class="tech">Teknis</dt><dd>"+" hanya memunculkan dialog — belum membuat apa pun di storage.</dd>
+            </dl>
+          </div>
+        </div>
+        <div class="arrow">→<span class="lbl">tap "+"</span></div>
+      </div>
+
+      <!-- B.2 -->
+      <div class="stepwrap">
+        <div>
+          <div class="step">
+            <div class="step-tag"><div class="step-dot">2</div>
+              <div><div class="step-label">Beri Nama Ruangan</div><div class="step-micro">Satu-satunya langkah unik</div></div></div>
+            <div class="phone"><div class="notch"></div>
+              <div class="scr">
+                <div class="statusbar"><span>10.30</span><span>WiFi · 100%</span></div>
+                <div class="scr-body">
+                  <div class="dash-head">
+                    <div><div class="p-word" style="margin-bottom:3px;">Selamat pagi</div><div class="p-h lg">Rumah Saya</div></div>
+                    <div class="add-btn">+</div>
+                  </div>
+                  <div class="rcard" style="opacity:.4;"><div class="bg ph sc-ocean"></div><div class="inner"><div class="rcard-nm">Ruang Tamu</div><div class="rcard-meta">2 wall</div></div></div>
+                  <div class="rcard flat" style="opacity:.4;"><div class="inner"><div class="rcard-nm">Kamar</div><div class="rcard-meta">1 wall</div></div></div>
+                </div>
+                <div class="scrim"></div>
+                <div class="dialog">
+                  <h4>Ruangan baru</h4>
+                  <p>Beri nama, lalu tambahkan wall pertamanya.</p>
+                  <div class="field focus" style="margin-bottom:13px;"><span>Studio</span><span class="caret"></span></div>
+                  <div class="p-btn" style="margin-bottom:7px;">Buat &amp; tambah wall</div>
+                  <div class="p-btn ghost">Batal</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="note">
+            <dl>
+              <dt>Konteks</dt><dd>Dialog ringkas — hanya nama. Tombol primer <b>"Buat &amp; tambah wall"</b> jujur menyatakan apa yang terjadi berikutnya.</dd>
+              <dt>User</dt><dd>Ketik nama, tap <b>"Buat &amp; tambah wall"</b>. Atau <b>Batal</b> — tidak ada yang dibuat.</dd>
+              <dt class="tech">Teknis</dt><dd>Record <b>Room</b> dibuat saat tombol ditekan. Lalu langsung membuka Alur Tambah Wall dengan roomId baru.</dd>
+            </dl>
+          </div>
+        </div>
+        <div class="arrow">→<span class="lbl">serahkan ke Sub-journey A</span></div>
+      </div>
+
+      <!-- B.3 -->
+      <div class="stepwrap">
+        <div>
+          <div class="step">
+            <div class="step-tag"><div class="step-dot shared">3</div>
+              <div><div class="step-label">Alur Tambah Wall <span class="shared-pill">BERSAMA</span></div><div class="step-micro">Persis Sub-journey A langkah 2–4</div></div></div>
+            <div class="phone"><div class="notch"></div>
+              <div class="scr">
+                <div class="glow g-accent" style="width:190px;height:190px;right:-66px;bottom:-66px;"></div>
+                <div class="statusbar"><span>10.31</span><span>WiFi · 100%</span></div>
+                <div class="scr-body">
+                  <div class="topbar"><span class="chevron">‹</span><span class="t">Tambah Wall</span><span class="x">✕</span></div>
+                  <div class="ctx-banner"><span class="ic">⌂</span>Wall baru akan masuk ke <b>Studio</b></div>
+                  <div class="stepper"><i class="on"></i><i class="on"></i><i></i></div>
+                  <div class="pulse"></div>
+                  <h3 class="p-h md" style="text-align:center;margin-bottom:4px;">Satu wall baru ditemukan</h3>
+                  <p class="p-sub" style="text-align:center;margin-bottom:12px;">Wall yang sudah terdaftar tidak ditampilkan.</p>
+                  <div class="p-card found-card">
+                    <div class="found-thumb ph sc-forest"></div>
+                    <div><div style="font-size:11px;font-weight:600;">Wall baru</div><div class="p-sub">Belum diberi nama · Online</div></div>
+                  </div>
+                  <div style="flex:1;"></div>
+                  <div class="p-btn" style="margin-bottom:16px;">Pilih wall ini</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="note">
+            <dl>
+              <dt>Konteks</dt><dd>Mulai titik ini, <b>persis Sub-journey A</b> — hubungkan WiFi, discovery, beri nama. Banner konteks kini menyebut <b>"Studio"</b>.</dd>
+              <dt>User</dt><dd>Lanjutkan seperti Tambah Wall biasa.</dd>
+              <dt class="tech">Teknis</dt><dd>Komponen yang <b>sama persis</b> — hanya roomId yang berbeda.</dd>
+            </dl>
+          </div>
+        </div>
+        <div class="arrow">→</div>
+      </div>
+
+      <!-- B.4 -->
+      <div class="stepwrap">
+        <div>
+          <div class="step">
+            <div class="step-tag"><div class="step-dot">4</div>
+              <div><div class="step-label">Ruangan Baru + Wall Pertamanya</div><div class="step-micro">Mendarat di Layar Ruangan baru</div></div></div>
+            <div class="phone"><div class="notch"></div>
+              <div class="scr">
+                <div class="statusbar"><span>10.33</span><span>WiFi · 100%</span></div>
+                <div class="scr-body">
+                  <div class="dest-flag" style="margin-top:8px;">◆ Ruangan dibuat</div>
+                  <div class="topbar" style="padding-top:0;"><span class="chevron">‹</span><span class="t">Studio</span></div>
+                  <div class="sync-banner"><span class="d"></span>1 wall di ruangan ini</div>
+                  <div class="row-lbl"><b>Wall di ruangan ini</b><span></span></div>
+                  <div class="wall-list">
+                    <div class="wall-row"><div class="wall-thumb ph sc-forest"></div><div><div class="wall-nm">Wall Studio</div><div class="wall-st">Baru ditambahkan · online</div></div><div class="wall-go">›</div></div>
+                    <div class="add-wall-row"><div class="ic">+</div>Tambah wall ke ruangan ini</div>
+                  </div>
+                  <div style="flex:1;"></div>
+                  <div class="toast float"><div class="ck">✓</div><div class="tt"><b>Studio siap</b><div>Ruangan dibuat · 1 wall ditambahkan</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="note">
+            <dl>
+              <dt>Konteks</dt><dd>User mendarat di <b>Layar Ruangan yang baru</b> — sudah berisi satu wall. Bukan ruangan kosong.</dd>
+              <dt>User</dt><dd>Selesai. <b>‹</b> kembali ke Dashboard yang kini punya kartu "Studio".</dd>
+              <dt class="tech">Teknis</dt><dd>Room + Wall tersimpan di storage. Tidak ada ruangan kosong yang pernah eksis di state.</dd>
+            </dl>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="edge">
+      <h4>Skenario tepi — Tambah Ruangan</h4>
+      <div class="edge-rows">
+        <div class="edge-item"><div class="pin"></div><p><b>User batal di alur tambah wall.</b> Ruangannya sudah terbuat. Tampilkan kartu ruangan kosong di Dashboard dengan ajakan "Tambah wall pertama" — JANGAN hapus diam-diam.</p></div>
+        <div class="edge-item"><div class="pin"></div><p><b>Nama ruangan duplikat.</b> Izinkan tapi beri tahu ("Sudah ada ruangan bernama ini") — atau sarankan nama. Jangan blokir keras.</p></div>
+        <div class="edge-item"><div class="pin"></div><p><b>Nama kosong.</b> Tombol "Buat &amp; tambah wall" non-aktif sampai ada teks. Tidak ada ruangan tanpa nama.</p></div>
+        <div class="edge-item"><div class="pin"></div><p><b>Ruangan kosong yang ditinggalkan.</b> Konsekuensi skenario pertama — Dashboard perlu state kartu "ruangan tanpa wall" yang rapi, dengan jalan masuk cepat ke Tambah Wall.</p></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>Tiga langkah inti Tambah Wall dibangun <em>sekali</em> — dipakai tiga kali.</h3>
+      <p>
+        Langkah "Hubungkan WiFi → Discovery → Beri Nama" muncul di <b>onboarding</b> (bagian 02),
+        di <b>Sub-journey A</b> (Tambah Wall), dan di <b>Sub-journey B</b> (Tambah Ruangan). Itu komponen yang sama —
+        yang berbeda hanya: (a) dari mana ia dipanggil, dan (b) apakah roomId sudah ditentukan atau baru dibuat.
+        Bangun "Alur Tambah Wall" sebagai satu modul dengan parameter <i>roomId</i> dan <i>asal pemanggil</i>;
+        ketiga tempat tinggal memanggilnya. Inilah perpanjangan prinsip <b>satu komponen, banyak konteks</b>
+        yang dipakai di seluruh dokumen — dan yang menjaga Phase 1 tetap ringan saat fiturnya bertambah.
+      </p>
+    </div>
+  </section>
+
+  <div class="rule"></div>
+
+  <!-- ================= 08 · BINDING RULES ================= -->
+  <section class="section" id="s8">
+    <div class="sec-tab"><span class="badge">08</span><span class="lbl">Aturan Pengikat</span></div>
+    <h2 class="sec-h">Dua garis yang menjaga seluruh dokumen ini <em>konsisten</em>.</h2>
+    <p class="sec-intro">
+      Apa pun layar yang ditambahkan nanti, dua aturan ini menentukan bentuknya: garis <b>warna</b>
+      (chrome vs cahaya) dan garis <b>tanggung jawab</b> (aplikasi vs firmware).
+    </p>
+
+    <div class="ledger">
+      <div class="col app">
+        <h4>Sisi Aplikasi — proprietary, ini produkmu</h4>
+        <ul>
+          <li>Hierarki Rumah → Ruangan → Wall</li>
+          <li>Scene terkurasi: nama, kategori, mood, thumbnail</li>
+          <li>Galeri berkategori + sheet penyesuaian</li>
+          <li>Kontrol grup via pemetaan UDP sync group</li>
+          <li>Mini-kontrol di kartu Dashboard</li>
+          <li>Onboarding yang dibungkus jadi pengalaman</li>
+          <li>Tambah Wall &amp; Tambah Ruangan dengan entry per konteks</li>
+          <li>Alur Tambah Wall sebagai modul yang dipanggil 3 tempat</li>
+          <li>Discovery otomatis — IP tak pernah terlihat</li>
+        </ul>
+      </div>
+      <div class="col fw">
+        <h4>Sisi Firmware — WLED, jangan disentuh di Phase 1</h4>
+        <ul>
+          <li>LED timing &amp; rendering engine</li>
+          <li>Effects &amp; palette bawaan</li>
+          <li>WiFi reconnect &amp; state persistence</li>
+          <li>Captive portal provisioning</li>
+          <li>UDP sync &amp; JSON / WebSocket API</li>
+          <li>OTA — ditunda, di luar scope</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>Satu konsep, banyak konteks — itu yang menjaga kode tetap ramping.</h3>
+      <p>
+        Tiga komponen bersama menjelma di seluruh dokumen ini. <b>Pemilih scene</b> dipakai oleh bagian 05
+        (menyasar satu wall) dan bagian 06 (menyasar satu sync group) — yang berbeda hanya parameter target.
+        <b>Sheet penyesuaian</b> dipakai di kedua tempat. Dan <b>Alur Tambah Wall</b> di bagian 07 muncul di
+        onboarding (dokumen pembuka), Sub-journey A, dan Sub-journey B — yang berbeda hanya roomId dan asal
+        pemanggil. Mini-kontrol di kartu Dashboard menyerap mayoritas aksi harian, sehingga navigasi penuh
+        hanya terjadi saat user benar-benar ingin menjelajah. Inilah cara Phase 1 tetap ringan tanpa
+        mengorbankan pengalaman: <b>bangun komponen sekali, panggil dari banyak tempat dengan parameter
+        berbeda</b>.
+      </p>
+    </div>
+  </section>
+
+  <!-- ================= FOOTER ================= -->
+  <footer class="foot">
+    <div class="ft">Living Wall — Phase 1 Design Spec</div>
+    <div class="fm">Local-first · Stock WLED · Flutter · 8 bagian · 5 journey · spec terpadu</div>
+  </footer>
+
+</div>
+</body>
+</html>

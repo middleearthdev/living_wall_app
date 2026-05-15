@@ -1,0 +1,810 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Living Wall — Scene Catalog · Phase 1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#000000;--surface:#0c0d10;--surface-2:#141619;--surface-3:#1c1f25;
+    --line:rgba(226,231,246,.075);--line-2:rgba(226,231,246,.15);
+    --text:#eef0f5;--text-dim:rgba(238,240,245,.56);--text-faint:rgba(238,240,245,.32);
+    --accent:#7c8ef5;--accent-2:#9aa8ff;--accent-deep:#5d6fe0;
+    --accent-soft:rgba(124,142,245,.13);--accent-line:rgba(124,142,245,.4);
+    --cat-tenang:#8aa6c9;--cat-fokus:#9ec5a8;--cat-sosial:#d2a07a;--cat-dinamis:#c688b8;
+    --display:'Fraunces',serif;--body:'Hanken Grotesk',sans-serif;--mono:'JetBrains Mono',monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{background:var(--ink);color:var(--text);font-family:var(--body);-webkit-font-smoothing:antialiased;}
+  body{
+    background:
+      radial-gradient(900px 620px at 8% -8%, rgba(124,142,245,.10), transparent 60%),
+      radial-gradient(820px 700px at 102% 6%, rgba(124,142,245,.055), transparent 55%),
+      var(--ink);
+    padding:64px 28px 96px;line-height:1.55;
+  }
+  .wrap{max-width:1280px;margin:0 auto;}
+
+  .kicker{font-size:12px;letter-spacing:.32em;text-transform:uppercase;color:var(--accent-2);font-weight:600;margin-bottom:22px;}
+  h1{font-family:var(--display);font-weight:400;font-size:clamp(36px,5vw,60px);line-height:1.05;letter-spacing:-.02em;max-width:18ch;}
+  h1 em{font-style:italic;color:var(--accent-2);}
+  .sub{margin-top:20px;max-width:68ch;color:var(--text-dim);font-size:16.5px;}
+  .sub b{color:var(--text);}
+
+  .legend{margin-top:36px;border:1px solid var(--line);border-radius:18px;
+    background:linear-gradient(165deg,var(--surface-2),var(--ink));padding:24px 30px;
+    display:grid;grid-template-columns:repeat(4,1fr);gap:16px 24px;}
+  .lg-row{display:flex;align-items:baseline;gap:11px;}
+  .lg-dot{width:9px;height:9px;border-radius:50%;flex:none;transform:translateY(2px);}
+  .lg-dot.tenang{background:var(--cat-tenang);}
+  .lg-dot.fokus{background:var(--cat-fokus);}
+  .lg-dot.sosial{background:var(--cat-sosial);}
+  .lg-dot.dinamis{background:var(--cat-dinamis);}
+  .lg-nm{font-family:var(--display);font-size:17px;}
+  .lg-ct{font-size:11px;color:var(--text-dim);margin-top:2px;}
+  .lg-ct b{color:var(--text);}
+
+  /* category header */
+  .cat-head{margin:54px 0 22px;display:flex;align-items:baseline;gap:14px;}
+  .cat-dot{width:12px;height:12px;border-radius:50%;flex:none;transform:translateY(3px);}
+  .cat-dot.tenang{background:var(--cat-tenang);}
+  .cat-dot.fokus{background:var(--cat-fokus);}
+  .cat-dot.sosial{background:var(--cat-sosial);}
+  .cat-dot.dinamis{background:var(--cat-dinamis);}
+  .cat-title{font-family:var(--display);font-size:30px;letter-spacing:-.01em;}
+  .cat-count{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--text-faint);font-weight:600;}
+  .cat-blurb{margin-left:26px;color:var(--text-dim);font-size:14px;max-width:60ch;margin-top:-4px;}
+
+  /* scene card */
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:24px;}
+  .scn{border:1px solid var(--line);border-radius:18px;overflow:hidden;
+    background:linear-gradient(170deg,var(--surface-2),var(--ink) 70%);display:flex;flex-direction:column;}
+  .scn-thumb{height:130px;position:relative;overflow:hidden;background:#06080c;}
+  .scn-thumb::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 35%,rgba(0,0,0,.5));z-index:2;}
+  .scn-thumb .nm{position:absolute;left:14px;bottom:11px;z-index:3;font-family:var(--display);font-size:19px;color:#fff;letter-spacing:-.01em;}
+  .scn-thumb .badge{position:absolute;top:11px;right:12px;z-index:3;font-size:9px;
+    padding:3px 9px;border-radius:100px;background:rgba(0,0,0,.5);backdrop-filter:blur(6px);
+    color:#fff;letter-spacing:.04em;font-weight:600;border:1px solid rgba(255,255,255,.15);}
+  .scn-thumb .badge.tenang{color:var(--cat-tenang);border-color:rgba(138,166,201,.45);}
+  .scn-thumb .badge.fokus{color:var(--cat-fokus);border-color:rgba(158,197,168,.45);}
+  .scn-thumb .badge.sosial{color:var(--cat-sosial);border-color:rgba(210,160,122,.45);}
+  .scn-thumb .badge.dinamis{color:var(--cat-dinamis);border-color:rgba(198,136,184,.45);}
+
+  .scn-body{padding:16px 18px 14px;display:flex;flex-direction:column;gap:11px;flex:1;}
+  .scn-desc{font-size:13px;color:var(--text);line-height:1.45;}
+  .scn-use{font-size:11.5px;color:var(--text-dim);font-style:italic;}
+  .scn-use::before{content:"Cocok untuk: ";font-style:normal;color:var(--text-faint);font-weight:600;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;display:block;font-style:normal;margin-bottom:3px;}
+
+  .scn-api{margin-top:auto;border-top:1px solid var(--line);padding:13px 18px 16px;background:rgba(0,0,0,.25);}
+  .api-h{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:9px;}
+  .api-h .lbl{font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent-2);font-weight:600;}
+  .api-h .fx{font-size:9px;color:var(--text-faint);font-family:var(--mono);}
+  .api-h .fx b{color:var(--text-dim);font-weight:500;}
+  .api-code{font-family:var(--mono);font-size:10.5px;line-height:1.55;color:var(--text-dim);
+    white-space:pre;overflow-x:auto;}
+  .api-code .k{color:#9aa8ff;}
+  .api-code .n{color:#d2a07a;}
+  .api-code .s{color:#9ec5a8;}
+  .api-code .c{color:var(--text-faint);font-style:italic;}
+
+  /* photographic scene fills */
+  .sc-tokyo{background:radial-gradient(60% 70% at 22% 78%,rgba(232,84,168,.85),transparent 70%),radial-gradient(55% 60% at 80% 30%,rgba(72,182,214,.7),transparent 70%),radial-gradient(80% 90% at 60% 100%,rgba(120,80,210,.5),transparent 70%),linear-gradient(160deg,#10131f,#06070c);}
+  .sc-focus{background:radial-gradient(70% 80% at 30% 25%,rgba(96,200,224,.62),transparent 70%),radial-gradient(65% 70% at 80% 85%,rgba(86,120,236,.55),transparent 70%),linear-gradient(160deg,#0a141c,#06090f);}
+  .sc-sunset{background:radial-gradient(75% 80% at 28% 80%,rgba(240,150,90,.8),transparent 72%),radial-gradient(70% 70% at 78% 25%,rgba(232,96,112,.62),transparent 70%),linear-gradient(160deg,#1c120e,#0a0706);}
+  .sc-ocean{background:radial-gradient(70% 80% at 25% 30%,rgba(86,128,236,.72),transparent 70%),radial-gradient(70% 70% at 82% 82%,rgba(140,86,224,.62),transparent 70%),linear-gradient(160deg,#0c1024,#06070f);}
+  .sc-forest{background:radial-gradient(72% 80% at 30% 78%,rgba(96,176,118,.72),transparent 72%),radial-gradient(60% 65% at 80% 28%,rgba(150,182,108,.5),transparent 70%),linear-gradient(160deg,#0c1410,#060907);}
+  .sc-rain{background:radial-gradient(75% 85% at 35% 35%,rgba(120,150,180,.5),transparent 72%),radial-gradient(60% 65% at 80% 85%,rgba(96,116,150,.5),transparent 70%),linear-gradient(160deg,#0e1318,#06080b);}
+  .sc-candle{background:radial-gradient(78% 82% at 40% 75%,rgba(240,168,110,.7),transparent 74%),radial-gradient(55% 55% at 78% 30%,rgba(220,120,90,.45),transparent 70%),linear-gradient(160deg,#16110d,#080605);}
+  .sc-dawn{background:radial-gradient(75% 80% at 30% 78%,rgba(238,170,140,.7),transparent 72%),radial-gradient(64% 66% at 80% 26%,rgba(150,150,220,.5),transparent 70%),linear-gradient(160deg,#16120f,#08070a);}
+  .sc-aurora{background:radial-gradient(70% 80% at 30% 30%,rgba(80,200,150,.7),transparent 70%),radial-gradient(60% 65% at 75% 70%,rgba(120,90,200,.55),transparent 70%),radial-gradient(50% 50% at 50% 100%,rgba(70,140,180,.45),transparent 70%),linear-gradient(160deg,#08111c,#040608);}
+  .sc-breathe{background:radial-gradient(70% 75% at 50% 55%,rgba(140,200,220,.5),transparent 68%),linear-gradient(160deg,#0c1418,#06080b);}
+  .sc-daylight{background:radial-gradient(80% 90% at 50% 40%,rgba(220,228,240,.55),transparent 72%),linear-gradient(160deg,#1a1c20,#0c0d10);}
+  .sc-dinner{background:radial-gradient(75% 80% at 45% 75%,rgba(232,150,90,.7),transparent 72%),radial-gradient(55% 55% at 80% 30%,rgba(180,100,70,.4),transparent 70%),linear-gradient(160deg,#150e08,#070504);}
+  .sc-movie{background:radial-gradient(60% 65% at 22% 80%,rgba(150,60,130,.55),transparent 70%),radial-gradient(55% 55% at 85% 25%,rgba(70,80,150,.5),transparent 70%),linear-gradient(160deg,#08070d,#040305);}
+  .sc-golden{background:radial-gradient(80% 85% at 35% 70%,rgba(238,170,100,.78),transparent 72%),radial-gradient(60% 60% at 80% 35%,rgba(232,130,140,.55),transparent 70%),linear-gradient(160deg,#1a120c,#080604);}
+  .sc-sakura{background:radial-gradient(70% 75% at 30% 35%,rgba(238,170,200,.65),transparent 70%),radial-gradient(60% 65% at 78% 78%,rgba(220,140,180,.55),transparent 70%),linear-gradient(160deg,#170d12,#080507);}
+  .sc-fire{background:radial-gradient(75% 85% at 50% 90%,rgba(240,120,40,.85),transparent 72%),radial-gradient(55% 60% at 50% 55%,rgba(232,170,60,.55),transparent 70%),linear-gradient(160deg,#170804,#070302);}
+  .sc-twinkle{background:radial-gradient(40% 45% at 20% 30%,rgba(220,220,255,.6),transparent 60%),radial-gradient(35% 40% at 75% 22%,rgba(180,200,255,.55),transparent 60%),radial-gradient(30% 35% at 55% 70%,rgba(255,240,200,.5),transparent 60%),radial-gradient(35% 40% at 85% 80%,rgba(200,180,240,.5),transparent 60%),linear-gradient(160deg,#06091a,#020308);}
+  .sc-party{background:radial-gradient(65% 70% at 25% 75%,rgba(224,84,180,.78),transparent 70%),radial-gradient(62% 66% at 82% 28%,rgba(132,80,228,.7),transparent 70%),radial-gradient(50% 55% at 60% 50%,rgba(240,180,80,.5),transparent 70%),linear-gradient(160deg,#150c1c,#08060d);}
+
+  /* implementation section */
+  .impl{margin-top:80px;border:1px solid var(--line);border-radius:22px;
+    background:linear-gradient(160deg,var(--surface-2),var(--ink));padding:42px 44px;}
+  .impl .kicker{margin-bottom:16px;}
+  .impl h2{font-family:var(--display);font-weight:400;font-size:30px;letter-spacing:-.015em;max-width:28ch;line-height:1.18;}
+  .impl h2 em{font-style:italic;color:var(--accent-2);}
+  .impl .lead{margin-top:14px;color:var(--text-dim);font-size:15px;max-width:74ch;}
+  .impl .lead b{color:var(--text);}
+  .impl-rows{margin-top:36px;display:grid;grid-template-columns:1fr 1fr;gap:24px 40px;}
+  .impl-block{border:1px solid var(--line);border-radius:14px;padding:22px 24px;background:rgba(0,0,0,.18);}
+  .impl-block h4{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent-2);margin-bottom:12px;font-weight:600;}
+  .impl-block p{font-size:13.5px;color:var(--text-dim);line-height:1.6;}
+  .impl-block p b{color:var(--text);font-weight:600;}
+  .impl-block + .impl-block{margin-top:0;}
+  .impl-block .code{font-family:var(--mono);font-size:11px;background:rgba(0,0,0,.35);
+    padding:11px 13px;border-radius:8px;margin-top:11px;color:var(--text-dim);
+    white-space:pre;overflow-x:auto;line-height:1.5;}
+  .impl-block .code .k{color:#9aa8ff;}
+  .impl-block .code .n{color:#d2a07a;}
+  .impl-block .code .s{color:#9ec5a8;}
+  .impl-block .code .c{color:var(--text-faint);font-style:italic;}
+
+  .closer{margin-top:46px;text-align:center;color:var(--text-faint);font-size:13px;}
+  .closer b{color:var(--text-dim);}
+
+  @media(max-width:880px){
+    .legend{grid-template-columns:1fr 1fr;}
+    .impl-rows{grid-template-columns:1fr;}
+    .grid{grid-template-columns:1fr;}
+    body{padding:48px 16px 70px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="kicker">Living Wall · Phase 1 · Scene Catalog</div>
+    <h1>18 scene terkurasi — siap dipanggil lewat <em>JSON API</em>.</h1>
+    <p class="sub">
+      Setiap scene di sini sudah dipasangkan dengan parameter WLED konkret. Tujuannya bukan menampilkan
+      semua ~180 efek bawaan, tapi <b>kurasi 18 mood yang berarti</b> — yang user kenali lewat nama, bukan
+      effect ID. Catalog ini = data yang mengisi galeri scene di seluruh dokumen desain.
+    </p>
+
+    <div class="legend">
+      <div class="lg-row">
+        <span class="lg-dot tenang"></span>
+        <div><div class="lg-nm">Tenang</div><div class="lg-ct"><b>6 scene</b> · untuk istirahat, baca, tidur</div></div>
+      </div>
+      <div class="lg-row">
+        <span class="lg-dot fokus"></span>
+        <div><div class="lg-nm">Fokus</div><div class="lg-ct"><b>3 scene</b> · untuk kerja, belajar, fungsi</div></div>
+      </div>
+      <div class="lg-row">
+        <span class="lg-dot sosial"></span>
+        <div><div class="lg-nm">Sosial</div><div class="lg-ct"><b>6 scene</b> · untuk makan, kumpul, nonton</div></div>
+      </div>
+      <div class="lg-row">
+        <span class="lg-dot dinamis"></span>
+        <div><div class="lg-nm">Dinamis</div><div class="lg-ct"><b>3 scene</b> · untuk pesta, perayaan, energi</div></div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ============ TENANG ============ -->
+  <div class="cat-head">
+    <span class="cat-dot tenang"></span>
+    <div>
+      <span class="cat-count">Kategori 01 · 6 scene</span>
+      <div class="cat-title">Tenang</div>
+    </div>
+  </div>
+  <p class="cat-blurb">Slow, lembut, palette dingin atau hangat-redup. Brightness rendah ke sedang. Untuk meredakan ruangan, bukan menyalakannya.</p>
+
+  <div class="grid">
+
+    <!-- Ocean Drift -->
+    <article class="scn">
+      <div class="scn-thumb sc-ocean">
+        <span class="badge tenang">Tenang</span>
+        <span class="nm">Ocean Drift</span>
+      </div>
+      <div class="scn-body">
+        <p class="scn-desc">Ombak biru-hijau yang bergerak perlahan — efek Pacifica klasik dengan palet Ocean.</p>
+        <p class="scn-use">Sore yang panjang, baca buku, atau sekadar menenangkan ruangan.</p>
+      </div>
+      <div class="scn-api">
+        <div class="api-h"><span class="lbl">API Payload</span><span class="fx"><b>fx</b> 101 · <b>pal</b> 9</span></div>
+<div class="api-code"><span class="k">{</span>
+  <span class="s">"on"</span><span class="k">:</span> <span class="n">true</span><span class="k">,</span>
+  <span class="s">"bri"</span><span class="k">:</span> <span class="n">140</span><span class="k">,</span>
+  <span class="s">"transition"</span><span class="k">:</span> <span class="n">14</span><span class="k">,</span>
+  <span class="s">"seg"</span><span class="k">:</span> <span class="k">[{</span>
+    <span class="s">"id"</span><span class="k">:</span> <span class="n">0</span><span class="k">,</span>
+    <span class="s">"fx"</span><span class="k">:</span> <span class="n">101</span><span class="k">,</span>  <span class="c">// Pacifica</span>
+    <span class="s">"pal"</span><span class="k">:</span> <span class="n">9</span><span class="k">,</span>   <span class="c">// Ocean</span>
+    <span class="s">"sx"</span><span class="k">:</span> <span class="n">64</span><span class="k">,</span>
+    <span class="s">"ix"</span><span class="k">:</span> <span class="n">120</span>
+  <span class="k">}]</span>
+<span class="k">}</span></div>
+      </div>
+    </article>
+
+    <!-- Candlelight -->
+    <article class="scn">
+      <div class="scn-thumb sc-candle">
+        <span class="badge tenang">Tenang</span>
+        <span class="nm">Candlelight</span>
+      </div>
+      <div class="scn-body">
+        <p class="scn-desc">Hangat berkedip seperti nyala lilin — tiap titik LED berkelip mandiri.</p>
+        <p class="scn-use">Makan malam santai, mood meditatif, latar bertelepon panjang.</p>
+      </div>
+      <div class="scn-api">
+        <div class="api-h"><span class="lbl">API Payload</span><span class="fx"><b>fx</b> 102 · <b>col</b> warm</span></div>
+<div class="api-code"><span class="k">{</span>
+  <span class="s">"on"</span><span class="k">:</span> <span class="n">true</span><span class="k">,</span>
+  <span class="s">"bri"</span><span class="k">:</span> <span class="n">120</span><span class="k">,</span>
+  <span class="s">"transition"</span><span class="k">:</span> <span class="n">14</span><span class="k">,</span>
+  <span class="s">"seg"</span><span class="k">:</span> <span class="k">[{</span>
+    <span class="s">"id"</span><span class="k">:</span> <span class="n">0</span><span class="k">,</span>
+    <span class="s">"fx"</span><span class="k">:</span> <span class="n">102</span><span class="k">,</span>  <span class="c">// Candle Multi</span>
+    <span class="s">"pal"</span><span class="k">:</span> <span class="n">0</span><span class="k">,</span>
+    <span class="s">"col"</span><span class="k">:</span> <span class="k">[[</span><span class="n">255</span><span class="k">,</span><span class="n">170</span><span class="k">,</span><span class="n">80</span><span class="k">]],</span>
+    <span class="s">"sx"</span><span class="k">:</span> <span class="n">96</span><span class="k">,</span>
+    <span class="s">"ix"</span><span class="k">:</span> <span class="n">96</span>
+  <span class="k">}]</span>
+<span class="k">}</span></div>
+      </div>
+    </article>
+
+    <!-- Wind Down -->
+    <article class="scn">
+      <div class="scn-thumb sc-dawn">
+        <span class="badge tenang">Tenang</span>
+        <span class="nm">Wind Down</span>
+      </div>
+      <div class="scn-body">
+        <p class="scn-desc">Senja meredup — gradient hangat ke gelap, transisi sangat pelan.</p>
+        <p class="scn-use">Satu jam menjelang tidur, ritual penutup hari.</p>
+      </div>
+      <div class="scn-api">
+        <div class="api-h"><span class="lbl">API Payload</span><span class="fx"><b>fx</b> 107 · <b>pal</b> 21</span></div>
+<div class="api-code"><span class="k">{</span>
+  <span class="s">"on"</span><span class="k">:</span> <span class="n">true</span><span class="k">,</span>
+  <span class="s">"bri"</span><span class="k">:</span> <span class="n">100</span><span class="k">,</span>
+  <span class="s">"transition"</span><span class="k">:</span> <span class="n">30</span><span class="k">,</span>
+  <span class="s">"seg"</span><span class="k">:</span> <span class="k">[{</span>
+    <span class="s">"id"</span><span class="k">:</span> <span class="n">0</span><span class="k">,</span>
+    <span class="s">"fx"</span><span class="k">:</span> <span class="n">107</span><span class="k">,</span>  <span class="c">// Noise Pal</span>
+    <span class="s">"pal"</span><span class="k">:</span> <span class="n">21</span><span class="k">,</span>  <span class="c">// Sunset 2</span>
+    <span class="s">"sx"</span><span class="k">:</span> <span class="n">32</span><span class="k">,</span>
+    <span class="s">"ix"</span><span class="k">:</span> <span class="n">64</span>
+  <span class="k">}]</span>
+<span class="k">}</span></div>
+      </div>
+    </article>
+
+    <!-- Aurora -->
+    <article class="scn">
+      <div class="scn-thumb sc-aurora">
+        <span class="badge tenang">Tenang</span>
+        <span class="nm">Aurora</span>
+      </div>
+      <div class="scn-body">
+        <p class="scn-desc">Cahaya utara — hijau dan ungu menari pelan di atas biru tua.</p>
+        <p class="scn-use">Ruangan kosong yang ingin "punya napas", malam musim hujan.</p>
+      </div>
+      <div class="scn-api">
+        <div class="api-h"><span class="lbl">API Payload</span><span class="fx"><b>fx</b> 38 · <b>pal</b> 50</span></div>
+<div class="api-code"><span class="k">{</span>
+  <span class="s">"on"</span><span class="k">:</span> <span class="n">true</span><span class="k">,</span>
+  <span class="s">"bri"</span><span class="k">:</span> <span class="n">130</span><span class="k">,</span>
+  <span class="s">"transition"</span><span class="k">:</span> <span class="n">14</span><span class="k">,</span>
+  <span class="s">"seg"</span><span class="k">:</span> <span class="k">[{</span>
+    <span class="s">"id"</span><span class="k">:</span> <span class="n">0</span><span class="k">,</span>
+    <span class="s">"fx"</span><span class="k">:</span> <span class="n">38</span><span class="k">,</span>   <span class="c">// Aurora</span>
+    <span class="s">"pal"</span><span class="k">:</span> <span class="n">50</span><span class="k">,</span>  <span class="c">// Aurora</span>
+    <span class="s">"sx"</span><span class="k">:</span> <span class="n">32</span><span class="k">,</span>
+    <span class="s">"ix"</span><span class="k">:</span> <span class="n">96</span>
+  <span class="k">}]</span>
+<span class="k">}</span></div>
+      </div>
+    </article>
+
+    <!-- Rain -->
+    <article class="scn">
+      <div class="scn-thumb sc-rain">
+        <span class="badge tenang">Tenang</span>
+        <span class="nm">Rain</span>
+      </div>
+      <div class="scn-body">
+        <p class="scn-desc">Tetes-tetes biru kelabu jatuh perlahan — seperti hujan di balik jendela.</p>
+        <p class="scn-use">Sore mendung, hari hujan, kerja sambil mendengar suara hujan.</p>
+      </div>
+      <div class="scn-api">
+        <div class="api-h"><span class="lbl">API Payload</span><span class="fx"><b>fx</b> 43 · <b>pal</b> 7</span></div>
+<div class="api-code"><span class="k">{</span>
+  <span class="s">"on"</span><span class="k">:</span> <span class="n">true</span><span class="k">,</span>
+  <span class="s">"bri"</span><span class="k">:</span> <span class="n">100</span><span class="k">,</span>
+  <span class="s">"transition"</span><span class="k">:</span> <span class="n">14</span><span class="k">,</span>
+  <span class="s">"seg"</span><span class="k">:</span> <span class="k">[{</span>
+    <span class="s">"id"</span><span class="k">:</span> <span class="n">0</span><span class="k">,</span>
+    <span class="s">"fx"</span><span class="k">:</span> <span class="n">43</span><span class="k">,</span>   <span class="c">// Rain</span>
+    <span class="s">"pal"</span><span class="k">:</span> <span class="n">7</span><span class="k">,</span>   <span class="c">// Cloud</span>
+    <span class="s">"sx"</span><span class="k">:</span> <span class="n">100</span><span class="k">,</span>
+    <span class="s">"ix"</span><span class="k">:</span> <span class="n">80</span>
+  <span class="k">}]</span>
+<span class="k">}</span></div>
+      </div>
+    </article>
+
+    <!-- Breathe -->
+    <article class="scn">
+      <div class="scn-thumb sc-breathe">
+        <span class="badge tenang">Tenang</span>
+        <span class="nm">Breathe</span>
+      </div>
+      <div class="scn-body">
+        <p class="scn-desc">Satu warna sejuk yang bernapas perlahan — naik turun seperti pernapasan dalam.</p>
+        <p class="scn-use">Latihan napas, yoga, momen butuh ritme yang tenang.</p>
+      </div>
+      <div class="scn-api">
+        <div class="api-h"><span class="lbl">API Payload</span><span class="fx"><b>fx</b> 2 · <b>col</b> cool</span></div>
+<div class="api-code"><span class="k">{</span>
+  <span class="s">"on"</span><span class="k">:</span> <span class="n">true</span><span class="k">,</span>
+  <span class="s">"bri"</span><span class="k">:</span> <span class="n">110</span><span class="k">,</span>
+  <span class="s">"transition"</span><span class="k">:</span> <span class="n">14</span><span class="k">,</span>
+  <span class="s">"seg"</span><span class="k">:</span> <span class="k">[{</span>
+    <span class="s">"id"</span><span class="k">:</span> <span class="n">0</span><span class="k">,</span>
+    <span class="s">"fx"</span><span class="k">:</span> <span class="n">2</span><span class="k">,</span>    <span class="c">// Breathe</span>
+    <span class="s">"pal"</span><span class="k">:</span> <span class="n">0</span><span class="k">,</span>
+    <span class="s">"col"</span><span class="k">:</span> <span class="k">[[</span><span class="n">120</span><span class="k">,</span><span class="n">200</span><span class="k">,</span><span class="n">220</span><span class="k">]],</span>
+    <span class="s">"sx"</span><span class="k">:</span> <span class="n">40</span>
+  <span class="k">}]</span>
+<span class="k">}</span></div>
+      </div>
+    </article>
+
+  </div>
+
+  <!-- ============ FOKUS ============ -->
+  <div class="cat-head">
+    <span class="cat-dot fokus"></span>
+    <div>
+      <span class="cat-count">Kategori 02 · 3 scene</span>
+      <div class="cat-title">Fokus</div>
+    </div>
+  </div>
+  <p class="cat-blurb">Stabil, terang, warna sejuk atau natural. Brightness sedang ke tinggi. Untuk membantu konsentrasi, bukan jadi tontonan.</p>
+
+  <div class="grid">
+
+    <!-- Focus -->
+    <article class="scn">
+      <div class="scn-thumb sc-focus">
+        <span class="badge fokus">Fokus</span>
+        <span class="nm">Focus</span>
+      </div>
+      <div class="scn-body">
+        <p class="scn-desc">Cahaya putih sejuk yang stabil — tanpa gerakan, tanpa palette berubah.</p>
+        <p class="scn-use">Kerja larut, sesi belajar yang butuh konsentrasi penuh.</p>
+      </div>
+      <div class="scn-api">
+        <div class="api-h"><span class="lbl">API Payload</span><span class="fx"><b>fx</b> 0 · <b>col</b> cool white</span></div>
+<div class="api-code"><span class="k">{</span>
+  <span class="s">"on"</span><span class="k">:</span> <span class="n">true</span><span class="k">,</span>
+  <span class="s">"bri"</span><span class="k">:</span> <span class="n">200</span><span class="k">,</span>
+  <span class="s">"transition"</span><span class="k">:</span> <span class="n">14</span><span class="k">,</span>
+  <span class="s">"seg"</span><span class="k">:</span> <span class="k">[{</span>
+    <span class="s">"id"</span><span class="k">:</span> <span class="n">0</span><span class="k">,</span>
+    <span class="s">"fx"</span><span class="k">:</span> <span class="n">0</span><span class="k">,</span>    <span class="c">// Solid</span>
+    <span class="s">"pal"</span><span class="k">:</span> <span class="n">0</span><span class="k">,</span>
+    <span class="s">"col"</span><span class="k">:</span> <span class="k">[[</span><span class="n">200</span><span class="k">,</span><span class="n">220</span><span class="k">,</span><span class="n">255</span><span class="k">]]</span>
+  <span class="k">}]</span>
+<span class="k">}</span></div>
+      </div>
+    </article>
+
+    <!-- Forest -->
+    <article class="scn">
+      <div class="scn-thumb sc-forest">
+        <span class="badge fokus">Fokus</span>
+        <span class="nm">Forest</span>
+      </div>
+      <div class="scn-body">
+        <p class="scn-desc">Hijau teduh dengan gerakan sangat halus — seperti kanopi hutan pagi.</p>
+        <p class="scn-use">Membaca panjang, jam-jam fokus yang masih ingin "natural".</p>
+      </div>
+      <div class="scn-api">
+        <div class="api-h"><span class="lbl">API Payload</span><span class="fx"><b>fx</b> 107 · <b>pal</b> 10</span></div>
+<div class="api-code"><span class="k">{</span>
+  <span class="s">"on"</span><span class="k">:</span> <span class="n">true</span><span class="k">,</span>
+  <span class="s">"bri"</span><span class="k">:</span> <span class="n">150</span><span class="k">,</span>
+  <span class="s">"transition"</span><span class="k">:</span> <span class="n">14</span><span class="k">,</span>
+  <span class="s">"seg"</span><span class="k">:</span> <span class="k">[{</span>
+    <span class="s">"id"</span><span class="k">:</span> <span class="n">0</span><span class="k">,</span>
+    <span class="s">"fx"</span><span class="k">:</span> <span class="n">107</span><span class="k">,</span>  <span class="c">// Noise Pal</span>
+    <span class="s">"pal"</span><span class="k">:</span> <span class="n">10</span><span class="k">,</span>  <span class="c">// Forest</span>
+    <span class="s">"sx"</span><span class="k">:</span> <span class="n">48</span><span class="k">,</span>
+    <span class="s">"ix"</span><span class="k">:</span> <span class="n">80</span>
+  <span class="k">}]</span>
+<span class="k">}</span></div>
+      </div>
+    </article>
+
+    <!-- Daylight -->
+    <article class="scn">
+      <div class="scn-thumb sc-daylight">
+        <span class="badge fokus">Fokus</span>
+        <span class="nm">Daylight</span>
+      </div>
+      <div class="scn-body">
+        <p class="scn-desc">Putih cerah seperti siang — netral, terang, tanpa kehangatan berlebih.</p>
+        <p class="scn-use">Membersihkan ruangan, kerja teliti, video call.</p>
+      </div>
+      <div class="scn-api">
+        <div class="api-h"><span class="lbl">API Payload</span><span class="fx"><b>fx</b> 0 · <b>col</b> daylight</span></div>
+<div class="api-code"><span class="k">{</span>
+  <span class="s">"on"</span><span class="k">:</span> <span class="n">true</span><span class="k">,</span>
+  <span class="s">"bri"</span><span class="k">:</span> <span class="n">230</span><span class="k">,</span>
+  <span class="s">"transition"</span><span class="k">:</span> <span class="n">14</span><span class="k">,</span>
+  <span class="s">"seg"</span><span class="k">:</span> <span class="k">[{</span>
+    <span class="s">"id"</span><span class="k">:</span> <span class="n">0</span><span class="k">,</span>
+    <span class="s">"fx"</span><span class="k">:</span> <span class="n">0</span><span class="k">,</span>    <span class="c">// Solid</span>
+    <span class="s">"pal"</span><span class="k">:</span> <span class="n">0</span><span class="k">,</span>
+    <span class="s">"col"</span><span class="k">:</span> <span class="k">[[</span><span class="n">255</span><span class="k">,</span><span class="n">255</span><span class="k">,</span><span class="n">240</span><span class="k">]]</span>
+  <span class="k">}]</span>
+<span class="k">}</span></div>
+      </div>
+    </article>
+
+  </div>
+
+  <!-- ============ SOSIAL ============ -->
+  <div class="cat-head">
+    <span class="cat-dot sosial"></span>
+    <div>
+      <span class="cat-count">Kategori 03 · 6 scene</span>
+      <div class="cat-title">Sosial</div>
+    </div>
+  </div>
+  <p class="cat-blurb">Warna kaya, palet hangat atau cinematic, gerakan lambat-sedang. Untuk ruangan yang sedang dipakai bersama orang.</p>
+
+  <div class="grid">
+
+    <!-- Sunset Mode -->
+    <article class="scn">
+      <div class="scn-thumb sc-sunset">
+        <span class="badge sosial">Sosial</span>
+        <span class="nm">Sunset Mode</span>
+      </div>
+      <div class="scn-body">
+        <p class="scn-desc">Gradient jingga keemasan ke merah-ungu — palet senja yang lambat bergerak.</p>
+        <p class="scn-use">Sore di akhir pekan, ngobrol santai, awal pesta kecil.</p>
+      </div>
+      <div class="scn-api">
+        <div class="api-h"><span class="lbl">API Payload</span><span class="fx"><b>fx</b> 110 · <b>pal</b> 13</span></div>
+<div class="api-code"><span class="k">{</span>
+  <span class="s">"on"</span><span class="k">:</span> <span class="n">true</span><span class="k">,</span>
+  <span class="s">"bri"</span><span class="k">:</span> <span class="n">170</span><span class="k">,</span>
+  <span class="s">"transition"</span><span class="k">:</span> <span class="n">14</span><span class="k">,</span>
+  <span class="s">"seg"</span><span class="k">:</span> <span class="k">[{</span>
+    <span class="s">"id"</span><span class="k">:</span> <span class="n">0</span><span class="k">,</span>
+    <span class="s">"fx"</span><span class="k">:</span> <span class="n">110</span><span class="k">,</span>  <span class="c">// Flow Stripe</span>
+    <span class="s">"pal"</span><span class="k">:</span> <span class="n">13</span><span class="k">,</span>  <span class="c">// Sunset</span>
+    <span class="s">"sx"</span><span class="k">:</span> <span class="n">48</span><span class="k">,</span>
+    <span class="s">"ix"</span><span class="k">:</span> <span class="n">128</span>
+  <span class="k">}]</span>
+<span class="k">}</span></div>
+      </div>
+    </article>
+
+    <!-- Dinner -->
+    <article class="scn">
+      <div class="scn-thumb sc-dinner">
+        <span class="badge sosial">Sosial</span>
+        <span class="nm">Dinner</span>
+      </div>
+      <div class="scn-body">
+        <p class="scn-desc">Hangat vintage seperti cahaya restoran — tanpa kerlip yang mengganggu makanan.</p>
+        <p class="scn-use">Makan malam, jamuan kecil, masakan yang ingin terlihat enak.</p>
+      </div>
+      <div class="scn-api">
+        <div class="api-h"><span class="lbl">API Payload</span><span class="fx"><b>fx</b> 2 · <b>pal</b> 23</span></div>
+<div class="api-code"><span class="k">{</span>
+  <span class="s">"on"</span><span class="k">:</span> <span class="n">true</span><span class="k">,</span>
+  <span class="s">"bri"</span><span class="k">:</span> <span class="n">160</span><span class="k">,</span>
+  <span class="s">"transition"</span><span class="k">:</span> <span class="n">14</span><span class="k">,</span>
+  <span class="s">"seg"</span><span class="k">:</span> <span class="k">[{</span>
+    <span class="s">"id"</span><span class="k">:</span> <span class="n">0</span><span class="k">,</span>
+    <span class="s">"fx"</span><span class="k">:</span> <span class="n">2</span><span class="k">,</span>    <span class="c">// Breathe</span>
+    <span class="s">"pal"</span><span class="k">:</span> <span class="n">23</span><span class="k">,</span>  <span class="c">// Vintage</span>
+    <span class="s">"sx"</span><span class="k">:</span> <span class="n">30</span><span class="k">,</span>
+    <span class="s">"ix"</span><span class="k">:</span> <span class="n">64</span>
+  <span class="k">}]</span>
+<span class="k">}</span></div>
+      </div>
+    </article>
+
+    <!-- Movie Night -->
+    <article class="scn">
+      <div class="scn-thumb sc-movie">
+        <span class="badge sosial">Sosial</span>
+        <span class="nm">Movie Night</span>
+      </div>
+      <div class="scn-body">
+        <p class="scn-desc">Latar redup berwarna lembut — cukup untuk membentuk ruangan, tidak mengganggu layar.</p>
+        <p class="scn-use">Nonton film, serial, momen layar besar.</p>
+      </div>
+      <div class="scn-api">
+        <div class="api-h"><span class="lbl">API Payload</span><span class="fx"><b>fx</b> 107 · <b>pal</b> 8</span></div>
+<div class="api-code"><span class="k">{</span>
+  <span class="s">"on"</span><span class="k">:</span> <span class="n">true</span><span class="k">,</span>
+  <span class="s">"bri"</span><span class="k">:</span> <span class="n">70</span><span class="k">,</span>
+  <span class="s">"transition"</span><span class="k">:</span> <span class="n">14</span><span class="k">,</span>
+  <span class="s">"seg"</span><span class="k">:</span> <span class="k">[{</span>
+    <span class="s">"id"</span><span class="k">:</span> <span class="n">0</span><span class="k">,</span>
+    <span class="s">"fx"</span><span class="k">:</span> <span class="n">107</span><span class="k">,</span>  <span class="c">// Noise Pal</span>
+    <span class="s">"pal"</span><span class="k">:</span> <span class="n">8</span><span class="k">,</span>   <span class="c">// Lava</span>
+    <span class="s">"sx"</span><span class="k">:</span> <span class="n">16</span><span class="k">,</span>
+    <span class="s">"ix"</span><span class="k">:</span> <span class="n">64</span>
+  <span class="k">}]</span>
+<span class="k">}</span></div>
+      </div>
+    </article>
+
+    <!-- Tokyo Rain -->
+    <article class="scn">
+      <div class="scn-thumb sc-tokyo">
+        <span class="badge sosial">Sosial</span>
+        <span class="nm">Tokyo Rain</span>
+      </div>
+      <div class="scn-body">
+        <p class="scn-desc">Neon magenta dan cyan menyatu — kota malam yang basah, sinematik.</p>
+        <p class="scn-use">Mood malam, sesi musik elektronik, kerja kreatif yang butuh atmosfer.</p>
+      </div>
+      <div class="scn-api">
+        <div class="api-h"><span class="lbl">API Payload</span><span class="fx"><b>fx</b> 107 · <b>pal</b> 19</span></div>
+<div class="api-code"><span class="k">{</span>
+  <span class="s">"on"</span><span class="k">:</span> <span class="n">true</span><span class="k">,</span>
+  <span class="s">"bri"</span><span class="k">:</span> <span class="n">140</span><span class="k">,</span>
+  <span class="s">"transition"</span><span class="k">:</span> <span class="n">14</span><span class="k">,</span>
+  <span class="s">"seg"</span><span class="k">:</span> <span class="k">[{</span>
+    <span class="s">"id"</span><span class="k">:</span> <span class="n">0</span><span class="k">,</span>
+    <span class="s">"fx"</span><span class="k">:</span> <span class="n">107</span><span class="k">,</span>  <span class="c">// Noise Pal</span>
+    <span class="s">"pal"</span><span class="k">:</span> <span class="n">19</span><span class="k">,</span>  <span class="c">// Splash</span>
+    <span class="s">"sx"</span><span class="k">:</span> <span class="n">64</span><span class="k">,</span>
+    <span class="s">"ix"</span><span class="k">:</span> <span class="n">144</span>
+  <span class="k">}]</span>
+<span class="k">}</span></div>
+      </div>
+    </article>
+
+    <!-- Golden Hour -->
+    <article class="scn">
+      <div class="scn-thumb sc-golden">
+        <span class="badge sosial">Sosial</span>
+        <span class="nm">Golden Hour</span>
+      </div>
+      <div class="scn-body">
+        <p class="scn-desc">Emas pekat seperti satu jam sebelum matahari terbenam — momen "foto bagus".</p>
+        <p class="scn-use">Sore yang romantis, momen merayakan, foto.</p>
+      </div>
+      <div class="scn-api">
+        <div class="api-h"><span class="lbl">API Payload</span><span class="fx"><b>fx</b> 107 · <b>pal</b> 47</span></div>
+<div class="api-code"><span class="k">{</span>
+  <span class="s">"on"</span><span class="k">:</span> <span class="n">true</span><span class="k">,</span>
+  <span class="s">"bri"</span><span class="k">:</span> <span class="n">180</span><span class="k">,</span>
+  <span class="s">"transition"</span><span class="k">:</span> <span class="n">14</span><span class="k">,</span>
+  <span class="s">"seg"</span><span class="k">:</span> <span class="k">[{</span>
+    <span class="s">"id"</span><span class="k">:</span> <span class="n">0</span><span class="k">,</span>
+    <span class="s">"fx"</span><span class="k">:</span> <span class="n">107</span><span class="k">,</span>  <span class="c">// Noise Pal</span>
+    <span class="s">"pal"</span><span class="k">:</span> <span class="n">47</span><span class="k">,</span>  <span class="c">// Orangery</span>
+    <span class="s">"sx"</span><span class="k">:</span> <span class="n">40</span><span class="k">,</span>
+    <span class="s">"ix"</span><span class="k">:</span> <span class="n">96</span>
+  <span class="k">}]</span>
+<span class="k">}</span></div>
+      </div>
+    </article>
+
+    <!-- Sakura -->
+    <article class="scn">
+      <div class="scn-thumb sc-sakura">
+        <span class="badge sosial">Sosial</span>
+        <span class="nm">Sakura</span>
+      </div>
+      <div class="scn-body">
+        <p class="scn-desc">Pink dan rose yang mekar — lembut, feminin tanpa cemberut.</p>
+        <p class="scn-use">Acara feminin, gathering teman dekat, weekend pagi.</p>
+      </div>
+      <div class="scn-api">
+        <div class="api-h"><span class="lbl">API Payload</span><span class="fx"><b>fx</b> 107 · <b>pal</b> 49</span></div>
+<div class="api-code"><span class="k">{</span>
+  <span class="s">"on"</span><span class="k">:</span> <span class="n">true</span><span class="k">,</span>
+  <span class="s">"bri"</span><span class="k">:</span> <span class="n">140</span><span class="k">,</span>
+  <span class="s">"transition"</span><span class="k">:</span> <span class="n">14</span><span class="k">,</span>
+  <span class="s">"seg"</span><span class="k">:</span> <span class="k">[{</span>
+    <span class="s">"id"</span><span class="k">:</span> <span class="n">0</span><span class="k">,</span>
+    <span class="s">"fx"</span><span class="k">:</span> <span class="n">107</span><span class="k">,</span>  <span class="c">// Noise Pal</span>
+    <span class="s">"pal"</span><span class="k">:</span> <span class="n">49</span><span class="k">,</span>  <span class="c">// Sakura</span>
+    <span class="s">"sx"</span><span class="k">:</span> <span class="n">48</span><span class="k">,</span>
+    <span class="s">"ix"</span><span class="k">:</span> <span class="n">96</span>
+  <span class="k">}]</span>
+<span class="k">}</span></div>
+      </div>
+    </article>
+
+  </div>
+
+  <!-- ============ DINAMIS ============ -->
+  <div class="cat-head">
+    <span class="cat-dot dinamis"></span>
+    <div>
+      <span class="cat-count">Kategori 04 · 3 scene</span>
+      <div class="cat-title">Dinamis</div>
+    </div>
+  </div>
+  <p class="cat-blurb">Gerakan, kontras, intensitas tinggi. Untuk momen yang benar-benar ingin meriah — pakai dengan hemat agar tetap terasa istimewa.</p>
+
+  <div class="grid">
+
+    <!-- Fireplace -->
+    <article class="scn">
+      <div class="scn-thumb sc-fire">
+        <span class="badge dinamis">Dinamis</span>
+        <span class="nm">Fireplace</span>
+      </div>
+      <div class="scn-body">
+        <p class="scn-desc">Api perapian — lidah jingga dan merah yang naik turun tak terduga.</p>
+        <p class="scn-use">Malam dingin, pesta kecil di musim hujan, latar percakapan panjang.</p>
+      </div>
+      <div class="scn-api">
+        <div class="api-h"><span class="lbl">API Payload</span><span class="fx"><b>fx</b> 66 · <b>pal</b> 35</span></div>
+<div class="api-code"><span class="k">{</span>
+  <span class="s">"on"</span><span class="k">:</span> <span class="n">true</span><span class="k">,</span>
+  <span class="s">"bri"</span><span class="k">:</span> <span class="n">180</span><span class="k">,</span>
+  <span class="s">"transition"</span><span class="k">:</span> <span class="n">14</span><span class="k">,</span>
+  <span class="s">"seg"</span><span class="k">:</span> <span class="k">[{</span>
+    <span class="s">"id"</span><span class="k">:</span> <span class="n">0</span><span class="k">,</span>
+    <span class="s">"fx"</span><span class="k">:</span> <span class="n">66</span><span class="k">,</span>   <span class="c">// Fire 2012</span>
+    <span class="s">"pal"</span><span class="k">:</span> <span class="n">35</span><span class="k">,</span>  <span class="c">// Fire</span>
+    <span class="s">"sx"</span><span class="k">:</span> <span class="n">130</span><span class="k">,</span>
+    <span class="s">"ix"</span><span class="k">:</span> <span class="n">144</span>
+  <span class="k">}]</span>
+<span class="k">}</span></div>
+      </div>
+    </article>
+
+    <!-- Twinkle Stars -->
+    <article class="scn">
+      <div class="scn-thumb sc-twinkle">
+        <span class="badge dinamis">Dinamis</span>
+        <span class="nm">Twinkle Stars</span>
+      </div>
+      <div class="scn-body">
+        <p class="scn-desc">Bintang berkelip di langit malam — putih hangat dan biru lembut di latar gelap.</p>
+        <p class="scn-use">Ulang tahun, kejutan kecil, ruang anak menjelang tidur.</p>
+      </div>
+      <div class="scn-api">
+        <div class="api-h"><span class="lbl">API Payload</span><span class="fx"><b>fx</b> 106 · <b>pal</b> 46</span></div>
+<div class="api-code"><span class="k">{</span>
+  <span class="s">"on"</span><span class="k">:</span> <span class="n">true</span><span class="k">,</span>
+  <span class="s">"bri"</span><span class="k">:</span> <span class="n">130</span><span class="k">,</span>
+  <span class="s">"transition"</span><span class="k">:</span> <span class="n">14</span><span class="k">,</span>
+  <span class="s">"seg"</span><span class="k">:</span> <span class="k">[{</span>
+    <span class="s">"id"</span><span class="k">:</span> <span class="n">0</span><span class="k">,</span>
+    <span class="s">"fx"</span><span class="k">:</span> <span class="n">106</span><span class="k">,</span>  <span class="c">// Twinkleup</span>
+    <span class="s">"pal"</span><span class="k">:</span> <span class="n">46</span><span class="k">,</span>  <span class="c">// April Night</span>
+    <span class="s">"sx"</span><span class="k">:</span> <span class="n">96</span><span class="k">,</span>
+    <span class="s">"ix"</span><span class="k">:</span> <span class="n">200</span>
+  <span class="k">}]</span>
+<span class="k">}</span></div>
+      </div>
+    </article>
+
+    <!-- Party -->
+    <article class="scn">
+      <div class="scn-thumb sc-party">
+        <span class="badge dinamis">Dinamis</span>
+        <span class="nm">Party</span>
+      </div>
+      <div class="scn-body">
+        <p class="scn-desc">Warna penuh berlari — magenta, ungu, cyan, emas. Energi tinggi, ritme cepat.</p>
+        <p class="scn-use">Pesta sungguhan, musik kencang, tahun baru.</p>
+      </div>
+      <div class="scn-api">
+        <div class="api-h"><span class="lbl">API Payload</span><span class="fx"><b>fx</b> 8 · <b>pal</b> 6</span></div>
+<div class="api-code"><span class="k">{</span>
+  <span class="s">"on"</span><span class="k">:</span> <span class="n">true</span><span class="k">,</span>
+  <span class="s">"bri"</span><span class="k">:</span> <span class="n">200</span><span class="k">,</span>
+  <span class="s">"transition"</span><span class="k">:</span> <span class="n">14</span><span class="k">,</span>
+  <span class="s">"seg"</span><span class="k">:</span> <span class="k">[{</span>
+    <span class="s">"id"</span><span class="k">:</span> <span class="n">0</span><span class="k">,</span>
+    <span class="s">"fx"</span><span class="k">:</span> <span class="n">8</span><span class="k">,</span>    <span class="c">// Colorloop</span>
+    <span class="s">"pal"</span><span class="k">:</span> <span class="n">6</span><span class="k">,</span>   <span class="c">// Party</span>
+    <span class="s">"sx"</span><span class="k">:</span> <span class="n">180</span><span class="k">,</span>
+    <span class="s">"ix"</span><span class="k">:</span> <span class="n">200</span>
+  <span class="k">}]</span>
+<span class="k">}</span></div>
+      </div>
+    </article>
+
+  </div>
+
+  <!-- ============ IMPLEMENTATION ============ -->
+  <section class="impl">
+    <div class="kicker">Catatan Implementasi</div>
+    <h2>Catalog ini adalah <em>data</em>, bukan firmware.</h2>
+    <p class="lead">
+      18 scene di atas tinggal di <b>aplikasi Flutter kamu</b>, bukan di WLED. WLED tetap stock —
+      tidak ada preset yang disimpan ke device. Yang dikirim ke wall adalah JSON payload di atas,
+      satu request per pemilihan scene. Bagian ini menjelaskan bagaimana data ini hidup di kode.
+    </p>
+
+    <div class="impl-rows">
+
+      <div class="impl-block">
+        <h4>Model data</h4>
+        <p>Setiap scene jadi satu objek immutable dengan defaults yang sudah ditune.
+        Sheet penyesuaian (brightness · speed · intensity) hanya meng-override tiga field — selebihnya tetap.</p>
+<div class="code"><span class="k">class</span> <span class="n">Scene</span> {
+  <span class="k">final</span> <span class="n">String</span> id;
+  <span class="k">final</span> <span class="n">String</span> name;
+  <span class="k">final</span> <span class="n">SceneCategory</span> category;
+  <span class="k">final</span> <span class="n">String</span> description;
+  <span class="k">final</span> <span class="n">String</span> useCase;
+  <span class="k">final</span> <span class="n">int</span> defaultBri;
+  <span class="k">final</span> <span class="n">int</span> fx;
+  <span class="k">final</span> <span class="n">int</span> pal;
+  <span class="k">final</span> <span class="n">int</span>? defaultSx;
+  <span class="k">final</span> <span class="n">int</span>? defaultIx;
+  <span class="k">final</span> <span class="n">List</span>&lt;<span class="n">int</span>&gt;? col;
+}</div>
+      </div>
+
+      <div class="impl-block">
+        <h4>Mengirim ke wall</h4>
+        <p>Wrap satu fungsi yang menerima scene + override opsional, hasilkan JSON, POST ke
+        <span style="font-family:var(--mono);font-size:12px;">/json/state</span> wall.
+        Untuk grup: ubah satu wall, sisanya ikut via UDP sync (sudah dibahas di spec).</p>
+<div class="code"><span class="k">Future&lt;void&gt;</span> <span class="n">applyScene</span>(
+  <span class="n">Wall</span> wall, <span class="n">Scene</span> scene, {
+  <span class="n">int</span>? briOverride,
+  <span class="n">int</span>? sxOverride,
+  <span class="n">int</span>? ixOverride,
+}) <span class="k">async</span> {
+  <span class="k">final</span> payload = scene.toJson(
+    bri: briOverride ?? scene.defaultBri,
+    sx: sxOverride ?? scene.defaultSx,
+    ix: ixOverride ?? scene.defaultIx,
+  );
+  <span class="k">await</span> http.post(<span class="s">'http://${wall.ip}/json/state'</span>,
+    body: jsonEncode(payload));
+}</div>
+      </div>
+
+      <div class="impl-block">
+        <h4>Transisi halus</h4>
+        <p>Field <span style="font-family:var(--mono);font-size:12px;">"transition": 14</span>
+        (14 × 100ms = <b>1.4 detik</b>) ada di tiap payload. Itu yang membuat perpindahan scene
+        terasa lembut, bukan loncat. Untuk Wind Down naikkan ke 30 (3 detik) supaya senjanya
+        benar-benar pelan.</p>
+      </div>
+
+      <div class="impl-block">
+        <h4>Quick scene vs sheet</h4>
+        <p>Sesuai keputusan desain: tap quick scene = <b>kirim defaults langsung</b>, tanpa sheet.
+        Sheet hanya muncul dari galeri "Lihat semua". Itu sebabnya defaults harus ter-tune —
+        80% interaksi tidak akan pernah menyentuh slider.</p>
+      </div>
+
+      <div class="impl-block">
+        <h4>Menambah scene ke-19</h4>
+        <p>Karena scene = data, menambahkannya tidak perlu rilis app baru kalau kamu memuatnya
+        dari backend (Phase 2+). Phase 1 local-first → tambah scene = update file aset + rilis.
+        Mulai konservatif: 18 scene cukup untuk semua mood harian.</p>
+      </div>
+
+      <div class="impl-block">
+        <h4>Cara tuning di hardware</h4>
+        <p>Aspirasi vs realita kadang berbeda. <b>Uji tiap scene di wall sungguhan</b> sebelum
+        finalisasi — terutama brightness (LED terang di datasheet bisa silau di dinding) dan
+        speed (apa yang terlihat di simulator beda dengan pada 144 LED). Tune sampai sesuai
+        deskripsinya, lalu kunci angkanya.</p>
+      </div>
+
+    </div>
+  </section>
+
+  <p class="closer">
+    <b>18 scene · 4 kategori · 1 model data.</b> Catalog ini sumber kebenaran untuk semua galeri di design spec.
+  </p>
+
+</div>
+</body>
+</html>

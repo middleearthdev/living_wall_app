@@ -1,0 +1,66 @@
+name: living_wall_app
+description: "Living Ambient Wall — smart LED wall controller (Phase 1, local-first)."
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.9.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+
+  # State management
+  flutter_riverpod: ^2.5.1
+  # riverpod_annotation: ^2.3.5  # disabled — see dev_dependencies note on riverpod_generator
+
+  # Routing
+  go_router: ^14.2.0
+
+  # Network
+  dio: ^5.5.0
+  web_socket_channel: ^3.0.1
+  multicast_dns: ^0.3.2
+  network_info_plus: ^6.0.0
+
+  # Persistence
+  drift: ^2.20.0
+  sqlite3_flutter_libs: ^0.5.24
+  path_provider: ^2.1.4
+  path: ^1.9.0
+
+  # Models / serialization
+  freezed_annotation: ^2.4.4
+  json_annotation: ^4.9.0
+
+  # UI
+  google_fonts: ^6.2.1
+
+  # Platform
+  permission_handler: ^11.3.1
+  url_launcher: ^6.3.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+  # Code generation
+  build_runner: ^2.4.11
+  freezed: ^2.5.7
+  json_serializable: ^6.8.0
+  drift_dev: ^2.20.0
+  # riverpod_generator pulls analyzer_plugin 0.12.0 (incompatible with analyzer 7).
+  # Re-enable when upstream is fixed; until then write providers without @riverpod codegen.
+  # riverpod_generator: ^2.4.2
+
+  # Riverpod static checks (re-enable when analyzer_plugin is compatible with analyzer 7)
+  # custom_lint: ^0.7.3
+  # riverpod_lint: ^2.6.1
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/scenes.json
+    - assets/images/scenes/
