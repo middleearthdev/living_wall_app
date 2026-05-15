@@ -89,8 +89,7 @@ class RoomCard extends ConsumerWidget {
           Material(
             color: Colors.transparent,
             child: InkWell(
-              onTap: () =>
-                  context.push(Routes.dashboardRoom(room.id), extra: room),
+              onTap: () => _openRoom(context, ref, vitals.wallCount),
               child: Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -139,10 +138,7 @@ class RoomCard extends ConsumerWidget {
                         activeId: activeScene?.id,
                         onPick: (scene) =>
                             controller.applyScene(room.id, scene),
-                        onMore: () => context.push(
-                          Routes.dashboardRoom(room.id),
-                          extra: room,
-                        ),
+                        onMore: () => _openScenes(context, ref),
                       ),
                       const SizedBox(height: 12),
                       _RoomBrightnessSlider(
@@ -177,6 +173,32 @@ class RoomCard extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  /// Per design spec: 1-wall rooms skip the room screen and tap straight
+  /// into wall control (jalur A). 2+ walls go through room screen (jalur B)
+  /// so the user can drill into a specific wall or apply a mood to all.
+  void _openRoom(BuildContext context, WidgetRef ref, int wallCount) {
+    if (wallCount == 1) {
+      final first = ref.read(firstWallForRoomProvider(room.id)).valueOrNull;
+      if (first != null) {
+        context.push(Routes.dashboardWall(room.id, first.id));
+        return;
+      }
+    }
+    context.push(Routes.dashboardRoom(room.id), extra: room);
+  }
+
+  /// "···" on the mini scenes strip opens the scene gallery. Week 5 only
+  /// has a per-wall gallery; for 2+-wall rooms we route to the first wall's
+  /// gallery as a stop-gap until the room-wide gallery lands in week 6.
+  void _openScenes(BuildContext context, WidgetRef ref) {
+    final first = ref.read(firstWallForRoomProvider(room.id)).valueOrNull;
+    if (first != null) {
+      context.push(Routes.dashboardScenes(room.id, first.id));
+      return;
+    }
+    context.push(Routes.dashboardRoom(room.id), extra: room);
   }
 
   static const _grayscaleMatrix = <double>[

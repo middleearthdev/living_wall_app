@@ -19,4 +19,6 @@ class Routes {
   static String dashboardRoom(String roomId) => '/dashboard/room/$roomId';
   static String dashboardWall(String roomId, String wallId) =>
       '/dashboard/room/$roomId/wall/$wallId';
+  static String dashboardScenes(String roomId, String wallId) =>
+      '/dashboard/room/$roomId/wall/$wallId/scenes';
 }

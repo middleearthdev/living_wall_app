@@ -10,7 +10,8 @@ import '../screens/onboarding/empty_state_screen.dart';
 import '../screens/onboarding/name_place_screen.dart';
 import '../screens/onboarding/wifi_guide_screen.dart';
 import '../screens/room/room_screen.dart';
-import '../screens/wall/wall_control_placeholder_screen.dart';
+import '../screens/scenes/scene_gallery_screen.dart';
+import '../screens/wall/wall_control_screen.dart';
 import 'routes.dart';
 
 /// Router lives behind a provider so it can read `hasAnyWallProvider` for the
@@ -67,9 +68,19 @@ final routerProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: 'wall/:wallId',
-                builder: (_, state) => WallControlPlaceholderScreen(
+                builder: (_, state) => WallControlScreen(
+                  roomId: state.pathParameters['roomId']!,
                   wallId: state.pathParameters['wallId']!,
                 ),
+                routes: [
+                  GoRoute(
+                    path: 'scenes',
+                    builder: (_, state) => SceneGalleryScreen(
+                      roomId: state.pathParameters['roomId']!,
+                      wallId: state.pathParameters['wallId']!,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
