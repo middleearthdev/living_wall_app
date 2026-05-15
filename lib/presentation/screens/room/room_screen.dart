@@ -93,6 +93,10 @@ class RoomScreen extends ConsumerWidget {
                               ),
                               const SizedBox(height: 6),
                             ],
+                            _AddWallRow(
+                              onTap: () => context
+                                  .push(Routes.addWallWifi(roomId)),
+                            ),
                             const SizedBox(height: 16),
                             _SectionLabel(
                               text: 'Mood ruangan',
@@ -401,6 +405,118 @@ class _WallRow extends ConsumerWidget {
   ];
 }
 
+/// Dashed CTA row at the end of the wall list. Tapping launches the
+/// add-wall flow with the current room locked as the destination — so the
+/// user never sees a "pick a room" step from inside an existing room.
+class _AddWallRow extends StatelessWidget {
+  const _AddWallRow({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final ext = Theme.of(context).extension<LivingWallTheme>()!;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: DottedBorderBox(
+          color: ext.accentLight.withValues(alpha: 0.55),
+          radius: 12,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            child: Row(
+              children: [
+                Container(
+                  width: 24,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    color: ext.accent.withValues(alpha: 0.18),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(
+                      color: ext.accentLight.withValues(alpha: 0.5),
+                    ),
+                  ),
+                  child: Icon(Icons.add, size: 16, color: ext.accentLight),
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  'Tambah wall ke ruangan ini',
+                  style: TextStyle(
+                    color: ext.accentLight,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Material doesn't expose a dashed border out of the box; this tiny
+/// custom-painter wrapper draws a 1px dashed outline at the given radius.
+/// Used only by [_AddWallRow] — promote if a second caller appears.
+class DottedBorderBox extends StatelessWidget {
+  const DottedBorderBox({
+    super.key,
+    required this.color,
+    required this.radius,
+    required this.child,
+  });
+
+  final Color color;
+  final double radius;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      painter: _DashedRectPainter(color: color, radius: radius),
+      child: child,
+    );
+  }
+}
+
+class _DashedRectPainter extends CustomPainter {
+  _DashedRectPainter({required this.color, required this.radius});
+
+  final Color color;
+  final double radius;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+    final rect = RRect.fromRectAndRadius(
+      Rect.fromLTWH(0.5, 0.5, size.width - 1, size.height - 1),
+      Radius.circular(radius),
+    );
+    final path = Path()..addRRect(rect);
+    const dashWidth = 5.0;
+    const dashGap = 4.0;
+    final metrics = path.computeMetrics().toList();
+    for (final metric in metrics) {
+      var dist = 0.0;
+      while (dist < metric.length) {
+        final end = (dist + dashWidth).clamp(0, metric.length);
+        canvas.drawPath(metric.extractPath(dist, end.toDouble()), paint);
+        dist = end + dashGap;
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _DashedRectPainter old) =>
+      old.color != color || old.radius != radius;
+}
+
 /// Smaller sibling of the dashboard room toggle — used per-wall to flip
 /// sync membership. Its own GestureDetector means taps don't bubble up to
 /// the row's InkWell, so toggling exclusion never accidentally navigates
@@ -581,9 +697,8 @@ class _EmptyRoom extends StatelessWidget {
                   vertical: 14,
                 ),
               ),
-              // Week 7 will route to a room-aware add-wall flow; until then
-              // the onboarding wifi screen is the available entry point.
-              onPressed: () => GoRouter.of(context).push(Routes.onboardingWifi),
+              onPressed: () =>
+                  GoRouter.of(context).push(Routes.addWallWifi(roomId)),
               child: const Text('Tambah wall pertama'),
             ),
           ],

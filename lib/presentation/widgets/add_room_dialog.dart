@@ -45,10 +45,13 @@ class _AddRoomDialogState extends ConsumerState<AddRoomDialog> {
       final room = await homes.createRoom(homeId: home.id, name: name);
       ref.invalidate(roomsProvider);
       if (!mounted) return;
+      final navigator = GoRouter.of(context);
       Navigator.of(context).pop(room);
-      // Bounce straight into the new room so the user can add its first wall.
-      // The room screen handles the "tambah wall pertama" CTA.
-      GoRouter.of(context).push(Routes.dashboardRoom(room.id), extra: room);
+      // Per spec B.2 — "Buat & tambah wall": after creating the room, hand
+      // straight off to the add-wall flow with the new room locked in. If
+      // the user cancels mid-add-wall the room is preserved (Dashboard
+      // shows it as an empty room with "Tambah wall pertama").
+      navigator.push(Routes.addWallWifi(room.id));
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -142,7 +145,7 @@ class _AddRoomDialogState extends ConsumerState<AddRoomDialog> {
                             color: Colors.black,
                           ),
                         )
-                      : const Text('Buat'),
+                      : const Text('Buat & tambah wall'),
                 ),
               ],
             ),

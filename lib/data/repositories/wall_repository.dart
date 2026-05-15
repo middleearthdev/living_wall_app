@@ -32,6 +32,15 @@ class WallRepository {
     return row == null ? null : _toWall(row);
   }
 
+  /// Every wall across every room. Used by add-wall discovery to suppress
+  /// re-pairing devices we've already registered — the deviceId is the
+  /// dedupe key, so a wall that's already in one room can't end up duped
+  /// into another.
+  Future<List<Wall>> allWalls() async {
+    final rows = await _db.select(_db.walls).get();
+    return rows.map(_toWall).toList();
+  }
+
   /// Inserts a new wall. Throws on deviceId conflict — the caller should
   /// catch this and surface "wall already added" to the user.
   Future<Wall> addWall({

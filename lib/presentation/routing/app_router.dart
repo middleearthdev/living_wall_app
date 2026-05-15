@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../application/providers/app_providers.dart';
+import '../../data/models/add_wall_context.dart';
 import '../../data/models/discovered_wall.dart';
 import '../screens/dashboard/dashboard_screen.dart';
 import '../screens/onboarding/discovery_screen.dart';
@@ -81,6 +82,37 @@ final routerProvider = Provider<GoRouter>((ref) {
                     ),
                   ),
                 ],
+              ),
+              // Add-wall flow — reuses the onboarding screens with an
+              // AddWallContext that locks the target room.
+              GoRoute(
+                path: 'add-wall/wifi',
+                builder: (_, state) => WifiGuideScreen(
+                  addContext: AddWallContext(
+                    roomId: state.pathParameters['roomId']!,
+                  ),
+                ),
+              ),
+              GoRoute(
+                path: 'add-wall/discovery',
+                builder: (_, state) => DiscoveryScreen(
+                  addContext: AddWallContext(
+                    roomId: state.pathParameters['roomId']!,
+                  ),
+                ),
+              ),
+              GoRoute(
+                path: 'add-wall/name',
+                builder: (context, state) {
+                  final discovered = state.extra as DiscoveredWall?;
+                  if (discovered == null) return const _MissingExtraScreen();
+                  return NamePlaceScreen(
+                    discovered: discovered,
+                    addContext: AddWallContext(
+                      roomId: state.pathParameters['roomId']!,
+                    ),
+                  );
+                },
               ),
             ],
           ),

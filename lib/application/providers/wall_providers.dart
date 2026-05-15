@@ -13,6 +13,31 @@ final wallByIdProvider = FutureProvider.family<Wall?, String>((ref, wallId) {
   return ref.watch(wallRepositoryProvider).findById(wallId);
 });
 
+/// Compact info about an already-registered wall keyed by its `deviceId`
+/// (MAC). The add-wall discovery screen looks each scan hit up here to
+/// decide whether to disable the row with a "Sudah ada di {room}" label
+/// instead of letting the user re-pair it.
+class RegisteredWallInfo {
+  const RegisteredWallInfo({required this.wallId, required this.roomName});
+  final String wallId;
+  final String roomName;
+}
+
+final registeredByDeviceIdProvider =
+    FutureProvider<Map<String, RegisteredWallInfo>>((ref) async {
+      final walls = await ref.watch(wallRepositoryProvider).allWalls();
+      if (walls.isEmpty) return const <String, RegisteredWallInfo>{};
+      final rooms = await ref.watch(roomsProvider.future);
+      final roomById = {for (final r in rooms) r.id: r};
+      return {
+        for (final w in walls)
+          w.deviceId: RegisteredWallInfo(
+            wallId: w.id,
+            roomName: roomById[w.roomId]?.name ?? 'Ruangan',
+          ),
+      };
+    });
+
 /// First wall in a room. Used as the canonical signal for "the room's
 /// scene" — UDP sync keeps the rest aligned.
 final firstWallForRoomProvider = FutureProvider.family<Wall?, String>((

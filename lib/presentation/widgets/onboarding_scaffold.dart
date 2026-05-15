@@ -3,20 +3,37 @@ import 'package:flutter/material.dart';
 import '../../core/theme/colors.dart';
 import '../../core/theme/app_theme.dart';
 
-/// Shared chrome for onboarding screens. Keeps padding, step pill, and bottom
-/// action bar in one place so the four steps stay visually consistent.
+/// Shared chrome for the wifi → discovery → name flow. Used by both
+/// onboarding (S02–S04) and add-wall (Sub-A/Sub-B). The optional [topBar]
+/// slot replaces the step pill when an add-wall screen wants the
+/// "‹ Tambah Wall ✕" header instead; [contextBanner] sits below it to call
+/// out "akan masuk ke {room}" when the destination room is locked in.
 class OnboardingScaffold extends StatelessWidget {
   const OnboardingScaffold({
     super.key,
-    required this.stepLabel,
+    this.stepLabel,
+    this.topBar,
+    this.contextBanner,
     required this.title,
     this.subtitle,
     required this.body,
     this.primaryAction,
     this.secondaryAction,
-  });
+  }) : assert(
+         stepLabel != null || topBar != null,
+         'Provide either a step pill label or a top bar — chrome must have one',
+       );
 
-  final String stepLabel;
+  /// Onboarding mode pill ("LANGKAH 1 / 3"). Pass null when [topBar] is set.
+  final String? stepLabel;
+
+  /// Add-wall mode header. Renders in place of the step pill.
+  final Widget? topBar;
+
+  /// Optional row shown below the header — used by add-wall to signal the
+  /// locked target room.
+  final Widget? contextBanner;
+
   final String title;
   final String? subtitle;
   final Widget body;
@@ -35,7 +52,11 @@ class OnboardingScaffold extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _StepPill(label: stepLabel),
+              if (topBar != null) topBar! else _StepPill(label: stepLabel!),
+              if (contextBanner != null) ...[
+                const SizedBox(height: 14),
+                contextBanner!,
+              ],
               const SizedBox(height: 24),
               Text(title, style: theme.textTheme.displaySmall),
               if (subtitle != null) ...[

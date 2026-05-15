@@ -7,8 +7,11 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../application/providers/app_providers.dart';
 import '../../../application/providers/onboarding_providers.dart';
+import '../../../application/providers/room_providers.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../data/models/add_wall_context.dart';
 import '../../routing/routes.dart';
+import '../../widgets/add_wall_chrome.dart';
 import '../../widgets/onboarding_scaffold.dart';
 
 /// S02 — guide the user through the WLED captive-portal dance.
@@ -18,7 +21,12 @@ import '../../widgets/onboarding_scaffold.dart';
 /// just opens system WiFi settings and reads back the SSID once the user
 /// returns. Real captive-portal automation is deferred to hardware testing.
 class WifiGuideScreen extends ConsumerStatefulWidget {
-  const WifiGuideScreen({super.key});
+  const WifiGuideScreen({super.key, this.addContext});
+
+  /// When non-null, the screen renders in add-wall mode: top bar with close,
+  /// context banner pointing at the target room, and "next" navigation that
+  /// stays inside the add-wall stack.
+  final AddWallContext? addContext;
 
   @override
   ConsumerState<WifiGuideScreen> createState() => _WifiGuideScreenState();
@@ -40,9 +48,19 @@ class _WifiGuideScreenState extends ConsumerState<WifiGuideScreen> {
     final theme = Theme.of(context);
     final ext = theme.extension<LivingWallTheme>()!;
     final snapshot = ref.watch(wifiSnapshotProvider);
+    final ctx = widget.addContext;
+    final targetRoom = ctx == null ? null : ref.watch(roomByIdProvider(ctx.roomId));
 
     return OnboardingScaffold(
-      stepLabel: 'LANGKAH 1 / 3',
+      stepLabel: ctx == null ? 'LANGKAH 1 / 3' : null,
+      topBar: ctx == null
+          ? null
+          : AddWallTopBar(
+              onClose: () => context.go(Routes.dashboardRoom(ctx.roomId)),
+            ),
+      contextBanner: ctx == null
+          ? null
+          : AddWallContextBanner(roomName: targetRoom?.name ?? 'Ruangan'),
       title: 'Sambungkan wall ke WiFi',
       subtitle:
           'Setelah dinyalakan, wall membuat jaringan sementara bernama "WLED-AP". '
@@ -102,7 +120,7 @@ class _WifiGuideScreenState extends ConsumerState<WifiGuideScreen> {
       ),
       primaryAction: PrimaryButton(
         label: 'Lanjut ke pencarian',
-        onPressed: () => context.push(Routes.onboardingDiscovery),
+        onPressed: () => context.push(Routes.discoveryFor(ctx)),
       ),
     );
   }

@@ -4,10 +4,13 @@ import 'package:go_router/go_router.dart';
 
 import '../../../application/controllers/onboarding_controller.dart';
 import '../../../application/providers/app_providers.dart';
+import '../../../application/providers/room_providers.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../data/models/add_wall_context.dart';
 import '../../../data/models/discovered_wall.dart';
 import '../../../data/models/room.dart';
 import '../../routing/routes.dart';
+import '../../widgets/add_wall_chrome.dart';
 import '../../widgets/onboarding_scaffold.dart';
 
 /// S04 — final step. Confirm name, pick or create a room, commit.
@@ -16,9 +19,18 @@ import '../../widgets/onboarding_scaffold.dart';
 /// show the "new room" field. Once the user has rooms, the same screen is
 /// reused from the Add Wall flow (week 7) with the picker visible.
 class NamePlaceScreen extends ConsumerStatefulWidget {
-  const NamePlaceScreen({super.key, required this.discovered});
+  const NamePlaceScreen({
+    super.key,
+    required this.discovered,
+    this.addContext,
+  });
 
   final DiscoveredWall discovered;
+
+  /// When non-null the room is locked — picker is hidden and the wall lands
+  /// in the configured room. Success navigation also lands back on that
+  /// room instead of bouncing through the dashboard.
+  final AddWallContext? addContext;
 
   @override
   ConsumerState<NamePlaceScreen> createState() => _NamePlaceScreenState();
@@ -61,21 +73,35 @@ class _NamePlaceScreenState extends ConsumerState<NamePlaceScreen> {
     final theme = Theme.of(context);
     final ext = theme.extension<LivingWallTheme>()!;
     final submit = ref.watch(onboardingSubmitControllerProvider);
+    final ctx = widget.addContext;
+    final lockedRoom = ctx == null ? null : ref.watch(roomByIdProvider(ctx.roomId));
 
-    // Bounce to dashboard once the wall is committed.
+    // After commit: onboarding bounces to dashboard; add-wall lands back on
+    // the room the user came from.
     ref.listen(onboardingSubmitControllerProvider, (prev, next) {
       next.whenData((wall) {
         if (wall != null && mounted) {
-          context.go(Routes.dashboard);
+          context.go(
+            ctx == null ? Routes.dashboard : Routes.dashboardRoom(ctx.roomId),
+          );
         }
       });
     });
 
     return OnboardingScaffold(
-      stepLabel: 'LANGKAH 3 / 3',
+      stepLabel: ctx == null ? 'LANGKAH 3 / 3' : null,
+      topBar: ctx == null
+          ? null
+          : AddWallTopBar(
+              onClose: () => context.go(Routes.dashboardRoom(ctx.roomId)),
+            ),
+      contextBanner: ctx == null
+          ? null
+          : AddWallContextBanner(roomName: lockedRoom?.name ?? 'Ruangan'),
       title: 'Beri nama wall',
-      subtitle:
-          'Nama ini muncul di dashboard. Pilih ruangan supaya wall ikut sinkron dengan panel lain di ruangan yang sama.',
+      subtitle: ctx == null
+          ? 'Nama ini muncul di dashboard. Pilih ruangan supaya wall ikut sinkron dengan panel lain di ruangan yang sama.'
+          : 'Nama yang mudah kamu kenali. Wall langsung masuk ke ruangan yang sudah dipilih.',
       body: FutureBuilder<List<Room>>(
         future: _roomsFuture,
         builder: (context, snap) {
@@ -90,7 +116,10 @@ class _NamePlaceScreenState extends ConsumerState<NamePlaceScreen> {
                 const SizedBox(height: 24),
                 _FieldLabel(text: 'Ruangan'),
                 const SizedBox(height: 8),
-                if (rooms.isNotEmpty) ...[
+                if (ctx != null) ...[
+                  _LockedRoomChip(name: lockedRoom?.name ?? 'Ruangan'),
+                  const SizedBox(height: 12),
+                ] else if (rooms.isNotEmpty) ...[
                   for (final room in rooms)
                     _RoomTile(
                       room: room,
@@ -110,7 +139,7 @@ class _NamePlaceScreenState extends ConsumerState<NamePlaceScreen> {
                   ),
                   const SizedBox(height: 12),
                 ],
-                if (_creatingNewRoom) ...[
+                if (ctx == null && _creatingNewRoom) ...[
                   _Field(controller: _newRoomCtrl, hint: 'Nama ruangan baru'),
                 ],
                 if (submit.hasError) ...[
@@ -156,6 +185,17 @@ class _NamePlaceScreenState extends ConsumerState<NamePlaceScreen> {
         onPressed: () {
           final name = _wallNameCtrl.text.trim();
           if (name.isEmpty) return;
+          // Add-wall mode: room is locked by ctx.roomId — skip picker fields.
+          if (ctx != null) {
+            ref
+                .read(onboardingSubmitControllerProvider.notifier)
+                .submit(
+                  discovered: widget.discovered,
+                  wallName: name,
+                  roomId: ctx.roomId,
+                );
+            return;
+          }
           if (_creatingNewRoom && _newRoomCtrl.text.trim().isEmpty) return;
           ref
               .read(onboardingSubmitControllerProvider.notifier)
@@ -166,6 +206,46 @@ class _NamePlaceScreenState extends ConsumerState<NamePlaceScreen> {
                 newRoomName: _creatingNewRoom ? _newRoomCtrl.text : null,
               );
         },
+      ),
+    );
+  }
+}
+
+class _LockedRoomChip extends StatelessWidget {
+  const _LockedRoomChip({required this.name});
+
+  final String name;
+
+  @override
+  Widget build(BuildContext context) {
+    final ext = Theme.of(context).extension<LivingWallTheme>()!;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: ext.accent.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: ext.accentLight.withValues(alpha: 0.5)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.home_outlined, size: 16, color: ext.accentLight),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              name,
+              style: TextStyle(
+                color: ext.accentLight,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          Icon(Icons.lock_outline, size: 14, color: ext.accentLight),
+          const SizedBox(width: 4),
+          Text(
+            'terkunci',
+            style: TextStyle(color: ext.accentLight, fontSize: 11),
+          ),
+        ],
       ),
     );
   }

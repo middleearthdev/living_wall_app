@@ -19,6 +19,18 @@ final roomsProvider = FutureProvider<List<Room>>((ref) async {
   return ref.watch(homeRepositoryProvider).roomsForHome(home.id);
 });
 
+/// Synchronous lookup against [roomsProvider]. Useful inside widgets that
+/// already watch rooms — avoids a second AsyncValue.when wrapper just to
+/// resolve a name from an id.
+final roomByIdProvider = Provider.family<Room?, String>((ref, roomId) {
+  final rooms = ref.watch(roomsProvider).valueOrNull;
+  if (rooms == null) return null;
+  for (final r in rooms) {
+    if (r.id == roomId) return r;
+  }
+  return null;
+});
+
 final wallsForRoomProvider = FutureProvider.family<List<Wall>, String>((
   ref,
   roomId,
