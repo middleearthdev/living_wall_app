@@ -45,5 +45,16 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_wled._tcp</string>
+	</array>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Living Wall mencari panel LED di jaringan WiFi rumah Anda untuk mengontrol pencahayaan.</string>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
 </dict>
 </plist>

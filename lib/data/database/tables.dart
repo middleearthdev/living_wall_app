@@ -1,5 +1,10 @@
 import 'package:drift/drift.dart';
 
+// Row classes are explicitly named *Row to avoid clashing with the Freezed
+// domain models (Home/Room/Wall) in lib/data/models. Repositories translate
+// between the two at the boundary.
+
+@DataClassName('HomeRow')
 class Homes extends Table {
   TextColumn get id => text()();
   TextColumn get name => text()();
@@ -8,6 +13,7 @@ class Homes extends Table {
   Set<Column<Object>> get primaryKey => {id};
 }
 
+@DataClassName('RoomRow')
 class Rooms extends Table {
   TextColumn get id => text()();
   TextColumn get homeId => text().references(Homes, #id)();
@@ -18,6 +24,7 @@ class Rooms extends Table {
   Set<Column<Object>> get primaryKey => {id};
 }
 
+@DataClassName('WallRow')
 class Walls extends Table {
   TextColumn get id => text()();
   TextColumn get roomId => text().references(Rooms, #id)();

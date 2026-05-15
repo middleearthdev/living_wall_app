@@ -15,6 +15,10 @@ class NetworkTiming {
   /// Discovery probe — kept short so a /24 sweep finishes in a few seconds.
   static const Duration discoveryProbeTimeout = Duration(milliseconds: 600);
 
+  /// mDNS query window. WLED advertises within ~1s on a clean network; 8s
+  /// covers noisy WiFi and devices that just woke up.
+  static const Duration discoveryMdnsTimeout = Duration(seconds: 8);
+
   /// WebSocket reconnect — exponential backoff capped at 30s so a
   /// long-offline wall doesn't hammer the network.
   static const Duration wsReconnectInitial = Duration(seconds: 2);

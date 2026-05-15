@@ -8,13 +8,16 @@ import '../models/wled_info.dart';
 /// Errors bubble up as [DioException]; callers wrap in AsyncValue.
 class WledClient {
   WledClient({required String baseUrl, Dio? dio})
-      : _dio = dio ??
-            Dio(BaseOptions(
+    : _dio =
+          dio ??
+          Dio(
+            BaseOptions(
               baseUrl: baseUrl,
               connectTimeout: NetworkTiming.httpConnectTimeout,
               receiveTimeout: NetworkTiming.httpReceiveTimeout,
               responseType: ResponseType.json,
-            )) {
+            ),
+          ) {
     _dio.interceptors.add(_RetryInterceptor());
   }
 
@@ -28,11 +31,7 @@ class WledClient {
     int? sxOverride,
     int? ixOverride,
   }) {
-    final seg = <String, dynamic>{
-      'id': 0,
-      'fx': scene.fx,
-      'pal': scene.pal,
-    };
+    final seg = <String, dynamic>{'id': 0, 'fx': scene.fx, 'pal': scene.pal};
     final sx = sxOverride ?? scene.defaultSx;
     final ix = ixOverride ?? scene.defaultIx;
     if (sx != null) seg['sx'] = sx;

@@ -9,10 +9,9 @@ class AppTypography {
   AppTypography._();
 
   static TextTheme build(TextTheme base) {
-    final body = GoogleFonts.hankenGroteskTextTheme(base).apply(
-      bodyColor: AppColors.text,
-      displayColor: AppColors.text,
-    );
+    final body = GoogleFonts.hankenGroteskTextTheme(
+      base,
+    ).apply(bodyColor: AppColors.text, displayColor: AppColors.text);
 
     return body.copyWith(
       displayLarge: GoogleFonts.fraunces(
