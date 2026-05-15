@@ -52,6 +52,15 @@ final lastAppliedSceneIdProvider = StateProvider.family<String?, String>(
   (ref, wallId) => null,
 );
 
+/// In-memory exclusion flag. `true` means the wall is temporarily out of
+/// its room's sync group — room-level commands skip it, and the device's
+/// udpn.send/recv is toggled to false. Resets on app launch, matching the
+/// spec's "sementara" wording. Device-side udpn config persists; a future
+/// week-8 startup pass can reconcile.
+final wallExcludedProvider = StateProvider.family<bool, String>(
+  (ref, wallId) => false,
+);
+
 /// What scene to surface as "active" on cards/headers. Falls back through:
 /// explicit user intent → fx+pal lookup against catalog → null (Custom).
 final activeSceneForWallProvider = Provider.family<Scene?, String>((
@@ -102,18 +111,25 @@ class RoomVitals {
     required this.anyOn,
     required this.brightness,
     required this.allKnown,
+    required this.excludedCount,
   });
 
   const RoomVitals.empty()
     : wallCount = 0,
       anyOn = false,
       brightness = 0,
-      allKnown = false;
+      allKnown = false,
+      excludedCount = 0;
 
   final int wallCount;
   final bool anyOn;
   final int brightness;
   final bool allKnown;
+  final int excludedCount;
+
+  int get inSyncCount => wallCount - excludedCount;
+  bool get hasExclusions => excludedCount > 0;
+  bool get allExcluded => wallCount > 0 && excludedCount >= wallCount;
 }
 
 final roomVitalsProvider = Provider.family<RoomVitals, String>((ref, roomId) {
@@ -124,7 +140,9 @@ final roomVitalsProvider = Provider.family<RoomVitals, String>((ref, roomId) {
   var anyOn = false;
   var maxBri = 0;
   var known = 0;
+  var excluded = 0;
   for (final w in walls) {
+    if (ref.watch(wallExcludedProvider(w.id))) excluded += 1;
     final state = ref.watch(wallStateProvider(w.id)).valueOrNull;
     if (state == null) continue;
     known += 1;
@@ -136,5 +154,6 @@ final roomVitalsProvider = Provider.family<RoomVitals, String>((ref, roomId) {
     anyOn: anyOn,
     brightness: maxBri,
     allKnown: known == walls.length,
+    excludedCount: excluded,
   );
 });

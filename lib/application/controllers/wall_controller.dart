@@ -55,6 +55,18 @@ class WallController {
     await client.setOnOff(on);
   }
 
+  /// Toggle whether the wall participates in its room's UDP sync group.
+  /// `true` = excluded (drops out of the group), `false` = re-included.
+  /// Writes through to the device first; the local flag only flips after
+  /// the HTTP succeeds so a failed call doesn't leave UI lying about
+  /// device state.
+  Future<void> setExcluded(String wallId, bool excluded) async {
+    final client = await _clientFor(wallId);
+    if (client == null) return;
+    await client.setSyncEnabled(send: !excluded, recv: !excluded);
+    _ref.read(wallExcludedProvider(wallId).notifier).state = excluded;
+  }
+
   /// Throttled — coalesces slider frames into ~12 calls/sec per wall so a
   /// hard drag doesn't flood the network while keeping <200ms response.
   void setBrightness(String wallId, int brightness) {

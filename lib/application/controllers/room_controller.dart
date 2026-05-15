@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/utils/throttler.dart';
 import '../../data/models/scene.dart';
 import '../../data/models/wall.dart';
+import '../../data/repositories/wall_repository.dart';
 import '../../data/services/wled_client.dart';
 import '../providers/app_providers.dart';
 import '../providers/wall_providers.dart';
@@ -22,14 +23,23 @@ class RoomController {
   WledClient _clientFor(Wall wall) =>
       WledClient(baseUrl: 'http://${wall.ipAddress}');
 
-  Future<List<Wall>> _walls(String roomId) =>
-      _ref.read(wallRepositoryProvider).wallsInRoom(roomId);
+  WallRepository get _wallRepo => _ref.read(wallRepositoryProvider);
+
+  /// Walls in the room that are still part of the sync group — excluded
+  /// walls drop off these fan-outs entirely. Spec wording: "Mood tetap
+  /// diterapkan ke wall online; yang dikecualikan tetap di scene sendiri."
+  Future<List<Wall>> _targets(String roomId) async {
+    final all = await _wallRepo.wallsInRoom(roomId);
+    return all
+        .where((w) => !_ref.read(wallExcludedProvider(w.id)))
+        .toList(growable: false);
+  }
 
   Future<void> _forEach(
     String roomId,
     Future<void> Function(WledClient client) action,
   ) async {
-    final walls = await _walls(roomId);
+    final walls = await _targets(roomId);
     if (walls.isEmpty) return;
     await Future.wait(walls.map((w) => action(_clientFor(w))));
   }
@@ -37,9 +47,11 @@ class RoomController {
   /// Best-effort scene apply. The user-intent override fires synchronously so
   /// the UI flips to the new scene immediately; the HTTP fan-out runs after.
   /// If the request fails the override stays — the next WebSocket frame from
-  /// the wall will re-derive the truth via the fx/pal lookup.
+  /// the wall will re-derive the truth via the fx/pal lookup. Excluded walls
+  /// are skipped entirely, including the intent override, so their card
+  /// keeps showing whatever they're actually playing.
   Future<void> applyScene(String roomId, Scene scene) async {
-    final walls = await _walls(roomId);
+    final walls = await _targets(roomId);
     for (final w in walls) {
       _ref.read(lastAppliedSceneIdProvider(w.id).notifier).state = scene.id;
     }
@@ -52,7 +64,9 @@ class RoomController {
 
   /// Throttled — coalesces slider frames into ~12 calls/sec per room. That
   /// keeps the wall feeling instant (<200ms response) without flooding the
-  /// network when the slider is dragged hard.
+  /// network when the slider is dragged hard. The targets list is
+  /// re-resolved on every fire, so toggling exclusion mid-drag takes effect
+  /// on the next frame rather than at the next gesture.
   void setBrightness(String roomId, int brightness) {
     final clamped = brightness.clamp(0, 255);
     final throttler = _brightnessThrottlers.putIfAbsent(

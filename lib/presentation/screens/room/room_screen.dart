@@ -6,8 +6,10 @@ import '../../../application/controllers/room_controller.dart';
 import '../../../application/providers/room_providers.dart';
 import '../../../application/providers/scene_providers.dart';
 import '../../../application/providers/wall_providers.dart';
+import '../../../application/controllers/wall_controller.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/scene_palette.dart';
+import '../../../core/utils/room_sync_banner.dart';
 import '../../../data/models/scene.dart';
 import '../../../data/models/wall.dart';
 import '../../routing/routes.dart';
@@ -61,9 +63,12 @@ class RoomScreen extends ConsumerWidget {
                 style: theme.textTheme.displaySmall?.copyWith(fontSize: 26),
               ),
               const SizedBox(height: 12),
-              if (vitals.wallCount >= 2)
-                _SyncBanner(wallCount: vitals.wallCount),
-              if (vitals.wallCount >= 2) const SizedBox(height: 12),
+              _SyncBanner(
+                copy: roomSyncBanner(
+                  wallCount: vitals.wallCount,
+                  excludedCount: vitals.excludedCount,
+                ),
+              ),
               Expanded(
                 child: wallsAsync.when(
                   data: (walls) => walls.isEmpty
@@ -73,12 +78,15 @@ class RoomScreen extends ConsumerWidget {
                           children: [
                             _SectionLabel(
                               text: 'Wall di ruangan ini',
-                              hint: 'tap untuk kontrol satuan',
+                              hint: vitals.wallCount >= 2
+                                  ? 'toggle untuk kecualikan'
+                                  : 'tap untuk kontrol satuan',
                             ),
                             const SizedBox(height: 8),
                             for (final w in walls) ...[
                               _WallRow(
                                 wall: w,
+                                showToggle: vitals.wallCount >= 2,
                                 onTap: () => context.push(
                                   Routes.dashboardWall(roomId, w.id),
                                 ),
@@ -95,6 +103,7 @@ class RoomScreen extends ConsumerWidget {
                             _MoodGrid(
                               moods: moods,
                               activeId: activeScene?.id,
+                              disabled: vitals.allExcluded,
                               onPick: (s) {
                                 ref
                                     .read(roomControllerProvider)
@@ -160,39 +169,72 @@ class _TopBar extends StatelessWidget {
   }
 }
 
+/// Three-state sync banner. Hidden state collapses to a zero-height widget
+/// rather than being omitted from the tree so layout doesn't shift when the
+/// state flips at runtime.
 class _SyncBanner extends StatelessWidget {
-  const _SyncBanner({required this.wallCount});
+  const _SyncBanner({required this.copy});
 
-  final int wallCount;
+  final RoomSyncBannerCopy copy;
 
   @override
   Widget build(BuildContext context) {
+    if (copy.kind == RoomSyncBannerKind.hidden) {
+      return const SizedBox.shrink();
+    }
     final ext = Theme.of(context).extension<LivingWallTheme>()!;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: ext.accent.withValues(alpha: 0.14),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: ext.accentLight.withValues(alpha: 0.4)),
+    final (bg, border, fg, dot) = switch (copy.kind) {
+      RoomSyncBannerKind.synced => (
+        ext.accent.withValues(alpha: 0.14),
+        ext.accentLight.withValues(alpha: 0.4),
+        ext.accentLight,
+        ext.accent,
       ),
-      child: Row(
-        children: [
-          Container(
-            width: 6,
-            height: 6,
-            decoration: BoxDecoration(
-              color: ext.accent,
-              shape: BoxShape.circle,
+      RoomSyncBannerKind.partiallyExcluded => (
+        ext.surface3.withValues(alpha: 0.45),
+        ext.surface3,
+        ext.textDim,
+        ext.textFaint,
+      ),
+      RoomSyncBannerKind.allExcluded => (
+        Theme.of(context).colorScheme.error.withValues(alpha: 0.12),
+        Theme.of(context).colorScheme.error.withValues(alpha: 0.45),
+        Theme.of(context).colorScheme.error,
+        Theme.of(context).colorScheme.error,
+      ),
+      RoomSyncBannerKind.hidden => (
+        Colors.transparent,
+        Colors.transparent,
+        Colors.transparent,
+        Colors.transparent,
+      ),
+    };
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: border),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 6,
+              height: 6,
+              decoration: BoxDecoration(color: dot, shape: BoxShape.circle),
             ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              '$wallCount wall di ruangan ini berubah bersamaan',
-              style: TextStyle(color: ext.accentLight, fontSize: 11),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                copy.message,
+                style: TextStyle(color: fg, fontSize: 11),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -231,9 +273,17 @@ class _SectionLabel extends StatelessWidget {
 }
 
 class _WallRow extends ConsumerWidget {
-  const _WallRow({required this.wall, required this.onTap});
+  const _WallRow({
+    required this.wall,
+    required this.showToggle,
+    required this.onTap,
+  });
 
   final Wall wall;
+
+  /// Renders the sync-include toggle when true (multi-wall room) and a
+  /// navigation chevron when false (single-wall room — no group concept).
+  final bool showToggle;
   final VoidCallback onTap;
 
   @override
@@ -242,67 +292,157 @@ class _WallRow extends ConsumerWidget {
     final ext = theme.extension<LivingWallTheme>()!;
     final state = ref.watch(wallStateProvider(wall.id)).valueOrNull;
     final scene = ref.watch(activeSceneForWallProvider(wall.id));
+    final excluded = ref.watch(wallExcludedProvider(wall.id));
 
     final isOff = state == null || !state.on;
     final sceneLabel = scene?.name ?? (isOff ? 'mati' : 'Custom');
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            color: ext.surface2.withValues(alpha: 0.5),
-            border: Border.all(color: ext.accentLight.withValues(alpha: 0.3)),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  gradient: ScenePalette.gradient(scene?.id),
-                  borderRadius: BorderRadius.circular(9),
-                  border: Border.all(color: ext.surface3),
-                ),
+    return Opacity(
+      opacity: excluded ? 0.6 : 1,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              color: ext.surface2.withValues(alpha: 0.5),
+              border: Border.all(
+                color: excluded
+                    ? ext.surface3
+                    : ext.accentLight.withValues(alpha: 0.3),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      wall.name,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text.rich(
-                      TextSpan(
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: ext.textDim,
+            ),
+            child: Row(
+              children: [
+                ColorFiltered(
+                  colorFilter: excluded
+                      ? const ColorFilter.matrix(_grayscaleMatrix)
+                      : const ColorFilter.mode(
+                          Colors.transparent,
+                          BlendMode.multiply,
                         ),
-                        children: [
-                          if (!isOff) ...[
-                            TextSpan(
-                              text: 'Tersinkron',
-                              style: TextStyle(color: ext.accentLight),
-                            ),
-                            const TextSpan(text: ' · '),
-                          ],
-                          TextSpan(text: sceneLabel),
-                        ],
-                      ),
+                  child: Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      gradient: ScenePalette.gradient(scene?.id),
+                      borderRadius: BorderRadius.circular(9),
+                      border: Border.all(color: ext.surface3),
                     ),
-                  ],
+                  ),
                 ),
-              ),
-              Icon(Icons.chevron_right, color: ext.accentLight, size: 20),
-            ],
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        wall.name,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text.rich(
+                        TextSpan(
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: ext.textDim,
+                          ),
+                          children: excluded
+                              ? const [
+                                  TextSpan(
+                                    text: 'Dikecualikan · kontrol sendiri',
+                                  ),
+                                ]
+                              : [
+                                  if (!isOff) ...[
+                                    TextSpan(
+                                      text: 'Tersinkron',
+                                      style: TextStyle(color: ext.accentLight),
+                                    ),
+                                    const TextSpan(text: ' · '),
+                                  ],
+                                  TextSpan(text: sceneLabel),
+                                ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (showToggle)
+                  _SyncToggle(
+                    included: !excluded,
+                    onChanged: (include) => ref
+                        .read(wallControllerProvider)
+                        .setExcluded(wall.id, !include),
+                  )
+                else
+                  Icon(
+                    Icons.chevron_right,
+                    color: ext.accentLight,
+                    size: 20,
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  static const _grayscaleMatrix = <double>[
+    0.3, 0.59, 0.11, 0, 0,
+    0.3, 0.59, 0.11, 0, 0,
+    0.3, 0.59, 0.11, 0, 0,
+    0, 0, 0, 1, 0,
+  ];
+}
+
+/// Smaller sibling of the dashboard room toggle — used per-wall to flip
+/// sync membership. Its own GestureDetector means taps don't bubble up to
+/// the row's InkWell, so toggling exclusion never accidentally navigates
+/// into the wall control screen.
+class _SyncToggle extends StatelessWidget {
+  const _SyncToggle({required this.included, required this.onChanged});
+
+  final bool included;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final ext = Theme.of(context).extension<LivingWallTheme>()!;
+    return GestureDetector(
+      onTap: () => onChanged(!included),
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        width: 36,
+        height: 20,
+        padding: const EdgeInsets.all(2),
+        decoration: BoxDecoration(
+          color: included
+              ? ext.accent.withValues(alpha: 0.32)
+              : ext.surface3.withValues(alpha: 0.5),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(
+            color: included
+                ? ext.accentLight.withValues(alpha: 0.6)
+                : ext.surface3,
+          ),
+        ),
+        child: AnimatedAlign(
+          duration: const Duration(milliseconds: 160),
+          alignment: included ? Alignment.centerRight : Alignment.centerLeft,
+          child: Container(
+            width: 14,
+            height: 14,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: included ? ext.accentLight : ext.textFaint,
+            ),
           ),
         ),
       ),
@@ -315,15 +455,21 @@ class _MoodGrid extends StatelessWidget {
     required this.moods,
     required this.activeId,
     required this.onPick,
+    this.disabled = false,
   });
 
   final List<Scene> moods;
   final String? activeId;
   final ValueChanged<Scene> onPick;
 
+  /// When true the grid renders dim and ignores taps. Used when every wall
+  /// in the room is excluded — there's no one to apply a mood to until the
+  /// user re-includes at least one wall.
+  final bool disabled;
+
   @override
   Widget build(BuildContext context) {
-    return GridView.builder(
+    final grid = GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -336,8 +482,15 @@ class _MoodGrid extends StatelessWidget {
       itemBuilder: (_, i) => _MoodTile(
         scene: moods[i],
         selected: moods[i].id == activeId,
-        onTap: () => onPick(moods[i]),
+        onTap: disabled ? null : () => onPick(moods[i]),
       ),
+    );
+
+    if (!disabled) return grid;
+
+    return Opacity(
+      opacity: 0.5,
+      child: IgnorePointer(ignoring: true, child: grid),
     );
   }
 }
@@ -351,7 +504,7 @@ class _MoodTile extends StatelessWidget {
 
   final Scene scene;
   final bool selected;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
