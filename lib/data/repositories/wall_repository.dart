@@ -25,6 +25,13 @@ class WallRepository {
     return rows.map(_toWall).toList();
   }
 
+  Future<Wall?> findById(String wallId) async {
+    final row = await (_db.select(
+      _db.walls,
+    )..where((t) => t.id.equals(wallId))).getSingleOrNull();
+    return row == null ? null : _toWall(row);
+  }
+
   /// Inserts a new wall. Throws on deviceId conflict — the caller should
   /// catch this and surface "wall already added" to the user.
   Future<Wall> addWall({

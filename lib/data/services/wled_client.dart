@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 
 import '../../core/constants/network.dart';
 import '../models/scene.dart';
+import '../models/wall_state.dart';
 import '../models/wled_info.dart';
 
 /// HTTP client for a single WLED device. One instance per wall — baseUrl is fixed.
@@ -59,6 +60,20 @@ class WledClient {
           'sync': {'send': send, 'recv': recv},
         },
       });
+
+  /// One-shot read of the current state. Used to seed [wallStateProvider] so
+  /// the UI doesn't sit in a loading state waiting for the first WebSocket
+  /// frame (WLED only pushes deltas — there's no "current state on connect").
+  Future<WallState?> getState() async {
+    try {
+      final res = await _dio.get<Map<String, dynamic>>('/json/state');
+      final data = res.data;
+      if (data == null) return null;
+      return WallState.fromWledJson(data);
+    } catch (_) {
+      return null;
+    }
+  }
 
   /// Returns null instead of throwing — discovery probe needs to silently
   /// reject non-WLED hosts on the subnet.

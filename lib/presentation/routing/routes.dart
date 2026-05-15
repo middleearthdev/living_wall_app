@@ -13,4 +13,10 @@ class Routes {
 
   // Dashboard
   static const String dashboard = '/dashboard';
+  static const String dashboardRoomPath = '/dashboard/room/:roomId';
+  static const String dashboardWallPath = '/dashboard/room/:roomId/wall/:wallId';
+
+  static String dashboardRoom(String roomId) => '/dashboard/room/$roomId';
+  static String dashboardWall(String roomId, String wallId) =>
+      '/dashboard/room/$roomId/wall/$wallId';
 }

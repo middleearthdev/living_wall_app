@@ -4,11 +4,13 @@ import 'package:go_router/go_router.dart';
 
 import '../../application/providers/app_providers.dart';
 import '../../data/models/discovered_wall.dart';
-import '../screens/dashboard/dashboard_placeholder_screen.dart';
+import '../screens/dashboard/dashboard_screen.dart';
 import '../screens/onboarding/discovery_screen.dart';
 import '../screens/onboarding/empty_state_screen.dart';
 import '../screens/onboarding/name_place_screen.dart';
 import '../screens/onboarding/wifi_guide_screen.dart';
+import '../screens/room/room_screen.dart';
+import '../screens/wall/wall_control_placeholder_screen.dart';
 import 'routes.dart';
 
 /// Router lives behind a provider so it can read `hasAnyWallProvider` for the
@@ -56,7 +58,22 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: Routes.dashboard,
-        builder: (_, __) => const DashboardPlaceholderScreen(),
+        builder: (_, __) => const DashboardScreen(),
+        routes: [
+          GoRoute(
+            path: 'room/:roomId',
+            builder: (_, state) =>
+                RoomScreen(roomId: state.pathParameters['roomId']!),
+            routes: [
+              GoRoute(
+                path: 'wall/:wallId',
+                builder: (_, state) => WallControlPlaceholderScreen(
+                  wallId: state.pathParameters['wallId']!,
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     ],
   );
