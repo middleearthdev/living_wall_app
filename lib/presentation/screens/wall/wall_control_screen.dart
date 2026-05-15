@@ -9,6 +9,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/scene_palette.dart';
 import '../../../data/models/scene.dart';
 import '../../routing/routes.dart';
+import '../../widgets/wall_settings_sheet.dart';
 
 /// S06 — single-wall control. Hero shows what's playing, the quick-scene
 /// strip handles the 80% case (tap = apply defaults), and "Lihat semua →"
@@ -45,6 +46,9 @@ class WallControlScreen extends ConsumerWidget {
     final activeScene = ref.watch(activeSceneForWallProvider(wallId));
     final catalog = ref.watch(sceneCatalogSyncProvider);
     final controller = ref.read(wallControllerProvider);
+    final connectivity =
+        ref.watch(wallConnectivityProvider(wallId)).valueOrNull ??
+        WallConnectivity.connecting;
 
     final wallName = wallAsync.valueOrNull?.name ?? 'Wall';
 
@@ -61,13 +65,18 @@ class WallControlScreen extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _TopBar(title: wallName, onBack: () => context.pop()),
+              _TopBar(
+                title: wallName,
+                onBack: () => context.pop(),
+                onMore: () => _openSettings(context, ref, wallId),
+              ),
               const SizedBox(height: 8),
               _Hero(
                 activeScene: activeScene,
                 isOn: state?.on ?? false,
                 brightness: state?.brightness ?? 0,
-                isConnecting: state == null,
+                connectivity: connectivity,
+                hasSeenState: state != null,
               ),
               const SizedBox(height: 14),
               _SectionHeader(
@@ -99,14 +108,20 @@ class WallControlScreen extends ConsumerWidget {
 }
 
 class _TopBar extends StatelessWidget {
-  const _TopBar({required this.title, required this.onBack});
+  const _TopBar({
+    required this.title,
+    required this.onBack,
+    required this.onMore,
+  });
 
   final String title;
   final VoidCallback onBack;
+  final VoidCallback onMore;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final ext = theme.extension<LivingWallTheme>()!;
     return Row(
       children: [
         IconButton(
@@ -122,8 +137,30 @@ class _TopBar extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
           ),
         ),
+        IconButton(
+          onPressed: onMore,
+          padding: EdgeInsets.zero,
+          icon: Icon(Icons.more_horiz, size: 22, color: ext.textDim),
+        ),
       ],
     );
+  }
+}
+
+Future<void> _openSettings(
+  BuildContext context,
+  WidgetRef ref,
+  String wallId,
+) async {
+  final deleted = await showModalBottomSheet<bool>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (_) => WallSettingsSheet(wallId: wallId),
+  );
+  // Wall was deleted from inside the sheet — bail out of this screen too.
+  if (deleted == true && context.mounted) {
+    context.pop();
   }
 }
 
@@ -132,24 +169,36 @@ class _Hero extends StatelessWidget {
     required this.activeScene,
     required this.isOn,
     required this.brightness,
-    required this.isConnecting,
+    required this.connectivity,
+    required this.hasSeenState,
   });
 
   final Scene? activeScene;
   final bool isOn;
   final int brightness;
-  final bool isConnecting;
+  final WallConnectivity connectivity;
+
+  /// True if we've received at least one state frame. Distinguishes the
+  /// "first connect, no data yet" case from "wall went offline after we
+  /// had data" — the latter should keep showing the last-known scene
+  /// rather than reverting to the connecting copy.
+  final bool hasSeenState;
 
   @override
   Widget build(BuildContext context) {
     final ext = Theme.of(context).extension<LivingWallTheme>()!;
     final percent = (brightness / 255 * 100).round();
 
-    final status = isConnecting
-        ? 'Menyambungkan…'
-        : !isOn
-        ? 'Mati'
-        : 'Aktif sekarang · $percent%';
+    final String status;
+    if (connectivity == WallConnectivity.offline) {
+      status = 'Tidak terjangkau';
+    } else if (!hasSeenState && connectivity == WallConnectivity.connecting) {
+      status = 'Menyambungkan…';
+    } else if (!isOn) {
+      status = 'Mati';
+    } else {
+      status = 'Aktif sekarang · $percent%';
+    }
 
     return Container(
       height: 112,

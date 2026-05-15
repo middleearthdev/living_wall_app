@@ -7,6 +7,7 @@ import '../../data/repositories/wall_repository.dart';
 import '../../data/services/wled_client.dart';
 import '../providers/app_providers.dart';
 import '../providers/wall_providers.dart';
+import 'wall_controller.dart';
 
 /// Room-scoped control: applies commands to every wall in the room.
 ///
@@ -77,6 +78,17 @@ class RoomController {
       ),
     );
     throttler.submit(clamped);
+  }
+
+  /// Re-include every wall in the room. Used by the "Sertakan semua wall"
+  /// CTA when the user wants to undo all temporary exclusions at once
+  /// instead of toggling each row.
+  Future<void> includeAllWalls(String roomId) async {
+    final walls = await _wallRepo.wallsInRoom(roomId);
+    final wallCtrl = _ref.read(wallControllerProvider);
+    await Future.wait(
+      walls.map((w) => wallCtrl.setExcluded(w.id, false)),
+    );
   }
 
   void dispose() {

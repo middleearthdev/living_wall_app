@@ -48,10 +48,25 @@ final firstWallForRoomProvider = FutureProvider.family<Wall?, String>((
   return walls.isEmpty ? null : walls.first;
 });
 
+/// Single shared WebSocket per wall. Both [wallStateProvider] and
+/// [wallConnectivityProvider] subscribe to the same socket so we don't
+/// open two TCP connections per wall — broadcast streams from one
+/// instance fan out to all watchers.
+final _wallSocketProvider = FutureProvider.family<WledSocket?, String>((
+  ref,
+  wallId,
+) async {
+  final wall = await ref.watch(wallRepositoryProvider).findById(wallId);
+  if (wall == null) return null;
+  final socket = WledSocket(wall.ipAddress);
+  ref.onDispose(socket.dispose);
+  socket.connect();
+  return socket;
+});
+
 /// Live wall state via WebSocket. Seeds with a one-shot HTTP `/json/state`
 /// read so the UI doesn't sit in `AsyncLoading` waiting for the first
-/// device-side change. Socket lifetime is the app session — the family arg
-/// caches one socket per wall.
+/// device-side change. Socket lifetime is the app session.
 final wallStateProvider = StreamProvider.family<WallState, String>((
   ref,
   wallId,
@@ -63,11 +78,66 @@ final wallStateProvider = StreamProvider.family<WallState, String>((
   final seed = await client.getState();
   if (seed != null) yield seed;
 
-  final socket = WledSocket(wall.ipAddress);
-  ref.onDispose(socket.dispose);
-  socket.connect();
+  final socket = await ref.watch(_wallSocketProvider(wallId).future);
+  if (socket == null) return;
   yield* socket.stream;
 });
+
+/// Coarse reachability for a wall. Drives the "Tidak terjangkau" labels
+/// and lets controllers/UI distinguish "wall is genuinely offline" from
+/// "we just haven't talked to it yet".
+enum WallConnectivity {
+  /// Socket is still trying to connect or has never connected. UI should
+  /// show a neutral state — neither online nor a hard offline warning.
+  connecting,
+
+  /// Latest socket activity is a successful connect.
+  online,
+
+  /// Socket lost its connection or failed initial connect after retries.
+  /// UI surfaces "Tidak terjangkau".
+  offline,
+}
+
+WallConnectivity _connectivityFor(WledSocketStatus status) {
+  switch (status) {
+    case WledSocketStatus.connecting:
+      return WallConnectivity.connecting;
+    case WledSocketStatus.connected:
+      return WallConnectivity.online;
+    case WledSocketStatus.disconnected:
+      return WallConnectivity.offline;
+  }
+}
+
+/// Reactive connectivity. Seeds with the socket's [currentStatus] so a late
+/// subscriber doesn't sit at "connecting" forever just because it missed
+/// the initial "connected" event on the broadcast stream.
+final wallConnectivityProvider =
+    StreamProvider.family<WallConnectivity, String>((ref, wallId) async* {
+      final socket = await ref.watch(_wallSocketProvider(wallId).future);
+      if (socket == null) {
+        yield WallConnectivity.offline;
+        return;
+      }
+      yield _connectivityFor(socket.currentStatus);
+      await for (final status in socket.status) {
+        yield _connectivityFor(status);
+      }
+    });
+
+/// Tear down every per-wall provider that owns runtime state for a given
+/// wall. The socket and stream providers dispose on invalidate; the simple
+/// state providers reset to their defaults. Used after rename/delete so
+/// stale entries don't linger in the family cache.
+void invalidateWall(Ref ref, String wallId) {
+  ref.invalidate(_wallSocketProvider(wallId));
+  ref.invalidate(wallStateProvider(wallId));
+  ref.invalidate(wallConnectivityProvider(wallId));
+  ref.invalidate(wallByIdProvider(wallId));
+  ref.invalidate(lastAppliedSceneIdProvider(wallId));
+  ref.invalidate(wallExcludedProvider(wallId));
+}
 
 /// User-intent override: which scene id the controller most recently applied
 /// to this wall. UI prefers this over the fx/pal reverse-lookup because it

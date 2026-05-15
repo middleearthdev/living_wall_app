@@ -69,6 +69,11 @@ class RoomScreen extends ConsumerWidget {
                   excludedCount: vitals.excludedCount,
                 ),
               ),
+              if (vitals.hasExclusions)
+                _IncludeAllAction(
+                  onTap: () =>
+                      ref.read(roomControllerProvider).includeAllWalls(roomId),
+                ),
               Expanded(
                 child: wallsAsync.when(
                   data: (walls) => walls.isEmpty
@@ -297,7 +302,11 @@ class _WallRow extends ConsumerWidget {
     final state = ref.watch(wallStateProvider(wall.id)).valueOrNull;
     final scene = ref.watch(activeSceneForWallProvider(wall.id));
     final excluded = ref.watch(wallExcludedProvider(wall.id));
+    final connectivity =
+        ref.watch(wallConnectivityProvider(wall.id)).valueOrNull ??
+        WallConnectivity.connecting;
 
+    final isOffline = connectivity == WallConnectivity.offline;
     final isOff = state == null || !state.on;
     final sceneLabel = scene?.name ?? (isOff ? 'mati' : 'Custom');
 
@@ -361,6 +370,15 @@ class _WallRow extends ConsumerWidget {
                                     text: 'Dikecualikan · kontrol sendiri',
                                   ),
                                 ]
+                              : isOffline
+                              ? [
+                                  TextSpan(
+                                    text: 'Tidak terjangkau',
+                                    style: TextStyle(
+                                      color: Theme.of(context).colorScheme.error,
+                                    ),
+                                  ),
+                                ]
                               : [
                                   if (!isOff) ...[
                                     TextSpan(
@@ -403,6 +421,39 @@ class _WallRow extends ConsumerWidget {
     0.3, 0.59, 0.11, 0, 0,
     0, 0, 0, 1, 0,
   ];
+}
+
+/// Bulk re-include CTA. Lives directly under the sync banner when any wall
+/// is excluded — the per-row toggle still works, but tapping this re-includes
+/// every wall in one shot.
+class _IncludeAllAction extends StatelessWidget {
+  const _IncludeAllAction({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final ext = Theme.of(context).extension<LivingWallTheme>()!;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Align(
+        alignment: Alignment.centerRight,
+        child: TextButton.icon(
+          onPressed: onTap,
+          icon: Icon(Icons.sync, size: 16, color: ext.accentLight),
+          label: Text(
+            'Sertakan semua wall',
+            style: TextStyle(color: ext.accentLight, fontSize: 12),
+          ),
+          style: TextButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            minimumSize: Size.zero,
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 /// Dashed CTA row at the end of the wall list. Tapping launches the

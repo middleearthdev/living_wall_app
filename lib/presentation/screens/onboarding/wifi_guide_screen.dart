@@ -56,7 +56,8 @@ class _WifiGuideScreenState extends ConsumerState<WifiGuideScreen> {
       topBar: ctx == null
           ? null
           : AddWallTopBar(
-              onClose: () => context.go(Routes.dashboardRoom(ctx.roomId)),
+              onConfirmedClose: () =>
+                  context.go(Routes.dashboardRoom(ctx.roomId)),
             ),
       contextBanner: ctx == null
           ? null

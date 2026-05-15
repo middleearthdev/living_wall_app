@@ -5,6 +5,7 @@ import '../../data/models/scene.dart';
 import '../../data/models/wall.dart';
 import '../../data/services/wled_client.dart';
 import '../providers/app_providers.dart';
+import '../providers/room_providers.dart';
 import '../providers/wall_providers.dart';
 
 /// Single-wall control. The scene-gallery → adjustment-sheet flow needs
@@ -90,6 +91,36 @@ class WallController {
   Future<String> nameOf(String wallId) async {
     final wall = await _wall(wallId);
     return wall?.name ?? 'Wall';
+  }
+
+  /// Persist a new name. Only the wallByIdProvider entry needs explicit
+  /// invalidation — the room's wall list watches Wall objects too, but the
+  /// list itself doesn't refetch on rename, so we nudge it as well.
+  Future<void> rename(String wallId, String name) async {
+    final repo = _ref.read(wallRepositoryProvider);
+    await repo.rename(wallId: wallId, name: name);
+    _ref.invalidate(wallByIdProvider(wallId));
+    final wall = await repo.findById(wallId);
+    if (wall != null) {
+      _ref.invalidate(wallsForRoomProvider(wall.roomId));
+    }
+  }
+
+  /// Removes the wall from drift and tears down its socket/state providers.
+  /// The caller should navigate away — staying on a wall control screen
+  /// for a wall that no longer exists will render as offline + empty.
+  Future<void> delete(String wallId) async {
+    final repo = _ref.read(wallRepositoryProvider);
+    final wall = await repo.findById(wallId);
+    if (wall == null) return;
+    final roomId = wall.roomId;
+
+    await repo.delete(wallId);
+    invalidateWall(_ref, wallId);
+    _ref.invalidate(wallsForRoomProvider(roomId));
+    _ref.invalidate(firstWallForRoomProvider(roomId));
+    _ref.invalidate(registeredByDeviceIdProvider);
+    _ref.invalidate(hasAnyWallProvider);
   }
 
   void dispose() {

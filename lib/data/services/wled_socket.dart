@@ -27,13 +27,20 @@ class WledSocket {
   Timer? _reconnectTimer;
   Duration _nextDelay = NetworkTiming.wsReconnectInitial;
   bool _disposed = false;
+  WledSocketStatus _currentStatus = WledSocketStatus.disconnected;
 
   Stream<WallState> get stream => _states.stream;
   Stream<WledSocketStatus> get status => _statuses.stream;
 
+  /// Latest-known status. Useful for late subscribers since [_statuses] is a
+  /// broadcast controller without replay — a fresh listener won't see the
+  /// "connected" event fired before it attached. Pair with the stream:
+  /// seed with this, then yield from the stream.
+  WledSocketStatus get currentStatus => _currentStatus;
+
   void connect() {
     if (_disposed) return;
-    _statuses.add(WledSocketStatus.connecting);
+    _setStatus(WledSocketStatus.connecting);
 
     try {
       _channel = WebSocketChannel.connect(Uri.parse('ws://$_ip/ws'));
@@ -48,8 +55,13 @@ class WledSocket {
       onDone: _scheduleReconnect,
       cancelOnError: true,
     );
-    _statuses.add(WledSocketStatus.connected);
+    _setStatus(WledSocketStatus.connected);
     _nextDelay = NetworkTiming.wsReconnectInitial;
+  }
+
+  void _setStatus(WledSocketStatus next) {
+    _currentStatus = next;
+    _statuses.add(next);
   }
 
   void _onMessage(dynamic raw) {
@@ -64,7 +76,7 @@ class WledSocket {
 
   void _scheduleReconnect() {
     if (_disposed) return;
-    _statuses.add(WledSocketStatus.disconnected);
+    _setStatus(WledSocketStatus.disconnected);
     _teardownChannel();
 
     _reconnectTimer?.cancel();

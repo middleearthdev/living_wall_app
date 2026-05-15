@@ -83,6 +83,16 @@ class WallRepository {
     );
   }
 
+  Future<void> rename({required String wallId, required String name}) async {
+    await (_db.update(_db.walls)..where((t) => t.id.equals(wallId))).write(
+      WallsCompanion(name: Value(name)),
+    );
+  }
+
+  Future<void> delete(String wallId) async {
+    await (_db.delete(_db.walls)..where((t) => t.id.equals(wallId))).go();
+  }
+
   Wall _toWall(WallRow row) => Wall(
     id: row.id,
     roomId: row.roomId,
