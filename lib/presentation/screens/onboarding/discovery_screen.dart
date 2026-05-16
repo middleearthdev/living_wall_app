@@ -39,6 +39,11 @@ class DiscoveryScreen extends ConsumerWidget {
       orElse: () => false,
     );
 
+    void rescan() {
+      ref.invalidate(resolvedSubnetProvider);
+      ref.invalidate(discoveryScanProvider);
+    }
+
     return OnboardingScaffold(
       stepLabel: ctx == null ? 'LANGKAH 2 / 3' : null,
       topBar: ctx == null
@@ -60,16 +65,11 @@ class DiscoveryScreen extends ConsumerWidget {
           addContext: ctx,
         ),
         loading: () => const _LoadingState(),
-        error: (e, _) => _ErrorState(
-          message: e.toString(),
-          onRetry: () {
-            ref.invalidate(discoveryScanProvider);
-          },
-        ),
+        error: (e, _) => _ErrorState(message: e.toString(), onRetry: rescan),
       ),
       secondaryAction: showRetry
           ? OutlinedButton(
-              onPressed: () => ref.invalidate(discoveryScanProvider),
+              onPressed: rescan,
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
@@ -180,13 +180,14 @@ class _DiscoveredCard extends StatelessWidget {
   }
 }
 
-class _LoadingState extends StatelessWidget {
+class _LoadingState extends ConsumerWidget {
   const _LoadingState();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final ext = theme.extension<LivingWallTheme>()!;
+    final subnet = ref.watch(resolvedSubnetProvider).valueOrNull;
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -218,7 +219,9 @@ class _LoadingState extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            'Biasanya selesai dalam 5–10 detik.',
+            subnet == null
+                ? 'Biasanya selesai dalam 5–10 detik.'
+                : 'Menyapu $subnet.x · biasanya 5–10 detik.',
             style: theme.textTheme.bodySmall?.copyWith(color: ext.textFaint),
             textAlign: TextAlign.center,
           ),
@@ -228,13 +231,14 @@ class _LoadingState extends StatelessWidget {
   }
 }
 
-class _EmptyState extends StatelessWidget {
+class _EmptyState extends ConsumerWidget {
   const _EmptyState();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final ext = theme.extension<LivingWallTheme>()!;
+    final subnet = ref.watch(resolvedSubnetProvider).valueOrNull;
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -253,6 +257,14 @@ class _EmptyState extends StatelessWidget {
             style: theme.textTheme.bodySmall?.copyWith(color: ext.textFaint),
             textAlign: TextAlign.center,
           ),
+          if (subnet != null) ...[
+            const SizedBox(height: 12),
+            Text(
+              'Pencarian dijalankan di $subnet.x',
+              style: theme.textTheme.labelSmall?.copyWith(color: ext.textFaint),
+              textAlign: TextAlign.center,
+            ),
+          ],
           const SizedBox(height: 24),
           const _DiagnosticItem(
             text: 'Wall sudah dinyalakan dan LED-nya menyala.',
@@ -261,9 +273,10 @@ class _EmptyState extends StatelessWidget {
             text:
                 'Wall sudah disambungkan ke WiFi rumah lewat captive portal "WLED-AP".',
           ),
-          const _DiagnosticItem(
-            text:
-                'HP kamu di WiFi rumah yang sama — bukan jaringan tamu atau ekstender berbeda.',
+          _DiagnosticItem(
+            text: subnet == null
+                ? 'HP kamu di WiFi rumah yang sama — bukan jaringan tamu atau ekstender berbeda.'
+                : 'IP wall di aplikasi WLED diawali $subnet — kalau bukan, HP dan wall di jaringan berbeda.',
           ),
           const _DiagnosticItem(
             text:

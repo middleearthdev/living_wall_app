@@ -1,7 +1,7 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:multicast_dns/multicast_dns.dart';
+import 'package:network_info_plus/network_info_plus.dart';
 
 import '../../core/constants/network.dart';
 import '../models/discovered_wall.dart';
@@ -209,24 +209,27 @@ Future<WledInfo?> _defaultProbe(String ip) async {
   return client.getInfo();
 }
 
-/// Default subnet resolver: read the device's wifi IP, derive its /24.
-/// Returns null if the device isn't on WiFi or the IP isn't IPv4.
-Future<String?> _defaultSubnetResolver() async {
+/// Resolves the /24 base of the device's WiFi network, e.g. "192.168.1".
+///
+/// Public so the onboarding UI can surface "Sweeping 192.168.1.x" as a
+/// diagnostic — if a user sees an unexpected subnet there, it's almost
+/// always the smoking gun for "discovery finds nothing".
+///
+/// Uses `network_info_plus`'s WiFi-specific IP rather than the first
+/// available `NetworkInterface`, because on iOS the interface order is
+/// non-deterministic — cellular (`pdp_ip0`), VPN/iCloud Private Relay
+/// (`utun*`), and the off-but-allocated Personal Hotspot bridge can all
+/// appear before WiFi (`en0`) and resolve to a subnet the wall isn't on.
+Future<String?> resolveWifiSubnetBase() async {
   try {
-    final interfaces = await NetworkInterface.list(
-      type: InternetAddressType.IPv4,
-      includeLinkLocal: false,
-    );
-    for (final iface in interfaces) {
-      for (final addr in iface.addresses) {
-        final parts = addr.address.split('.');
-        if (parts.length != 4) continue;
-        if (addr.address.startsWith('127.')) continue;
-        return '${parts[0]}.${parts[1]}.${parts[2]}';
-      }
-    }
+    final ip = await NetworkInfo().getWifiIP();
+    if (ip == null) return null;
+    final parts = ip.split('.');
+    if (parts.length != 4) return null;
+    return '${parts[0]}.${parts[1]}.${parts[2]}';
   } catch (_) {
-    // fall through
+    return null;
   }
-  return null;
 }
+
+Future<String?> _defaultSubnetResolver() => resolveWifiSubnetBase();

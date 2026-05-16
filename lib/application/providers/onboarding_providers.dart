@@ -1,8 +1,16 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/models/discovered_wall.dart';
+import '../../data/services/discovery_service.dart';
 import '../../data/services/wifi_service.dart';
 import 'app_providers.dart';
+
+/// Resolved /24 base of the device's current WiFi network, e.g. "192.168.1".
+/// Surfaced in the discovery screen as a diagnostic so the user can spot
+/// the "scanning the wrong subnet" failure mode at a glance.
+final resolvedSubnetProvider = FutureProvider.autoDispose<String?>((ref) {
+  return resolveWifiSubnetBase();
+});
 
 /// One-shot snapshot of the current WiFi context. Auto-refreshes when the
 /// screen rebuilds — onboarding only needs a fresh read on entry, not live
