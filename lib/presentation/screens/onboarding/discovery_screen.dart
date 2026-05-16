@@ -30,6 +30,15 @@ class DiscoveryScreen extends ConsumerWidget {
     final ctx = addContext;
     final targetRoom = ctx == null ? null : ref.watch(roomByIdProvider(ctx.roomId));
 
+    // Surface "Cari ulang" only when a re-scan makes sense: scan finished
+    // (empty terminal) or at least one wall has shown up. During the initial
+    // sweep the button is noise — the user is already waiting on it.
+    // Errors render their own inline retry, so no scaffold button there.
+    final showRetry = scan.maybeWhen(
+      data: (p) => p.walls.isNotEmpty || p.isDone,
+      orElse: () => false,
+    );
+
     return OnboardingScaffold(
       stepLabel: ctx == null ? 'LANGKAH 2 / 3' : null,
       topBar: ctx == null
@@ -45,8 +54,8 @@ class DiscoveryScreen extends ConsumerWidget {
       subtitle:
           'Pastikan HP dan wall berada di WiFi rumah yang sama. Pencarian berlangsung beberapa detik.',
       body: scan.when(
-        data: (walls) => _ResultsList(
-          walls: walls,
+        data: (progress) => _Body(
+          progress: progress,
           registered: registered,
           addContext: ctx,
         ),
@@ -58,34 +67,39 @@ class DiscoveryScreen extends ConsumerWidget {
           },
         ),
       ),
-      secondaryAction: OutlinedButton(
-        onPressed: () => ref.invalidate(discoveryScanProvider),
-        style: OutlinedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-        ),
-        child: const Text('Cari ulang'),
-      ),
+      secondaryAction: showRetry
+          ? OutlinedButton(
+              onPressed: () => ref.invalidate(discoveryScanProvider),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+              child: const Text('Cari ulang'),
+            )
+          : null,
     );
   }
 }
 
-class _ResultsList extends StatelessWidget {
-  const _ResultsList({
-    required this.walls,
+class _Body extends StatelessWidget {
+  const _Body({
+    required this.progress,
     required this.registered,
     required this.addContext,
   });
 
-  final List<DiscoveredWall> walls;
+  final DiscoveryProgress progress;
   final Map<String, RegisteredWallInfo> registered;
   final AddWallContext? addContext;
 
   @override
   Widget build(BuildContext context) {
-    if (walls.isEmpty) return const _LoadingState();
+    final walls = progress.walls;
+    if (walls.isEmpty) {
+      return progress.isDone ? const _EmptyState() : const _LoadingState();
+    }
     return ListView.separated(
       itemCount: walls.length,
       separatorBuilder: (_, _) => const SizedBox(height: 12),
@@ -173,20 +187,118 @@ class _LoadingState extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final ext = theme.extension<LivingWallTheme>()!;
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        SizedBox(
-          width: 32,
-          height: 32,
-          child: CircularProgressIndicator(strokeWidth: 2.5, color: ext.accent),
-        ),
-        const SizedBox(height: 16),
-        Text(
-          'Menyapu jaringan…',
-          style: theme.textTheme.bodyLarge?.copyWith(color: ext.textDim),
-        ),
-      ],
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 72,
+            height: 72,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: ext.surface2,
+              border: Border.all(color: ext.surface3),
+            ),
+            child: Center(
+              child: SizedBox(
+                width: 28,
+                height: 28,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                  color: ext.accent,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            'Menyapu jaringan…',
+            style: theme.textTheme.titleMedium,
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Biasanya selesai dalam 5–10 detik.',
+            style: theme.textTheme.bodySmall?.copyWith(color: ext.textFaint),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _EmptyState extends StatelessWidget {
+  const _EmptyState();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final ext = theme.extension<LivingWallTheme>()!;
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const SizedBox(height: 24),
+          Icon(Icons.search_off_outlined, color: ext.textDim, size: 40),
+          const SizedBox(height: 12),
+          Text(
+            'Belum ada wall ditemukan',
+            style: theme.textTheme.titleMedium,
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Periksa hal-hal berikut, lalu tap "Cari ulang" di bawah.',
+            style: theme.textTheme.bodySmall?.copyWith(color: ext.textFaint),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+          const _DiagnosticItem(
+            text: 'Wall sudah dinyalakan dan LED-nya menyala.',
+          ),
+          const _DiagnosticItem(
+            text:
+                'Wall sudah disambungkan ke WiFi rumah lewat captive portal "WLED-AP".',
+          ),
+          const _DiagnosticItem(
+            text:
+                'HP kamu di WiFi rumah yang sama — bukan jaringan tamu atau ekstender berbeda.',
+          ),
+          const _DiagnosticItem(
+            text:
+                'Tunggu sekitar 30 detik setelah wall menyala — wall butuh waktu untuk join jaringan.',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DiagnosticItem extends StatelessWidget {
+  const _DiagnosticItem({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final ext = theme.extension<LivingWallTheme>()!;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.check_circle_outline, color: ext.textDim, size: 18),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              text,
+              style: theme.textTheme.bodyMedium?.copyWith(color: ext.textDim),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

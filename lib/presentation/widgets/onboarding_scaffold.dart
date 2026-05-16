@@ -72,7 +72,7 @@ class OnboardingScaffold extends StatelessWidget {
               const SizedBox(height: 32),
               Expanded(child: body),
               if (secondaryAction != null) ...[
-                secondaryAction!,
+                SizedBox(width: double.infinity, child: secondaryAction!),
                 const SizedBox(height: 8),
               ],
               if (primaryAction != null)

@@ -138,34 +138,68 @@ class MdnsHit {
 
 /// Default mDNS implementation. Streams hits until [timeout] elapses or the
 /// downstream subscription is cancelled.
-Stream<MdnsHit> _defaultMdnsScanner(Duration timeout) async* {
-  final client = MDnsClient();
-  await client.start();
-  final stopAt = DateTime.now().add(timeout);
+///
+/// Runs the multicast work inside a guarded zone because `multicast_dns`
+/// re-broadcasts queries on a periodic timer; a send failure from one of
+/// those timer callbacks (EHOSTUNREACH on iOS simulator, or before the user
+/// grants the local-network permission on a real device) escapes any local
+/// try/catch around `await for` and would otherwise become an unhandled
+/// isolate-level exception. Swallowing it lets the parent service's subnet
+/// sweep continue without multicast.
+Stream<MdnsHit> _defaultMdnsScanner(Duration timeout) {
+  final controller = StreamController<MdnsHit>();
 
-  try {
-    await for (final PtrResourceRecord ptr in client.lookup<PtrResourceRecord>(
-      ResourceRecordQuery.serverPointer('_wled._tcp.local'),
-      timeout: timeout,
-    )) {
-      if (DateTime.now().isAfter(stopAt)) break;
-      await for (final SrvResourceRecord srv
-          in client.lookup<SrvResourceRecord>(
-            ResourceRecordQuery.service(ptr.domainName),
-            timeout: timeout,
-          )) {
-        await for (final IPAddressResourceRecord addr
-            in client.lookup<IPAddressResourceRecord>(
-              ResourceRecordQuery.addressIPv4(srv.target),
-              timeout: timeout,
-            )) {
-          yield MdnsHit(addr.address.address, srv.port);
-        }
-      }
-    }
-  } finally {
-    client.stop();
+  Future<void> closeOnce() async {
+    if (!controller.isClosed) await controller.close();
   }
+
+  unawaited(
+    runZonedGuarded(
+      () async {
+        final client = MDnsClient();
+        try {
+          await client.start();
+          final stopAt = DateTime.now().add(timeout);
+          await for (final PtrResourceRecord ptr
+              in client.lookup<PtrResourceRecord>(
+                ResourceRecordQuery.serverPointer('_wled._tcp.local'),
+                timeout: timeout,
+              )) {
+            if (controller.isClosed || DateTime.now().isAfter(stopAt)) break;
+            await for (final SrvResourceRecord srv
+                in client.lookup<SrvResourceRecord>(
+                  ResourceRecordQuery.service(ptr.domainName),
+                  timeout: timeout,
+                )) {
+              if (controller.isClosed) break;
+              await for (final IPAddressResourceRecord addr
+                  in client.lookup<IPAddressResourceRecord>(
+                    ResourceRecordQuery.addressIPv4(srv.target),
+                    timeout: timeout,
+                  )) {
+                if (controller.isClosed) break;
+                controller.add(MdnsHit(addr.address.address, srv.port));
+              }
+            }
+          }
+        } catch (_) {
+          // Synchronous error in the lookup chain — degrade silently; the
+          // outer service still runs the subnet sweep.
+        } finally {
+          client.stop();
+          await closeOnce();
+        }
+      },
+      (_, _) {
+        // Async send failure from a multicast_dns timer callback — close
+        // the stream so the listener's onDone fires and the orchestrator
+        // can finalize discovery.
+        unawaited(closeOnce());
+      },
+    ),
+  );
+
+  return controller.stream;
 }
 
 /// Default probe — one-shot WledClient per IP. Short timeout so the /24 sweep

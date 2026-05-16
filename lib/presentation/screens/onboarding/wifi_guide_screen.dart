@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../application/providers/app_providers.dart';
@@ -49,7 +50,9 @@ class _WifiGuideScreenState extends ConsumerState<WifiGuideScreen> {
     final ext = theme.extension<LivingWallTheme>()!;
     final snapshot = ref.watch(wifiSnapshotProvider);
     final ctx = widget.addContext;
-    final targetRoom = ctx == null ? null : ref.watch(roomByIdProvider(ctx.roomId));
+    final targetRoom = ctx == null
+        ? null
+        : ref.watch(roomByIdProvider(ctx.roomId));
 
     return OnboardingScaffold(
       stepLabel: ctx == null ? 'LANGKAH 1 / 3' : null,
@@ -66,49 +69,56 @@ class _WifiGuideScreenState extends ConsumerState<WifiGuideScreen> {
       subtitle:
           'Setelah dinyalakan, wall membuat jaringan sementara bernama "WLED-AP". '
           'Sambungkan HP ke jaringan itu untuk memberi tahu password WiFi rumah.',
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _CurrentNetworkCard(snapshot: snapshot),
-          const SizedBox(height: 24),
-          Text(
-            'Langkah singkat:',
-            style: theme.textTheme.titleMedium?.copyWith(color: ext.textDim),
-          ),
-          const SizedBox(height: 12),
-          const _Step(
-            n: 1,
-            text:
-                'Buka pengaturan WiFi, pilih jaringan "WLED-AP" (password: wled1234).',
-          ),
-          const _Step(
-            n: 2,
-            text:
-                'HP otomatis membuka halaman setup. Pilih WiFi rumah, isi password, tap Save.',
-          ),
-          const _Step(
-            n: 3,
-            text:
-                'Kembali ke pengaturan WiFi, sambungkan HP ke WiFi rumah, lalu lanjut.',
-          ),
-        ],
+      body: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _CurrentNetworkCard(snapshot: snapshot),
+            const SizedBox(height: 24),
+            Text(
+              'Langkah singkat:',
+              style: theme.textTheme.titleMedium?.copyWith(color: ext.textDim),
+            ),
+            const SizedBox(height: 12),
+            // Step 1 wording follows the button behavior: Android lands at
+            // the WiFi panel directly, iOS lands at the app's settings page
+            // and the user has to navigate up.
+            _Step(
+              n: 1,
+              text: Platform.isAndroid
+                  ? 'Tap "Buka pengaturan WiFi" di bawah, lalu pilih jaringan "WLED-AP" (password: wled1234).'
+                  : 'Tap "Buka pengaturan" di bawah, tap "< Settings" di pojok kiri atas, pilih "Wi-Fi", lalu pilih jaringan "WLED-AP" (password: wled1234).',
+            ),
+            const _Step(
+              n: 2,
+              text:
+                  'HP otomatis membuka halaman setup. Pilih WiFi rumah, isi password, tap Save.',
+            ),
+            const _Step(
+              n: 3,
+              text:
+                  'Kembali ke pengaturan WiFi, sambungkan HP ke WiFi rumah, lalu lanjut.',
+            ),
+          ],
+        ),
       ),
       secondaryAction: OutlinedButton(
+        // Platform asymmetry: Android exposes a public, documented intent
+        // action for the WiFi panel; iOS does not allow third-party apps
+        // to deep-link there at all. Fall back to the app's own settings
+        // page when the intent is unhandled (rare, mainly heavily-skinned
+        // Android ROMs).
         onPressed: () async {
-          // App-Prefs:root=WIFI is undocumented on iOS but reliable; on
-          // Android, prefs:// fails so we fall back to the package URI.
-          final uri = Platform.isIOS
-              ? Uri.parse('App-Prefs:root=WIFI')
-              : Uri.parse('package:com.android.settings');
-          if (await canLaunchUrl(uri)) {
-            await launchUrl(uri);
-          } else {
-            // Last-resort: open generic settings on Android.
-            await launchUrl(
-              Uri.parse('intent://settings/wifi#Intent;scheme=android-app;end'),
-              mode: LaunchMode.externalApplication,
+          if (Platform.isAndroid) {
+            final uri = Uri.parse(
+              'intent:#Intent;action=android.settings.WIFI_SETTINGS;end',
             );
+            if (await canLaunchUrl(uri)) {
+              await launchUrl(uri, mode: LaunchMode.externalApplication);
+              return;
+            }
           }
+          await openAppSettings();
         },
         style: OutlinedButton.styleFrom(
           padding: const EdgeInsets.symmetric(vertical: 16),
@@ -117,7 +127,9 @@ class _WifiGuideScreenState extends ConsumerState<WifiGuideScreen> {
             borderRadius: BorderRadius.circular(16),
           ),
         ),
-        child: const Text('Buka pengaturan WiFi'),
+        child: Text(
+          Platform.isAndroid ? 'Buka pengaturan WiFi' : 'Buka pengaturan',
+        ),
       ),
       primaryAction: PrimaryButton(
         label: 'Lanjut ke pencarian',
@@ -137,6 +149,13 @@ class _CurrentNetworkCard extends StatelessWidget {
     final theme = Theme.of(context);
     final ext = theme.extension<LivingWallTheme>()!;
 
+    final String? ssid = snapshot.maybeWhen(
+      data: (snap) => snap.ssid as String?,
+      orElse: () => null,
+    );
+    final isLoading = snapshot.isLoading;
+    final showDiagnostic = !isLoading && ssid == null;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -144,54 +163,95 @@ class _CurrentNetworkCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: ext.surface3),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Icon(Icons.wifi, color: ext.accent, size: 28),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Jaringan saat ini',
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: ext.textDim,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                snapshot.when(
-                  data: (snap) {
-                    final ssid = snap.ssid as String?;
-                    if (ssid == null) {
-                      return Text(
+          Row(
+            children: [
+              Icon(Icons.wifi, color: ext.accent, size: 28),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Jaringan saat ini',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: ext.textDim,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    if (isLoading)
+                      Text(
+                        'Memeriksa…',
+                        style: theme.textTheme.bodyLarge?.copyWith(
+                          color: ext.textDim,
+                        ),
+                      )
+                    else if (ssid == null)
+                      Text(
                         'Tidak terdeteksi',
                         style: theme.textTheme.bodyLarge?.copyWith(
                           color: ext.textDim,
                         ),
-                      );
-                    }
-                    return Text(
-                      ssid,
-                      style: theme.textTheme.titleMedium,
-                      overflow: TextOverflow.ellipsis,
-                    );
-                  },
-                  loading: () => Text(
-                    'Memeriksa…',
-                    style: theme.textTheme.bodyLarge?.copyWith(
-                      color: ext.textDim,
+                      )
+                    else
+                      Text(
+                        ssid,
+                        style: theme.textTheme.titleMedium,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (showDiagnostic) ...[
+            const SizedBox(height: 12),
+            Divider(height: 1, color: ext.surface3),
+            const SizedBox(height: 12),
+            Text(
+              // iOS reads SSID via the paid-only "Access WiFi Information"
+              // entitlement. Free Apple ID can't enable it, so on iOS we
+              // soft-fail with an honest note instead of prompting for a
+              // permission the user has no way to grant. Android can act.
+              Platform.isAndroid
+                  ? 'Aktifkan WiFi dan berikan izin lokasi supaya nama jaringan bisa terbaca.'
+                  : 'iOS membatasi pembacaan nama WiFi untuk app pihak ketiga. Pastikan HP sudah terhubung WiFi rumah — fitur pencarian wall tetap berjalan normal.',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: ext.textFaint,
+                height: 1.4,
+              ),
+            ),
+            if (Platform.isAndroid) ...[
+              const SizedBox(height: 10),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  onPressed: () => openAppSettings(),
+                  icon: Icon(
+                    Icons.settings_outlined,
+                    size: 16,
+                    color: ext.accent,
+                  ),
+                  label: Text(
+                    'Buka pengaturan permission',
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      color: ext.accent,
                     ),
                   ),
-                  error: (_, __) => Text(
-                    'Tidak terdeteksi',
-                    style: theme.textTheme.bodyLarge?.copyWith(
-                      color: ext.textDim,
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
                     ),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
                 ),
-              ],
-            ),
-          ),
+              ),
+            ],
+          ],
         ],
       ),
     );
