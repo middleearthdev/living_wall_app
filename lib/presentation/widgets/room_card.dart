@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -7,6 +10,7 @@ import '../../application/providers/scene_providers.dart';
 import '../../application/providers/wall_providers.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/scene_palette.dart';
+import '../../core/utils/brightness_curve.dart';
 import '../../data/models/room.dart';
 import '../../data/models/scene.dart';
 import '../routing/routes.dart';
@@ -144,7 +148,8 @@ class RoomCard extends ConsumerWidget {
                       _RoomBrightnessSlider(
                         roomId: room.id,
                         brightness: vitals.brightness,
-                        enabled: vitals.anyOn && vitals.allKnown,
+                        isOn: vitals.anyOn,
+                        enabled: vitals.allKnown,
                       ),
                       const SizedBox(height: 10),
                       Center(
@@ -389,18 +394,20 @@ class _MiniSceneMore extends StatelessWidget {
   }
 }
 
-/// Brightness slider with optimistic local state. While the user is dragging,
-/// remote state updates are ignored — releasing snaps back to remote truth
-/// (or to the last value if the throttled write has already echoed).
+/// Room-wide brightness slider. Mirrors the wall control screen's slider
+/// — perceptual gamma curve, echo suppression, snap-to-off with haptics
+/// — but fans out to every wall in the room via [RoomController].
 class _RoomBrightnessSlider extends ConsumerStatefulWidget {
   const _RoomBrightnessSlider({
     required this.roomId,
     required this.brightness,
+    required this.isOn,
     required this.enabled,
   });
 
   final String roomId;
   final int brightness;
+  final bool isOn;
   final bool enabled;
 
   @override
@@ -410,9 +417,83 @@ class _RoomBrightnessSlider extends ConsumerStatefulWidget {
 
 class _RoomBrightnessSliderState extends ConsumerState<_RoomBrightnessSlider> {
   double? _draggingValue;
+  double? _lastSent;
+  Timer? _suppressTimer;
 
-  double get _displayValue =>
-      _draggingValue ?? widget.brightness.toDouble().clamp(0, 255);
+  static const _suppressWindow = Duration(milliseconds: 400);
+  static const _offDeadzoneEnter = 8.0;
+  static const _offDeadzoneExit = 16.0;
+  static const _milestoneStep = 64.0;
+
+  bool _draggingOff = false;
+  int _lastMilestone = -1;
+  bool? _lastOnOffSent;
+
+  double get _displayValue {
+    if (_draggingValue != null) return _draggingValue!;
+    if (_lastSent != null) return _lastSent!;
+    return BrightnessCurve.deviceToSlider(widget.brightness).clamp(0, 255);
+  }
+
+  @override
+  void dispose() {
+    _suppressTimer?.cancel();
+    super.dispose();
+  }
+
+  void _maybeSetOnOff(bool desired) {
+    if (_lastOnOffSent == desired) return;
+    _lastOnOffSent = desired;
+    ref.read(roomControllerProvider).setOnOff(widget.roomId, desired);
+  }
+
+  void _onChangeStart(double v) {
+    HapticFeedback.selectionClick();
+    _draggingOff = v < _offDeadzoneEnter || !widget.isOn;
+    _lastMilestone = (v / _milestoneStep).floor();
+    _lastOnOffSent = null;
+  }
+
+  void _onChanged(double v) {
+    final inOff = _draggingOff
+        ? v < _offDeadzoneExit
+        : v < _offDeadzoneEnter;
+    final snapped = inOff ? 0.0 : v;
+
+    if (inOff && !_draggingOff) {
+      HapticFeedback.mediumImpact();
+      _draggingOff = true;
+      _maybeSetOnOff(false);
+    } else if (!inOff && _draggingOff) {
+      HapticFeedback.selectionClick();
+      _draggingOff = false;
+      _maybeSetOnOff(true);
+    } else if (!inOff) {
+      final milestone = (snapped / _milestoneStep).floor();
+      if (milestone != _lastMilestone) {
+        HapticFeedback.selectionClick();
+        _lastMilestone = milestone;
+      }
+    }
+
+    setState(() => _draggingValue = snapped);
+    ref
+        .read(roomControllerProvider)
+        .setBrightness(widget.roomId, BrightnessCurve.sliderToDevice(snapped));
+  }
+
+  void _onChangeEnd(double v) {
+    final snapped = (_draggingOff || v < _offDeadzoneEnter) ? 0.0 : v;
+    HapticFeedback.lightImpact();
+    setState(() {
+      _draggingValue = null;
+      _lastSent = snapped;
+    });
+    _suppressTimer?.cancel();
+    _suppressTimer = Timer(_suppressWindow, () {
+      if (mounted) setState(() => _lastSent = null);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -420,7 +501,7 @@ class _RoomBrightnessSliderState extends ConsumerState<_RoomBrightnessSlider> {
     final percent = (value / 255 * 100).round();
 
     return Opacity(
-      opacity: widget.enabled ? 1 : 0.5,
+      opacity: widget.isOn ? 1 : 0.5,
       child: Row(
         children: [
           Icon(
@@ -445,15 +526,9 @@ class _RoomBrightnessSliderState extends ConsumerState<_RoomBrightnessSlider> {
                 value: value,
                 min: 0,
                 max: 255,
-                onChanged: widget.enabled
-                    ? (v) {
-                        setState(() => _draggingValue = v);
-                        ref
-                            .read(roomControllerProvider)
-                            .setBrightness(widget.roomId, v.round());
-                      }
-                    : null,
-                onChangeEnd: (_) => setState(() => _draggingValue = null),
+                onChangeStart: widget.enabled ? _onChangeStart : null,
+                onChanged: widget.enabled ? _onChanged : null,
+                onChangeEnd: widget.enabled ? _onChangeEnd : null,
               ),
             ),
           ),

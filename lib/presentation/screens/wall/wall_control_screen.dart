@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -9,6 +10,7 @@ import '../../../application/providers/scene_providers.dart';
 import '../../../application/providers/wall_providers.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/scene_palette.dart';
+import '../../../core/utils/brightness_curve.dart';
 import '../../../data/models/scene.dart';
 import '../../routing/routes.dart';
 import '../../widgets/wall_settings_sheet.dart';
@@ -99,7 +101,8 @@ class WallControlScreen extends ConsumerWidget {
               _BrightnessSlider(
                 wallId: wallId,
                 brightness: state?.brightness ?? 0,
-                enabled: (state?.on ?? false),
+                isOn: state?.on ?? false,
+                enabled: state != null,
               ),
             ],
           ),
@@ -408,11 +411,13 @@ class _BrightnessSlider extends ConsumerStatefulWidget {
   const _BrightnessSlider({
     required this.wallId,
     required this.brightness,
+    required this.isOn,
     required this.enabled,
   });
 
   final String wallId;
   final int brightness;
+  final bool isOn;
   final bool enabled;
 
   @override
@@ -420,26 +425,36 @@ class _BrightnessSlider extends ConsumerStatefulWidget {
 }
 
 class _BrightnessSliderState extends ConsumerState<_BrightnessSlider> {
-  // Active drag value — overrides widget.brightness so the thumb tracks
-  // the finger instead of trailing the WS echo.
+  // All internal state lives in slider-space (0..255 perceptual). The
+  // controller does the slider→device curve conversion before HTTP.
   double? _draggingValue;
-
-  // Last value the user released on. Held for a fixed window so the
-  // slider doesn't snap to a stale mid-drag echo right after release.
-  // After the window, we surrender to widget.brightness regardless —
-  // bounded so firmware coercion (preset clamps, gamma curves) surfaces
-  // quickly instead of being masked.
   double? _lastSent;
   Timer? _suppressTimer;
 
-  // Covers HTTP throttle (80ms) + round-trip + WS push for the trailing
-  // value to land. Local network is fast, so 400ms is comfortable.
+  // Echo-suppression window — pins the thumb to the released value while
+  // mid-drag throttler echoes are still landing. After this window we
+  // surrender to truth so firmware coercion still surfaces.
   static const _suppressWindow = Duration(milliseconds: 400);
 
-  double get _displayValue =>
-      _draggingValue ??
-      _lastSent ??
-      widget.brightness.toDouble().clamp(0, 255);
+  // Bottom 8 slider units (≈3% travel) snap to 0 = off. Exits at 16 to
+  // give hysteresis — drag oscillating across 8 won't ping setOnOff.
+  static const _offDeadzoneEnter = 8.0;
+  static const _offDeadzoneExit = 16.0;
+
+  // Quarter milestones for the "tek tek" tactile feel at 25/50/75%.
+  static const _milestoneStep = 64.0;
+
+  // Drag-session bookkeeping. Reset in _onChangeStart so transitions
+  // re-arm cleanly for each gesture.
+  bool _draggingOff = false;
+  int _lastMilestone = -1;
+  bool? _lastOnOffSent;
+
+  double get _displayValue {
+    if (_draggingValue != null) return _draggingValue!;
+    if (_lastSent != null) return _lastSent!;
+    return BrightnessCurve.deviceToSlider(widget.brightness).clamp(0, 255);
+  }
 
   @override
   void dispose() {
@@ -447,14 +462,70 @@ class _BrightnessSliderState extends ConsumerState<_BrightnessSlider> {
     super.dispose();
   }
 
+  void _maybeSetOnOff(bool desired) {
+    if (_lastOnOffSent == desired) return;
+    _lastOnOffSent = desired;
+    ref.read(wallControllerProvider).setOnOff(widget.wallId, desired);
+  }
+
+  void _onChangeStart(double v) {
+    HapticFeedback.selectionClick();
+    _draggingOff = v < _offDeadzoneEnter || !widget.isOn;
+    _lastMilestone = (v / _milestoneStep).floor();
+    _lastOnOffSent = null;
+  }
+
+  void _onChanged(double v) {
+    // Hysteresis: enter off-zone below 8, leave only above 16.
+    final inOff = _draggingOff
+        ? v < _offDeadzoneExit
+        : v < _offDeadzoneEnter;
+    final snapped = inOff ? 0.0 : v;
+
+    if (inOff && !_draggingOff) {
+      HapticFeedback.mediumImpact();
+      _draggingOff = true;
+      _maybeSetOnOff(false);
+    } else if (!inOff && _draggingOff) {
+      HapticFeedback.selectionClick();
+      _draggingOff = false;
+      _maybeSetOnOff(true);
+    } else if (!inOff) {
+      final milestone = (snapped / _milestoneStep).floor();
+      if (milestone != _lastMilestone) {
+        HapticFeedback.selectionClick();
+        _lastMilestone = milestone;
+      }
+    }
+
+    setState(() => _draggingValue = snapped);
+    ref
+        .read(wallControllerProvider)
+        .setBrightness(widget.wallId, BrightnessCurve.sliderToDevice(snapped));
+  }
+
+  void _onChangeEnd(double v) {
+    final snapped = (_draggingOff || v < _offDeadzoneEnter) ? 0.0 : v;
+    HapticFeedback.lightImpact();
+    setState(() {
+      _draggingValue = null;
+      _lastSent = snapped;
+    });
+    _suppressTimer?.cancel();
+    _suppressTimer = Timer(_suppressWindow, () {
+      if (mounted) setState(() => _lastSent = null);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final ext = theme.extension<LivingWallTheme>()!;
-    final percent = (_displayValue / 255 * 100).round();
+    final value = _displayValue;
+    final percent = (value / 255 * 100).round();
 
     return Opacity(
-      opacity: widget.enabled ? 1 : 0.5,
+      opacity: widget.isOn ? 1 : 0.5,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -486,27 +557,12 @@ class _BrightnessSliderState extends ConsumerState<_BrightnessSlider> {
               thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 7),
             ),
             child: Slider(
-              value: _displayValue,
+              value: value,
               min: 0,
               max: 255,
-              onChanged: widget.enabled
-                  ? (v) {
-                      setState(() => _draggingValue = v);
-                      ref
-                          .read(wallControllerProvider)
-                          .setBrightness(widget.wallId, v.round());
-                    }
-                  : null,
-              onChangeEnd: (v) {
-                setState(() {
-                  _draggingValue = null;
-                  _lastSent = v;
-                });
-                _suppressTimer?.cancel();
-                _suppressTimer = Timer(_suppressWindow, () {
-                  if (mounted) setState(() => _lastSent = null);
-                });
-              },
+              onChangeStart: widget.enabled ? _onChangeStart : null,
+              onChanged: widget.enabled ? _onChanged : null,
+              onChangeEnd: widget.enabled ? _onChangeEnd : null,
             ),
           ),
         ],
@@ -514,3 +570,4 @@ class _BrightnessSliderState extends ConsumerState<_BrightnessSlider> {
     );
   }
 }
+
