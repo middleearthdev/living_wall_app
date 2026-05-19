@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -200,53 +202,59 @@ class _Hero extends StatelessWidget {
       status = 'Aktif sekarang · $percent%';
     }
 
-    return Container(
-      height: 112,
-      decoration: BoxDecoration(
-        gradient: ScenePalette.gradient(activeScene?.id),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: ext.surface3.withValues(alpha: 0.5)),
-      ),
-      child: Stack(
-        children: [
-          Positioned.fill(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(14),
-                gradient: const LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [Color(0x30000000), Color(0xA0000000)],
+    // Scale height with screen width to match the design canvas hero
+    // ratio (218×104 in the artboard = ~2.10:1). Fixed-height 112 looked
+    // squashed on real phones whose content width is much wider than the
+    // 218px artboard scr-body.
+    return AspectRatio(
+      aspectRatio: 2.10,
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: ScenePalette.gradient(activeScene?.id),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: ext.surface3.withValues(alpha: 0.5)),
+        ),
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(14),
+                  gradient: const LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Color(0x30000000), Color(0xA0000000)],
+                  ),
                 ),
               ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.end,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  activeScene?.name ?? 'Custom',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w500,
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.end,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    activeScene?.name ?? 'Custom',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  status,
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.72),
-                    fontSize: 11,
+                  const SizedBox(height: 2),
+                  Text(
+                    status,
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.72),
+                      fontSize: 11,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -292,6 +300,10 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
+/// Two horizontal strips of three — matches the `.qstrip` pattern in the
+/// design canvas (S06). Using `Expanded` tiles instead of fixed 58×58
+/// adapts to real phone widths; on a 393pt screen the design's 58px tile
+/// would otherwise look stranded against a hero that fills the row.
 class _QuickScenesGrid extends StatelessWidget {
   const _QuickScenesGrid({
     required this.scenes,
@@ -303,23 +315,34 @@ class _QuickScenesGrid extends StatelessWidget {
   final String? activeId;
   final ValueChanged<Scene> onPick;
 
+  Widget _row(int start) {
+    final children = <Widget>[];
+    for (var i = start; i < start + 3; i++) {
+      if (i > start) children.add(const SizedBox(width: 8));
+      children.add(
+        Expanded(
+          child: i < scenes.length
+              ? _QuickSceneTile(
+                  scene: scenes[i],
+                  selected: scenes[i].id == activeId,
+                  onTap: () => onPick(scenes[i]),
+                )
+              : const SizedBox.shrink(),
+        ),
+      );
+    }
+    return Row(children: children);
+  }
+
   @override
   Widget build(BuildContext context) {
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        crossAxisSpacing: 8,
-        mainAxisSpacing: 10,
-        childAspectRatio: 0.86,
-      ),
-      itemCount: scenes.length,
-      itemBuilder: (_, i) => _QuickSceneTile(
-        scene: scenes[i],
-        selected: scenes[i].id == activeId,
-        onTap: () => onPick(scenes[i]),
-      ),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _row(0),
+        const SizedBox(height: 10),
+        _row(3),
+      ],
     );
   }
 }
@@ -340,8 +363,10 @@ class _QuickSceneTile extends StatelessWidget {
     final ext = Theme.of(context).extension<LivingWallTheme>()!;
     return GestureDetector(
       onTap: onTap,
+      behavior: HitTestBehavior.opaque,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
         children: [
           AspectRatio(
             aspectRatio: 1,
@@ -354,16 +379,17 @@ class _QuickSceneTile extends StatelessWidget {
                   color: selected
                       ? ext.accentLight
                       : ext.surface3.withValues(alpha: 0.6),
-                  width: selected ? 1.8 : 1,
+                  width: selected ? 1.5 : 1,
                 ),
               ),
             ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 4),
           Text(
             scene.name,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 10,
               color: selected ? null : ext.textDim,
@@ -394,10 +420,32 @@ class _BrightnessSlider extends ConsumerStatefulWidget {
 }
 
 class _BrightnessSliderState extends ConsumerState<_BrightnessSlider> {
+  // Active drag value — overrides widget.brightness so the thumb tracks
+  // the finger instead of trailing the WS echo.
   double? _draggingValue;
 
+  // Last value the user released on. Held for a fixed window so the
+  // slider doesn't snap to a stale mid-drag echo right after release.
+  // After the window, we surrender to widget.brightness regardless —
+  // bounded so firmware coercion (preset clamps, gamma curves) surfaces
+  // quickly instead of being masked.
+  double? _lastSent;
+  Timer? _suppressTimer;
+
+  // Covers HTTP throttle (80ms) + round-trip + WS push for the trailing
+  // value to land. Local network is fast, so 400ms is comfortable.
+  static const _suppressWindow = Duration(milliseconds: 400);
+
   double get _displayValue =>
-      _draggingValue ?? widget.brightness.toDouble().clamp(0, 255);
+      _draggingValue ??
+      _lastSent ??
+      widget.brightness.toDouble().clamp(0, 255);
+
+  @override
+  void dispose() {
+    _suppressTimer?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -449,7 +497,16 @@ class _BrightnessSliderState extends ConsumerState<_BrightnessSlider> {
                           .setBrightness(widget.wallId, v.round());
                     }
                   : null,
-              onChangeEnd: (_) => setState(() => _draggingValue = null),
+              onChangeEnd: (v) {
+                setState(() {
+                  _draggingValue = null;
+                  _lastSent = v;
+                });
+                _suppressTimer?.cancel();
+                _suppressTimer = Timer(_suppressWindow, () {
+                  if (mounted) setState(() => _lastSent = null);
+                });
+              },
             ),
           ),
         ],
