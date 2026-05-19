@@ -37,7 +37,10 @@ class _WifiGuideScreenState extends ConsumerState<WifiGuideScreen> {
   @override
   void initState() {
     super.initState();
-    // Permission ask before snapshot — Android needs location for SSID read.
+    // SSID readout is Android-only. iOS would need the paid
+    // wifi-info entitlement we deliberately do not ship, so we skip
+    // the permission ask and the snapshot fetch entirely.
+    if (!Platform.isAndroid) return;
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await ref.read(wifiServiceProvider).ensureSsidPermission();
       ref.invalidate(wifiSnapshotProvider);
@@ -48,11 +51,19 @@ class _WifiGuideScreenState extends ConsumerState<WifiGuideScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final ext = theme.extension<LivingWallTheme>()!;
-    final snapshot = ref.watch(wifiSnapshotProvider);
     final ctx = widget.addContext;
     final targetRoom = ctx == null
         ? null
         : ref.watch(roomByIdProvider(ctx.roomId));
+
+    // iOS gets a static informational card — we can't read SSID, so
+    // pretending to "detect" it leaves the user staring at a permanent
+    // "Tidak terdeteksi" diagnostic that reads as broken. The
+    // wifiSnapshotProvider is intentionally not watched on iOS so its
+    // autoDispose lifecycle doesn't churn for a value we ignore.
+    final wifiCard = Platform.isAndroid
+        ? _CurrentNetworkCard(snapshot: ref.watch(wifiSnapshotProvider))
+        : const _IosWifiReminderCard();
 
     return OnboardingScaffold(
       stepLabel: ctx == null ? 'LANGKAH 1 / 3' : null,
@@ -73,7 +84,7 @@ class _WifiGuideScreenState extends ConsumerState<WifiGuideScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _CurrentNetworkCard(snapshot: snapshot),
+            wifiCard,
             const SizedBox(height: 24),
             Text(
               'Langkah singkat:',
@@ -211,47 +222,86 @@ class _CurrentNetworkCard extends StatelessWidget {
             Divider(height: 1, color: ext.surface3),
             const SizedBox(height: 12),
             Text(
-              // iOS reads SSID via the paid-only "Access WiFi Information"
-              // entitlement. Free Apple ID can't enable it, so on iOS we
-              // soft-fail with an honest note instead of prompting for a
-              // permission the user has no way to grant. Android can act.
-              Platform.isAndroid
-                  ? 'Aktifkan WiFi dan berikan izin lokasi supaya nama jaringan bisa terbaca.'
-                  : 'iOS membatasi pembacaan nama WiFi untuk app pihak ketiga. Pastikan HP sudah terhubung WiFi rumah — fitur pencarian wall tetap berjalan normal.',
+              'Aktifkan WiFi dan berikan izin lokasi supaya nama jaringan bisa terbaca.',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: ext.textFaint,
                 height: 1.4,
               ),
             ),
-            if (Platform.isAndroid) ...[
-              const SizedBox(height: 10),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: TextButton.icon(
-                  onPressed: () => openAppSettings(),
-                  icon: Icon(
-                    Icons.settings_outlined,
-                    size: 16,
+            const SizedBox(height: 10),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: () => openAppSettings(),
+                icon: Icon(
+                  Icons.settings_outlined,
+                  size: 16,
+                  color: ext.accent,
+                ),
+                label: Text(
+                  'Buka pengaturan permission',
+                  style: theme.textTheme.labelLarge?.copyWith(
                     color: ext.accent,
                   ),
-                  label: Text(
-                    'Buka pengaturan permission',
-                    style: theme.textTheme.labelLarge?.copyWith(
-                      color: ext.accent,
-                    ),
+                ),
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
                   ),
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    minimumSize: Size.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
               ),
-            ],
+            ),
           ],
+        ],
+      ),
+    );
+  }
+}
+
+/// iOS variant of the WiFi card. Static informational reminder rather
+/// than a "detection" pattern — we can't read the SSID, so the Android
+/// "Jaringan saat ini" framing would always degrade to a permanent
+/// "Tidak terdeteksi" that reads as broken.
+class _IosWifiReminderCard extends StatelessWidget {
+  const _IosWifiReminderCard();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final ext = theme.extension<LivingWallTheme>()!;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: ext.surface2,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: ext.surface3),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.wifi, color: ext.accent, size: 28),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'WiFi rumah',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: ext.textDim,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Pastikan HP sudah terhubung ke jaringan tempat wall akan dipakai.',
+                  style: theme.textTheme.bodyMedium?.copyWith(height: 1.35),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
