@@ -14,28 +14,34 @@ import '../../routing/routes.dart';
 import '../../widgets/add_wall_chrome.dart';
 import '../../widgets/onboarding_scaffold.dart';
 
-/// Step inserted between Discovery and Name & Place — reads the per-unit
-/// QR code on the wall's label to provision grid dimensions for the 2D
-/// matrix. Mandatory in the primary path; manual entry is hidden behind a
-/// small link as a fallback only.
+/// Reusable QR scan surface — used by:
+/// - onboarding (between Discovery and Name & Place) for the first wall;
+/// - add-wall flow for each subsequent wall;
+/// - Wall Settings → "Konfigurasi ulang" to re-provision an existing wall.
+///
+/// Mandatory in primary onboarding/add-wall paths; manual entry is hidden
+/// behind a small link as a fallback. For reconfigure, [discovered] and
+/// [addContext] are both null — the route's [onScanned] callback knows
+/// which existing wall to update.
 class QrScanScreen extends ConsumerStatefulWidget {
   const QrScanScreen({
     super.key,
-    required this.discovered,
+    this.discovered,
     this.addContext,
     required this.onScanned,
   });
 
-  /// The wall picked at Discovery — passed forward to Name & Place along
-  /// with the parsed [ProvisionPayload].
-  final DiscoveredWall discovered;
+  /// The wall picked at Discovery — passed forward via the [onScanned]
+  /// closure for onboarding/add-wall. Null for reconfigure (the route
+  /// already knows which wall is being re-provisioned).
+  final DiscoveredWall? discovered;
 
   /// Non-null when this screen is part of an add-wall flow (vs first-time
-  /// onboarding). Drives the top bar and step pill.
+  /// onboarding). Drives the top bar and step pill. Null for reconfigure.
   final AddWallContext? addContext;
 
   /// Called with the validated payload after a successful scan or manual
-  /// entry. Navigation is the caller's concern.
+  /// entry. Navigation + persistence is the caller's concern.
   final void Function(ProvisionPayload payload) onScanned;
 
   @override

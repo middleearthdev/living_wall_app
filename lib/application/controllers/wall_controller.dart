@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/utils/throttler.dart';
+import '../../data/models/aspect_class.dart';
+import '../../data/models/provision_payload.dart';
 import '../../data/models/scene.dart';
 import '../../data/models/wall.dart';
 import '../../data/services/wled_client.dart';
@@ -104,6 +106,45 @@ class WallController {
     if (wall != null) {
       _ref.invalidate(wallsForRoomProvider(wall.roomId));
     }
+  }
+
+  /// Re-provision an existing wall from a fresh QR scan. Used by the
+  /// Wall Settings "Konfigurasi ulang" flow when the saved dimensions are
+  /// wrong (mis-scan, panel swap, factory bug).
+  ///
+  /// DB always wins: the new grid/serial fields are persisted even if the
+  /// WLED config re-issue fails (offline device). The active scene is
+  /// implicitly reset on the device because [WledClient.configureMatrix]
+  /// rewrites `hw.led.matrix` — that's expected per the confirmation
+  /// dialog copy.
+  Future<void> reconfigure(String wallId, ProvisionPayload payload) async {
+    final repo = _ref.read(wallRepositoryProvider);
+    final wall = await repo.findById(wallId);
+    if (wall == null) return;
+
+    await repo.updateConfig(
+      wallId: wallId,
+      serialNumber: payload.serialNumber,
+      gridWidth: payload.gridWidth,
+      gridHeight: payload.gridHeight,
+      lengthMm: payload.lengthMm,
+      heightMm: payload.heightMm,
+      aspectClass: aspectClassFor(payload.gridWidth, payload.gridHeight),
+    );
+
+    try {
+      final client = WledClient(baseUrl: 'http://${wall.ipAddress}');
+      await client.configureMatrix(
+        gridWidth: payload.gridWidth,
+        gridHeight: payload.gridHeight,
+      );
+    } catch (_) {
+      // Swallow — DB is updated. User can re-trigger from settings once
+      // the device is reachable. Losing the new dims would force another
+      // QR scan and is worse UX than a stale device config.
+    }
+
+    invalidateWall(_ref, wallId);
   }
 
   /// Removes the wall from drift and tears down its socket/state providers.

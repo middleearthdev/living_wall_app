@@ -28,6 +28,12 @@ class Routes {
   static String dashboardScenes(String roomId, String wallId) =>
       '/dashboard/room/$roomId/wall/$wallId/scenes';
 
+  /// Re-scan QR for an existing wall (Wall Settings → "Konfigurasi ulang").
+  /// Reuses [QrScanScreen] but the route callback updates the wall record
+  /// instead of creating a new one.
+  static String reconfigureQr(String roomId, String wallId) =>
+      '/dashboard/room/$roomId/wall/$wallId/reconfigure-qr';
+
   // Add-wall flow — 3 steps (Discovery → QR scan → Name). WiFi guide is
   // skipped because the app is already running on WiFi when add-wall is
   // entered; QR scan provisions the new wall's grid layout.

@@ -47,5 +47,23 @@ void main() {
         '/dashboard/room/r1/wall/w1/scenes',
       );
     });
+
+    test('reconfigureQr nests under the specific wall', () {
+      expect(
+        Routes.reconfigureQr('r1', 'w1'),
+        '/dashboard/room/r1/wall/w1/reconfigure-qr',
+      );
+    });
+
+    test('reconfigureQr keeps room + wall ids distinct', () {
+      expect(
+        Routes.reconfigureQr('r_a', 'w_x'),
+        isNot(equals(Routes.reconfigureQr('r_a', 'w_y'))),
+      );
+      expect(
+        Routes.reconfigureQr('r_a', 'w_x'),
+        isNot(equals(Routes.reconfigureQr('r_b', 'w_x'))),
+      );
+    });
   });
 }

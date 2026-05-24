@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../application/controllers/wall_controller.dart';
 import '../../application/providers/wall_providers.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/models/wall.dart';
+import '../routing/routes.dart';
 
 /// "···" menu on the wall control screen. Phase 1 actions are Rename and
 /// Delete. Move-to-another-room is parked for Phase 2 — it needs UDP sync
@@ -70,6 +72,47 @@ class _WallSettingsSheetState extends ConsumerState<WallSettingsSheet> {
     setState(() => _busy = true);
     await ref.read(wallControllerProvider).rename(wall.id, newName);
     if (mounted) Navigator.of(context).pop(false);
+  }
+
+  Future<void> _reconfigure(Wall wall) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) {
+        final theme = Theme.of(ctx);
+        final ext = theme.extension<LivingWallTheme>()!;
+        return AlertDialog(
+          backgroundColor: ext.surface2,
+          title: const Text('Konfigurasi ulang wall?'),
+          content: Text(
+            'Mengganti konfigurasi akan menulis ulang setup 2D matrix di '
+            'wall — scene yang aktif akan reset ke default. Scan QR di '
+            'label wall pada langkah berikutnya.',
+            style: theme.textTheme.bodyMedium?.copyWith(color: ext.textDim),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: Text('Batal', style: TextStyle(color: ext.textDim)),
+            ),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: ext.accent,
+                foregroundColor: Colors.black,
+              ),
+              onPressed: () => Navigator.of(ctx).pop(true),
+              child: const Text('Lanjut scan QR'),
+            ),
+          ],
+        );
+      },
+    );
+    if (confirmed != true) return;
+    if (!mounted) return;
+    // Close the sheet first so the QR scan route renders as a clean
+    // full-screen flow rather than stacking on top of a dismissed sheet.
+    final router = GoRouter.of(context);
+    Navigator.of(context).pop(false);
+    router.push(Routes.reconfigureQr(wall.roomId, wall.id));
   }
 
   Future<void> _delete(Wall wall) async {
@@ -150,6 +193,11 @@ class _WallSettingsSheetState extends ConsumerState<WallSettingsSheet> {
                     icon: Icons.edit_outlined,
                     label: 'Ganti nama',
                     onTap: _busy ? null : () => _rename(wall),
+                  ),
+                  _SettingsAction(
+                    icon: Icons.qr_code_scanner_outlined,
+                    label: 'Konfigurasi ulang',
+                    onTap: _busy ? null : () => _reconfigure(wall),
                   ),
                   _SettingsAction(
                     icon: Icons.delete_outline,

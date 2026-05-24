@@ -112,6 +112,31 @@ class WallRepository {
     );
   }
 
+  /// Replace the wall's grid / serial / dimension fields. Used by the
+  /// "Konfigurasi ulang" flow when the user re-scans a QR (e.g. damaged
+  /// label, swapped panel). The WLED `/json/cfg` re-issue is the caller's
+  /// responsibility — this method only touches the DB.
+  Future<void> updateConfig({
+    required String wallId,
+    required String serialNumber,
+    required int gridWidth,
+    required int gridHeight,
+    required int lengthMm,
+    required int heightMm,
+    required AspectClass aspectClass,
+  }) async {
+    await (_db.update(_db.walls)..where((t) => t.id.equals(wallId))).write(
+      WallsCompanion(
+        serialNumber: Value(serialNumber),
+        gridWidth: Value(gridWidth),
+        gridHeight: Value(gridHeight),
+        lengthMm: Value(lengthMm),
+        heightMm: Value(heightMm),
+        aspectClass: Value(aspectClass),
+      ),
+    );
+  }
+
   Future<void> delete(String wallId) async {
     await (_db.delete(_db.walls)..where((t) => t.id.equals(wallId))).go();
   }

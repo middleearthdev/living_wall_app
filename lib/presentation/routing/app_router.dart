@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../application/controllers/wall_controller.dart';
 import '../../application/providers/app_providers.dart';
 import '../../data/models/add_wall_context.dart';
 import '../../data/models/discovered_wall.dart';
@@ -92,6 +93,16 @@ final routerProvider = Provider<GoRouter>((ref) {
                       roomId: state.pathParameters['roomId']!,
                       wallId: state.pathParameters['wallId']!,
                     ),
+                  ),
+                  // Wall Settings → "Konfigurasi ulang": re-scan QR for an
+                  // existing wall. The screen is the same as onboarding's
+                  // QR step; only the onScanned callback differs.
+                  GoRoute(
+                    path: 'reconfigure-qr',
+                    builder: (context, state) {
+                      final wallId = state.pathParameters['wallId']!;
+                      return _ReconfigureQrRoute(wallId: wallId);
+                    },
                   ),
                 ],
               ),
@@ -195,6 +206,33 @@ class _MissingExtraScreen extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Thin wrapper around [QrScanScreen] that wires the scanned payload into
+/// [WallController.reconfigure] for an existing wall, then pops back to the
+/// wall control screen with a confirmation snackbar.
+///
+/// Lives in the router file (not screens/) because the only reason it
+/// exists is to bridge route params to the controller call — the actual
+/// scanning UI is the shared [QrScanScreen].
+class _ReconfigureQrRoute extends ConsumerWidget {
+  const _ReconfigureQrRoute({required this.wallId});
+
+  final String wallId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return QrScanScreen(
+      onScanned: (payload) async {
+        await ref.read(wallControllerProvider).reconfigure(wallId, payload);
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Konfigurasi wall diperbarui.')),
+        );
+        context.pop();
+      },
     );
   }
 }
