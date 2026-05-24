@@ -38,6 +38,9 @@ class _SceneGalleryScreenState extends ConsumerState<SceneGalleryScreen> {
     final ext = theme.extension<LivingWallTheme>()!;
     final catalogAsync = ref.watch(sceneCatalogProvider);
     final activeScene = ref.watch(activeSceneForWallProvider(widget.wallId));
+    final sortedScenes = ref.watch(
+      sortedScenesForWallProvider(widget.wallId),
+    );
 
     return Scaffold(
       body: SafeArea(
@@ -55,8 +58,8 @@ class _SceneGalleryScreenState extends ConsumerState<SceneGalleryScreen> {
               const SizedBox(height: 16),
               Expanded(
                 child: catalogAsync.when(
-                  data: (catalog) => _SceneSections(
-                    catalog: catalog,
+                  data: (_) => _SceneSections(
+                    sortedScenes: sortedScenes,
                     filter: _filter,
                     activeId: activeScene?.id,
                     onTap: (scene) => _openAdjustmentSheet(scene),
@@ -213,10 +216,12 @@ class _Chip extends StatelessWidget {
 
 /// Renders per-category sections in spec order (Tenang → Fokus → Sosial →
 /// Dinamis). Filter "Semua" shows all four; specific filter shows just one.
-/// Empty sections are silently dropped — per spec, no zero-state headers.
+/// Within each section, the global sort by aspect-class match is preserved
+/// (matching first, universal second, mismatched last). Empty sections are
+/// silently dropped — per spec, no zero-state headers.
 class _SceneSections extends StatelessWidget {
   const _SceneSections({
-    required this.catalog,
+    required this.sortedScenes,
     required this.filter,
     required this.activeId,
     required this.onTap,
@@ -229,7 +234,7 @@ class _SceneSections extends StatelessWidget {
     (SceneCategory.dinamis, 'Dinamis'),
   ];
 
-  final List<Scene> catalog;
+  final List<AspectSortedScene> sortedScenes;
   final SceneCategory? filter;
   final String? activeId;
   final ValueChanged<Scene> onTap;
@@ -242,7 +247,9 @@ class _SceneSections extends StatelessWidget {
     final sections = <Widget>[];
     for (final (cat, label) in _categoryOrder) {
       if (filter != null && filter != cat) continue;
-      final scenes = catalog.where((s) => s.category == cat).toList();
+      final scenes = sortedScenes
+          .where((s) => s.scene.category == cat)
+          .toList();
       if (scenes.isEmpty) continue;
       sections.add(
         Padding(
@@ -278,9 +285,10 @@ class _SceneSections extends StatelessWidget {
           ),
           itemCount: scenes.length,
           itemBuilder: (_, i) => _SceneCard(
-            scene: scenes[i],
-            isActive: scenes[i].id == activeId,
-            onTap: () => onTap(scenes[i]),
+            scene: scenes[i].scene,
+            isActive: scenes[i].scene.id == activeId,
+            isOptimal: scenes[i].isOptimal,
+            onTap: () => onTap(scenes[i].scene),
           ),
         ),
       );
@@ -307,11 +315,13 @@ class _SceneCard extends StatelessWidget {
   const _SceneCard({
     required this.scene,
     required this.isActive,
+    required this.isOptimal,
     required this.onTap,
   });
 
   final Scene scene;
   final bool isActive;
+  final bool isOptimal;
   final VoidCallback onTap;
 
   @override
@@ -348,29 +358,19 @@ class _SceneCard extends StatelessWidget {
               ),
             ),
           ),
+          // Top-right slot is shared between the "Aktif" pill (when this
+          // scene is the wall's current state) and the "kurang optimal"
+          // hint (when scene compatibility doesn't match wall aspect).
+          // Aktif wins if both apply, since it's the user's live state.
           if (isActive)
-            Positioned(
-              top: 8,
-              right: 8,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 7,
-                  vertical: 2,
-                ),
-                decoration: BoxDecoration(
-                  color: ext.accent,
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: const Text(
-                  'Aktif',
-                  style: TextStyle(
-                    color: Colors.black,
-                    fontSize: 9,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.2,
-                  ),
-                ),
-              ),
+            const _CardBadge(
+              text: 'Aktif',
+              variant: _BadgeVariant.active,
+            )
+          else if (!isOptimal)
+            const _CardBadge(
+              text: 'kurang optimal',
+              variant: _BadgeVariant.muted,
             ),
           Positioned(
             left: 10,
@@ -404,6 +404,44 @@ class _SceneCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+enum _BadgeVariant { active, muted }
+
+class _CardBadge extends StatelessWidget {
+  const _CardBadge({required this.text, required this.variant});
+
+  final String text;
+  final _BadgeVariant variant;
+
+  @override
+  Widget build(BuildContext context) {
+    final ext = Theme.of(context).extension<LivingWallTheme>()!;
+    final isActive = variant == _BadgeVariant.active;
+    return Positioned(
+      top: 8,
+      right: 8,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+        decoration: BoxDecoration(
+          color: isActive ? ext.accent : Colors.black.withValues(alpha: 0.55),
+          borderRadius: BorderRadius.circular(999),
+          border: isActive
+              ? null
+              : Border.all(color: Colors.white.withValues(alpha: 0.25)),
+        ),
+        child: Text(
+          text,
+          style: TextStyle(
+            color: isActive ? Colors.black : Colors.white.withValues(alpha: 0.85),
+            fontSize: 9,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.2,
+          ),
+        ),
       ),
     );
   }

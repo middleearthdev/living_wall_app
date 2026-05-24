@@ -45,7 +45,7 @@ class DiscoveryScreen extends ConsumerWidget {
     }
 
     return OnboardingScaffold(
-      stepLabel: ctx == null ? 'LANGKAH 2 / 3' : null,
+      stepLabel: ctx == null ? 'LANGKAH 2 / 4' : null,
       topBar: ctx == null
           ? null
           : AddWallTopBar(
@@ -139,7 +139,7 @@ class _DiscoveredCard extends StatelessWidget {
           onTap: isRegistered
               ? null
               : () => context.push(
-                  Routes.namePlaceFor(addContext),
+                  Routes.qrScanFor(addContext),
                   extra: wall,
                 ),
           child: Container(

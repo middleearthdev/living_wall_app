@@ -21,6 +21,10 @@ class AppColors {
   static final Color textDim = text.withValues(alpha: 0.56);
   static final Color textFaint = text.withValues(alpha: 0.32);
 
+  // Severity. Reserved for inline error/warning messaging — not chrome.
+  // Matches the docs/development-brief.html risk register palette.
+  static const Color high = Color(0xFFE8826B);
+
   // Scene category badges. Not for general chrome.
   static const Color tenang = Color(0xFF8AA6C9);
   static const Color fokus = Color(0xFF9EC5A8);

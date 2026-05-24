@@ -234,6 +234,7 @@ class RoomCard extends ConsumerWidget {
     id: id,
     name: id,
     category: SceneCategory.tenang,
+    compatibility: SceneCompatibility.universal,
     description: '',
     useCase: '',
     thumbnailAsset: '',

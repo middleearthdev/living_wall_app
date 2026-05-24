@@ -154,6 +154,13 @@
       semua ~180 efek bawaan, tapi <b>kurasi 18 mood yang berarti</b> — yang user kenali lewat nama, bukan
       effect ID. Catalog ini = data yang mengisi galeri scene di seluruh dokumen desain.
     </p>
+    <p class="sub" style="margin-top:14px;border-left:2px solid var(--accent-line);padding-left:14px;background:var(--accent-soft);padding:12px 14px;border-radius:8px;">
+      <b style="color:var(--accent-2);">⚠ Penting — fx IDs di catalog ini adalah placeholder 1D-era.</b> Wall sekarang dirender sebagai
+      <b>WLED 2D Matrix</b> (grid serpentine), bukan strip 1D. Sebelum production, tiap scene harus di-remap ke
+      <b>2D effect</b> (Plasma 2D, Polar Lights, Fire 2D, Sunrise 2D, dll) dan divalidasi di hardware
+      lintas 3 aspect class. fx ID + parameter di card di bawah adalah <i>starting point untuk tuning</i>,
+      bukan final spec.
+    </p>
 
     <div class="legend">
       <div class="lg-row">
@@ -171,6 +178,40 @@
       <div class="lg-row">
         <span class="lg-dot dinamis"></span>
         <div><div class="lg-nm">Dinamis</div><div class="lg-ct"><b>3 scene</b> · untuk pesta, perayaan, energi</div></div>
+      </div>
+    </div>
+
+    <div class="legend" style="margin-top:18px;">
+      <div style="grid-column:1/-1;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--text-faint);font-weight:600;margin-bottom:4px;">
+        Compatibility classification — gallery sort + badge
+      </div>
+      <div class="lg-row">
+        <span class="lg-dot" style="background:var(--accent-2);"></span>
+        <div>
+          <div class="lg-nm">Universal</div>
+          <div class="lg-ct"><b>10 scene</b> · candle, breathe, focus, daylight, forest, sakura, fireplace, twinkle, party, movie</div>
+        </div>
+      </div>
+      <div class="lg-row">
+        <span class="lg-dot fokus"></span>
+        <div>
+          <div class="lg-nm">Landscape</div>
+          <div class="lg-ct"><b>5 scene</b> · ocean, sunset, golden, aurora, tokyo</div>
+        </div>
+      </div>
+      <div class="lg-row">
+        <span class="lg-dot sosial"></span>
+        <div>
+          <div class="lg-nm">Portrait</div>
+          <div class="lg-ct"><b>3 scene</b> · rain, dawn (wind down), dinner</div>
+        </div>
+      </div>
+      <div class="lg-row">
+        <div>
+          <div class="lg-nm" style="font-size:13px;color:var(--text-dim);font-family:var(--body);font-weight:500;line-height:1.45;">
+            Gallery selalu tampilkan 18 scene. Yang match aspect class wall ditampilkan di atas; mismatched dipindah ke bawah dengan label "kurang optimal untuk wall ini". <b>Never hide, never disable</b>.
+          </div>
+        </div>
       </div>
     </div>
   </header>
@@ -732,14 +773,17 @@
         <h4>Model data</h4>
         <p>Setiap scene jadi satu objek immutable dengan defaults yang sudah ditune.
         Sheet penyesuaian (brightness · speed · intensity) hanya meng-override tiga field — selebihnya tetap.</p>
-<div class="code"><span class="k">class</span> <span class="n">Scene</span> {
+<div class="code"><span class="k">enum</span> <span class="n">SceneCompatibility</span> { universal, landscape, portrait }
+
+<span class="k">class</span> <span class="n">Scene</span> {
   <span class="k">final</span> <span class="n">String</span> id;
   <span class="k">final</span> <span class="n">String</span> name;
   <span class="k">final</span> <span class="n">SceneCategory</span> category;
+  <span class="k">final</span> <span class="n">SceneCompatibility</span> compatibility;  <span class="c">// for gallery sort + badge</span>
   <span class="k">final</span> <span class="n">String</span> description;
   <span class="k">final</span> <span class="n">String</span> useCase;
   <span class="k">final</span> <span class="n">int</span> defaultBri;
-  <span class="k">final</span> <span class="n">int</span> fx;
+  <span class="k">final</span> <span class="n">int</span> fx;   <span class="c">// MUST be 2D effect ID</span>
   <span class="k">final</span> <span class="n">int</span> pal;
   <span class="k">final</span> <span class="n">int</span>? defaultSx;
   <span class="k">final</span> <span class="n">int</span>? defaultIx;
@@ -751,7 +795,10 @@
         <h4>Mengirim ke wall</h4>
         <p>Wrap satu fungsi yang menerima scene + override opsional, hasilkan JSON, POST ke
         <span style="font-family:var(--mono);font-size:12px;">/json/state</span> wall.
-        Untuk grup: ubah satu wall, sisanya ikut via UDP sync (sudah dibahas di spec).</p>
+        Untuk grup: ubah satu wall, sisanya ikut via UDP sync (sudah dibahas di spec).
+        <b>Prerequisite:</b> wall harus sudah di-provision sebagai 2D matrix lewat
+        <span style="font-family:var(--mono);font-size:12px;">WledClient.configureMatrix()</span>
+        di add-wall flow — tanpa itu, scene 2D akan tetap render seakan strip 1D.</p>
 <div class="code"><span class="k">Future&lt;void&gt;</span> <span class="n">applyScene</span>(
   <span class="n">Wall</span> wall, <span class="n">Scene</span> scene, {
   <span class="n">int</span>? briOverride,
@@ -794,15 +841,57 @@
         <h4>Cara tuning di hardware</h4>
         <p>Aspirasi vs realita kadang berbeda. <b>Uji tiap scene di wall sungguhan</b> sebelum
         finalisasi — terutama brightness (LED terang di datasheet bisa silau di dinding) dan
-        speed (apa yang terlihat di simulator beda dengan pada 144 LED). Tune sampai sesuai
-        deskripsinya, lalu kunci angkanya.</p>
+        speed (apa yang terlihat di simulator beda dengan pada grid 72×48 atau 108×72).
+        Tune sampai sesuai deskripsinya, lalu kunci angkanya. <b>Lintas 3 aspect class:</b>
+        validasi universal scenes di satu panel reference saja cukup; landscape + portrait
+        scenes butuh sample panel yang match — minimal 1 unit M (1.2×0.8m, landscape) plus
+        1 unit portrait sample (0.8×1.2m atau serupa).</p>
+      </div>
+
+      <div class="impl-block">
+        <h4>Pemetaan fx ke 2D effect</h4>
+        <p>fx ID di tiap card adalah <b>placeholder</b> dari era 1D. Sebelum production, tiap scene
+        harus dipasangkan ke effect 2D di WLED 0.14+. Draft awal mapping:</p>
+<div class="code"><span class="c">// universal — most carry over with similar feel</span>
+candle, breathe → solid + bri pulse
+focus, daylight → solid
+fireplace      → Fire 2D
+twinkle, sakura → Plasma 2D + palette
+forest, movie, party → Plasma 2D / Drift 2D
+
+<span class="c">// landscape — horizon / horizontal flow</span>
+ocean    → Drift 2D atau Plasma 2D (low speed)
+sunset   → Sunrise 2D atau custom gradient
+golden   → Sunrise 2D variant
+aurora   → Polar Lights 2D
+tokyo    → Color Waves 2D
+
+<span class="c">// portrait — vertical flow</span>
+rain     → Matrix 2D (vertical)
+dawn     → vertical gradient (slow transition 30)
+dinner   → vertical glow / soft solid</div>
+        <p style="margin-top:10px;">Validasi A/B di hardware vs deskripsi tiap scene. Output langsung
+        ke <code style="font-family:var(--mono);font-size:12px;">assets/scenes.json</code> production.</p>
+      </div>
+
+      <div class="impl-block">
+        <h4>Aspect compatibility & gallery sort</h4>
+        <p>Saat user buka scene gallery dari wall control, gallery sort 18 scene berdasarkan
+        match dengan <code style="font-family:var(--mono);font-size:12px;">wall.aspectClass</code>:</p>
+        <p style="margin-top:8px;">
+          <b>1.</b> Scene dengan compatibility matching wall di atas<br>
+          <b>2.</b> Universal scenes di tengah<br>
+          <b>3.</b> Mismatched scenes di bawah, dengan label kecil "kurang optimal untuk wall ini"
+        </p>
+        <p style="margin-top:10px;"><b>Tidak pernah hide, tidak pernah disable.</b> User tetap bisa apply scene apapun —
+        keputusan ada di user. Premium UX = informatif, bukan restriktif.</p>
       </div>
 
     </div>
   </section>
 
   <p class="closer">
-    <b>18 scene · 4 kategori · 1 model data.</b> Catalog ini sumber kebenaran untuk semua galeri di design spec.
+    <b>18 scene · 4 kategori · 3 compatibility class · 1 model data.</b> Catalog ini sumber kebenaran untuk semua galeri di design spec — tapi <b>fx IDs perlu di-remap ke 2D effects</b> sebelum production.
   </p>
 
 </div>

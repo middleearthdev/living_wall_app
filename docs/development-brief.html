@@ -166,8 +166,9 @@
     <div class="decisions">
       <span class="dec">Stack: <b>Flutter + Riverpod + drift</b></span>
       <span class="dec">Arsitektur: <b>4-layer · local-first</b></span>
-      <span class="dec">WLED: <b>JSON API + WebSocket</b></span>
+      <span class="dec">WLED: <b>JSON API + WebSocket + 2D matrix</b></span>
       <span class="dec">Discovery: <b>mDNS + subnet fallback</b></span>
+      <span class="dec">Provisioning: <b>per-unit QR</b></span>
       <span class="dec">Platform: <b>iOS &amp; Android</b></span>
     </div>
 
@@ -257,11 +258,15 @@
 
         <div>permission_handler ^11</div>
         <div>Native permissions</div>
-        <div>Untuk Android location permission (dibutuhkan untuk SSID), iOS local network.</div>
+        <div>Android location (SSID), iOS local network, kamera (QR scan).</div>
 
         <div>url_launcher ^6.3</div>
         <div>Open WiFi settings</div>
         <div>Membuka Settings &gt; Wi-Fi pada langkah onboarding "Buka Pengaturan WiFi".</div>
+
+        <div>mobile_scanner ^5</div>
+        <div>QR scan</div>
+        <div>Scan QR di label wall saat onboarding/add-wall — payload berisi grid dims untuk provisioning 2D matrix.</div>
 
         <div>flutter_secure_storage ^9</div>
         <div>Storage sensitif</div>
@@ -542,6 +547,8 @@
 <span class="k">part</span> <span class="s">'wall.freezed.dart'</span><span class="k">;</span>
 <span class="k">part</span> <span class="s">'wall.g.dart'</span><span class="k">;</span>
 
+<span class="k">enum</span> <span class="t">AspectClass</span> { landscape<span class="k">,</span> portrait<span class="k">,</span> square }
+
 <span class="k">@freezed</span>
 <span class="k">class</span> <span class="t">Wall</span> <span class="k">with</span> <span class="t">_$Wall</span> {
   <span class="k">const factory</span> <span class="t">Wall</span>({
@@ -550,17 +557,35 @@
     <span class="k">required</span> <span class="t">String</span> name<span class="k">,</span>
     <span class="k">required</span> <span class="t">String</span> deviceId<span class="k">,</span>      <span class="c">// MAC address WLED</span>
     <span class="k">required</span> <span class="t">String</span> ipAddress<span class="k">,</span>
+
+    <span class="c">// 2D matrix spec — datang dari QR di label wall</span>
+    <span class="k">required</span> <span class="t">String</span> serialNumber<span class="k">,</span>  <span class="c">// 'LW-2026-00342'</span>
+    <span class="k">required</span> <span class="t">int</span> gridWidth<span class="k">,</span>       <span class="c">// LED per baris</span>
+    <span class="k">required</span> <span class="t">int</span> gridHeight<span class="k">,</span>      <span class="c">// jumlah baris</span>
+    <span class="k">required</span> <span class="t">int</span> lengthMm<span class="k">,</span>        <span class="c">// dimensi fisik untuk display</span>
+    <span class="k">required</span> <span class="t">int</span> heightMm<span class="k">,</span>
+    <span class="k">required</span> <span class="t">AspectClass</span> aspectClass<span class="k">,</span>  <span class="c">// derived dari ratio gridWidth/gridHeight</span>
+
     <span class="t">DateTime</span><span class="k">?</span> lastSeen<span class="k">,</span>
     <span class="k">@Default</span>(<span class="n">false</span>) <span class="t">bool</span> online<span class="k">,</span>
   }) <span class="k">=</span> <span class="t">_Wall</span><span class="k">;</span>
 
   <span class="k">factory</span> <span class="t">Wall</span><span class="k">.</span>fromJson(<span class="t">Map</span><span class="k">&lt;</span><span class="t">String</span><span class="k">,</span> <span class="k">dynamic</span><span class="k">&gt;</span> json) <span class="k">=&gt;</span> <span class="t">_$WallFromJson</span>(json)<span class="k">;</span>
+}
+
+<span class="c">// AspectClass derivation — di registrasi wall, hitung dari grid dims</span>
+<span class="t">AspectClass</span> aspectClassFor(<span class="t">int</span> w<span class="k">,</span> <span class="t">int</span> h) {
+  <span class="k">final</span> r <span class="k">=</span> w <span class="k">/</span> h<span class="k">;</span>
+  <span class="k">if</span> (r <span class="k">&gt;=</span> <span class="n">1.2</span>) <span class="k">return</span> <span class="t">AspectClass</span><span class="k">.</span>landscape<span class="k">;</span>
+  <span class="k">if</span> (r <span class="k">&lt;=</span> <span class="n">0.83</span>) <span class="k">return</span> <span class="t">AspectClass</span><span class="k">.</span>portrait<span class="k">;</span>
+  <span class="k">return</span> <span class="t">AspectClass</span><span class="k">.</span>square<span class="k">;</span>
 }</div>
     </div>
 
     <div class="block">
       <div class="blk-h">data/models/scene.dart</div>
 <div class="code"><span class="k">enum</span> <span class="t">SceneCategory</span> { tenang<span class="k">,</span> fokus<span class="k">,</span> sosial<span class="k">,</span> dinamis }
+<span class="k">enum</span> <span class="t">SceneCompatibility</span> { universal<span class="k">,</span> landscape<span class="k">,</span> portrait }
 
 <span class="k">@freezed</span>
 <span class="k">class</span> <span class="t">Scene</span> <span class="k">with</span> <span class="t">_$Scene</span> {
@@ -568,11 +593,12 @@
     <span class="k">required</span> <span class="t">String</span> id<span class="k">,</span>                  <span class="c">// 'ocean', 'candle', dst</span>
     <span class="k">required</span> <span class="t">String</span> name<span class="k">,</span>                <span class="c">// 'Ocean Drift'</span>
     <span class="k">required</span> <span class="t">SceneCategory</span> category<span class="k">,</span>
+    <span class="k">required</span> <span class="t">SceneCompatibility</span> compatibility<span class="k">,</span>  <span class="c">// gallery sort + badge</span>
     <span class="k">required</span> <span class="t">String</span> description<span class="k">,</span>
     <span class="k">required</span> <span class="t">String</span> useCase<span class="k">,</span>
     <span class="k">required</span> <span class="t">String</span> thumbnailAsset<span class="k">,</span>      <span class="c">// 'assets/images/scenes/ocean.jpg'</span>
 
-    <span class="c">// WLED API params</span>
+    <span class="c">// WLED API params — fx WAJIB 2D effect (Plasma 2D, Polar Lights, dll)</span>
     <span class="k">required</span> <span class="t">int</span> defaultBri<span class="k">,</span>
     <span class="k">required</span> <span class="t">int</span> fx<span class="k">,</span>
     <span class="k">required</span> <span class="t">int</span> pal<span class="k">,</span>
@@ -632,9 +658,54 @@
   <span class="t">TextColumn</span> <span class="k">get</span> name <span class="k">=&gt;</span> text()()<span class="k">;</span>
   <span class="t">TextColumn</span> <span class="k">get</span> deviceId <span class="k">=&gt;</span> text()<span class="k">.</span>unique()()<span class="k">;</span>
   <span class="t">TextColumn</span> <span class="k">get</span> ipAddress <span class="k">=&gt;</span> text()()<span class="k">;</span>
+
+  <span class="c">// 2D matrix spec (dari QR provisioning)</span>
+  <span class="t">TextColumn</span> <span class="k">get</span> serialNumber <span class="k">=&gt;</span> text()<span class="k">.</span>unique()()<span class="k">;</span>
+  <span class="t">IntColumn</span>  <span class="k">get</span> gridWidth <span class="k">=&gt;</span> integer()()<span class="k">;</span>
+  <span class="t">IntColumn</span>  <span class="k">get</span> gridHeight <span class="k">=&gt;</span> integer()()<span class="k">;</span>
+  <span class="t">IntColumn</span>  <span class="k">get</span> lengthMm <span class="k">=&gt;</span> integer()()<span class="k">;</span>
+  <span class="t">IntColumn</span>  <span class="k">get</span> heightMm <span class="k">=&gt;</span> integer()()<span class="k">;</span>
+  <span class="t">IntColumn</span>  <span class="k">get</span> aspectClass <span class="k">=&gt;</span> intEnum<span class="k">&lt;</span><span class="t">AspectClass</span><span class="k">&gt;</span>()()<span class="k">;</span>
+
   <span class="t">DateTimeColumn</span> <span class="k">get</span> lastSeen <span class="k">=&gt;</span> dateTime()<span class="k">.</span>nullable()()<span class="k">;</span>
   <span class="k">@override</span> <span class="t">Set</span><span class="k">&lt;</span><span class="t">Column</span><span class="k">&gt;?</span> <span class="k">get</span> primaryKey <span class="k">=&gt;</span> {id}<span class="k">;</span>
 }</div>
+    </div>
+
+    <div class="block">
+      <div class="blk-h">QR payload — sumber kebenaran untuk grid dims</div>
+      <p class="blk-p">
+        Setiap unit wall punya <b>QR code di label</b> yang berisi dimensi grid. App tidak boleh menebak atau
+        meminta user input manual di jalur utama — terlalu rawan typo, dan typo di grid dim = scene rendering
+        kacau tanpa error apapun.
+      </p>
+<div class="code"><span class="c">// Format URL scheme — bisa di-handle native deep link nanti</span>
+livingwall:<span class="k">//</span>provision<span class="k">?</span>
+  v<span class="k">=</span><span class="n">1</span><span class="k">&amp;</span>
+  serial<span class="k">=</span>LW-<span class="n">2026</span>-<span class="n">00342</span><span class="k">&amp;</span>
+  gw<span class="k">=</span><span class="n">72</span><span class="k">&amp;</span>      <span class="c">// grid width (LED per baris)</span>
+  gh<span class="k">=</span><span class="n">48</span><span class="k">&amp;</span>      <span class="c">// grid height (jumlah baris)</span>
+  lw<span class="k">=</span><span class="n">1200</span><span class="k">&amp;</span>    <span class="c">// length mm</span>
+  lh<span class="k">=</span><span class="n">800</span><span class="k">&amp;</span>     <span class="c">// height mm</span>
+  wp<span class="k">=</span>zigzag-bl-rm<span class="k">&amp;</span>  <span class="c">// wiring pattern: zigzag, bottom-left, row-major</span>
+  tier<span class="k">=</span>M     <span class="c">// 'M' | 'L' | 'custom' — INFO ONLY, app tidak branching</span></div>
+      <p class="blk-p" style="margin-top:14px;">
+        <b>Validasi wajib di scan</b>: ratio dalam 1:3 sampai 3:1, dims dalam kelipatan 200mm, dalam envelope
+        600–2400mm × 400–1600mm. Reject dengan error jelas kalau out of range.
+      </p>
+      <p class="blk-p">
+        <b>No HMAC / signing di Phase 1.</b> Provisioning hanya di local network; worst-case spoof = scene
+        terlihat aneh, bukan masalah keamanan. Skip key management overhead.
+      </p>
+    </div>
+
+    <div class="block">
+      <div class="blk-h muted">Aturan tegas — app tidak branching pada tier</div>
+      <p class="blk-p">
+        <code style="font-family:var(--mono);">Wall</code> model hanya tahu <code style="font-family:var(--mono);">gridWidth</code>, <code style="font-family:var(--mono);">gridHeight</code>, <code style="font-family:var(--mono);">aspectClass</code>.
+        Tier (M / L / custom) adalah konsep produksi/marketing — <b>bukan</b> konsep runtime. Jangan ada
+        <code style="font-family:var(--mono);">if (wall.tier == 'M')</code> di code base. Wall ukuran katalog dan custom diperlakukan identik.
+      </p>
     </div>
   </section>
 
@@ -819,13 +890,53 @@
     </div>
 
     <div class="block">
+      <div class="blk-h">Provisioning 2D matrix — <code style="font-family:var(--mono);">WledClient.configureMatrix()</code></div>
+      <p class="blk-p" style="margin-bottom:14px;">
+        Dipanggil <b>sekali</b> di akhir add-wall flow (setelah QR scan + Name & place). Batch semua
+        config one-shot: 2D matrix dims + serpentine wiring + UDP sync. Tulis ke flash sekali, jangan
+        re-issue di setiap app launch — flash punya finite write cycles.
+      </p>
+<div class="code"><span class="t">Future</span><span class="k">&lt;</span><span class="t">void</span><span class="k">&gt;</span> configureMatrix({
+  <span class="k">required</span> <span class="t">int</span> gridWidth<span class="k">,</span>
+  <span class="k">required</span> <span class="t">int</span> gridHeight<span class="k">,</span>
+}) <span class="k">async</span> {
+  <span class="k">await</span> _dio<span class="k">.</span>post(<span class="s">'/json/cfg'</span><span class="k">,</span> data: {
+    <span class="s">'hw'</span>: {
+      <span class="s">'led'</span>: {
+        <span class="s">'matrix'</span>: {
+          <span class="s">'mpc'</span>: <span class="n">1</span><span class="k">,</span>                  <span class="c">// 1 panel</span>
+          <span class="s">'panels'</span>: [{
+            <span class="s">'b'</span>: <span class="n">false</span><span class="k">,</span>             <span class="c">// not bottom-up (we use bottom-left origin)</span>
+            <span class="s">'r'</span>: <span class="n">false</span><span class="k">,</span>             <span class="c">// not right-to-left</span>
+            <span class="s">'v'</span>: <span class="n">false</span><span class="k">,</span>             <span class="c">// not vertical (row-major)</span>
+            <span class="s">'s'</span>: <span class="n">true</span><span class="k">,</span>              <span class="c">// serpentine (zigzag)</span>
+            <span class="s">'x'</span>: <span class="n">0</span><span class="k">,</span> <span class="s">'y'</span>: <span class="n">0</span><span class="k">,</span>
+            <span class="s">'w'</span>: gridWidth<span class="k">,</span>
+            <span class="s">'h'</span>: gridHeight<span class="k">,</span>
+          }]<span class="k">,</span>
+        }<span class="k">,</span>
+      }<span class="k">,</span>
+    }<span class="k">,</span>
+    <span class="c">// UDP sync group — di-set di sini juga supaya hanya 1× flash write</span>
+    <span class="s">'udpn'</span>: {<span class="s">'send'</span>: <span class="n">true</span><span class="k">,</span> <span class="s">'recv'</span>: <span class="n">true</span>}<span class="k">,</span>
+  })<span class="k">;</span>
+}</div>
+      <p class="blk-p" style="margin-top:14px;">
+        <b>Schema WLED panel object</b> sesuai firmware 0.14+. Field exact key dapat dicek di
+        <a href="https://kno.wled.ge/interfaces/json-api/" style="color:var(--accent-2);">kno.wled.ge/interfaces/json-api</a>
+        sebelum implementasi — schema bisa berubah antar versi minor.
+      </p>
+    </div>
+
+    <div class="block">
       <div class="blk-h muted">Strategi kontrol grup</div>
       <p class="blk-p">
         Sesuai spec: <b>kontrol grup di Phase 1 ditangani oleh WLED via UDP sync</b>, bukan oleh app. App hanya kirim
         perintah ke <i>satu wall</i> di ruangan; WLED sendiri yang broadcast UDP ke wall lain dalam sync group
         yang sama. Cara ini menjaga latency rendah dan tidak ada kemungkinan app jadi single point of failure
-        untuk sinkronisasi. <b>Yang perlu disiapkan app</b>: saat wall ditambahkan ke ruangan, set <code style="font-family:var(--mono);">udpn.send=true</code>
-        dan <code style="font-family:var(--mono);">udpn.recv=true</code> di config wall via API. Setelah itu, app tidak campur tangan.
+        untuk sinkronisasi. <b>Yang perlu disiapkan app</b>: <code style="font-family:var(--mono);">udpn.send=true</code> dan
+        <code style="font-family:var(--mono);">udpn.recv=true</code> di-batch dengan 2D matrix config di <code style="font-family:var(--mono);">configureMatrix()</code>
+        di atas. Single flash write, never re-issued.
       </p>
     </div>
   </section>
@@ -965,9 +1076,13 @@
         <div>DiscoveryScreen</div>
         <div>Subscribe ke <code style="font-family:var(--mono);">discoveryProvider</code>. Filter wall yang sudah terdaftar.</div>
 
+        <div>S03b_QrScan</div>
+        <div>QrScanScreen</div>
+        <div>Param: <code style="font-family:var(--mono);">discoveredWall</code>. Pakai <code style="font-family:var(--mono);">mobile_scanner</code>; parse URL payload, validasi range. Fallback "input manual" disembunyikan di link kecil.</div>
+
         <div>S04_NamePlace</div>
         <div>NamePlaceScreen</div>
-        <div>Param: <code style="font-family:var(--mono);">lockedRoomId</code>. Bila ada, chip ruangan terkunci.</div>
+        <div>Param: <code style="font-family:var(--mono);">lockedRoomId</code>, <code style="font-family:var(--mono);">qrPayload</code>. Setelah submit, panggil <code style="font-family:var(--mono);">WledClient.configureMatrix()</code>.</div>
 
         <div>S05_Dashboard</div>
         <div>DashboardScreen</div>
@@ -1090,9 +1205,15 @@
         builder: (_<span class="k">,</span> _) <span class="k">=&gt;</span> <span class="k">const</span> <span class="t">DiscoveryScreen</span>()<span class="k">,</span>
       )<span class="k">,</span>
       <span class="t">GoRoute</span>(
+        path: <span class="s">'/onboarding/qr'</span><span class="k">,</span>      <span class="c">// QR scan — mandatory di primary path</span>
+        builder: (_<span class="k">,</span> state) <span class="k">=&gt;</span> <span class="t">QrScanScreen</span>(
+          discoveredWall: state<span class="k">.</span>extra <span class="k">as</span> <span class="t">DiscoveredWall</span><span class="k">,</span>
+        )<span class="k">,</span>
+      )<span class="k">,</span>
+      <span class="t">GoRoute</span>(
         path: <span class="s">'/onboarding/name'</span><span class="k">,</span>
         builder: (_<span class="k">,</span> state) <span class="k">=&gt;</span> <span class="t">NamePlaceScreen</span>(
-          discoveredWall: state<span class="k">.</span>extra <span class="k">as</span> <span class="t">DiscoveredWall</span><span class="k">,</span>
+          payload: state<span class="k">.</span>extra <span class="k">as</span> <span class="t">ProvisionPayload</span><span class="k">,</span>  <span class="c">// discoveredWall + parsed QR</span>
         )<span class="k">,</span>
       )<span class="k">,</span>
 
@@ -1106,14 +1227,16 @@
             builder: (_<span class="k">,</span> state) <span class="k">=&gt;</span> <span class="t">RoomScreen</span>(roomId: state<span class="k">.</span>pathParameters[<span class="s">'roomId'</span>]<span class="k">!</span>)<span class="k">,</span>
             routes: [
               <span class="c">// Tambah wall ke ruangan ini (Sub-A)</span>
+              <span class="c">// WiFi guide DI-SKIP — app sudah jalan di WiFi.</span>
+              <span class="c">// Flow: Discovery → QR scan → Name (3 langkah)</span>
               <span class="t">GoRoute</span>(
-                path: <span class="s">'add-wall/wifi'</span><span class="k">,</span>
-                builder: (_<span class="k">,</span> state) <span class="k">=&gt;</span> <span class="t">WiFiGuideScreen</span>(
+                path: <span class="s">'add-wall/discovery'</span><span class="k">,</span>
+                builder: (_<span class="k">,</span> state) <span class="k">=&gt;</span> <span class="t">DiscoveryScreen</span>(
                   addContext: <span class="n">true</span><span class="k">,</span>
                   roomId: state<span class="k">.</span>pathParameters[<span class="s">'roomId'</span>]<span class="k">!,</span>
                 )<span class="k">,</span>
               )<span class="k">,</span>
-              <span class="t">GoRoute</span>(path: <span class="s">'add-wall/discovery'</span><span class="k">,</span> builder: ...)<span class="k">,</span>
+              <span class="t">GoRoute</span>(path: <span class="s">'add-wall/qr'</span><span class="k">,</span> builder: ...)<span class="k">,</span>      <span class="c">// QR scan — wajib</span>
               <span class="t">GoRoute</span>(path: <span class="s">'add-wall/name'</span><span class="k">,</span> builder: ...)<span class="k">,</span>
 
               <span class="c">// Kontrol wall individu</span>
@@ -1177,7 +1300,11 @@
 <span class="k">&lt;</span>dict<span class="k">&gt;</span>
   <span class="k">&lt;</span>key<span class="k">&gt;</span>NSAllowsLocalNetworking<span class="k">&lt;/</span>key<span class="k">&gt;</span>
   <span class="k">&lt;</span>true<span class="k">/&gt;</span>
-<span class="k">&lt;/</span>dict<span class="k">&gt;</span></div>
+<span class="k">&lt;/</span>dict<span class="k">&gt;</span>
+
+<span class="c">&lt;!-- Untuk QR scan di onboarding/add-wall --&gt;</span>
+<span class="k">&lt;</span>key<span class="k">&gt;</span>NSCameraUsageDescription<span class="k">&lt;/</span>key<span class="k">&gt;</span>
+<span class="k">&lt;</span>string<span class="k">&gt;</span>Living Wall memerlukan kamera untuk memindai QR code di label wall saat instalasi.<span class="k">&lt;/</span>string<span class="k">&gt;</span></div>
     </div>
 
     <div class="block">
@@ -1190,6 +1317,10 @@
 
 <span class="c">&lt;!-- Wajib di Android 8.1+ untuk membaca nama SSID jaringan saat ini --&gt;</span>
 <span class="k">&lt;</span>uses-permission android:name=<span class="s">"android.permission.ACCESS_FINE_LOCATION"</span><span class="k">/&gt;</span>
+
+<span class="c">&lt;!-- Untuk QR scan di onboarding/add-wall --&gt;</span>
+<span class="k">&lt;</span>uses-permission android:name=<span class="s">"android.permission.CAMERA"</span><span class="k">/&gt;</span>
+<span class="k">&lt;</span>uses-feature android:name=<span class="s">"android.hardware.camera"</span> android:required=<span class="s">"false"</span><span class="k">/&gt;</span>
 
 <span class="k">&lt;</span>application
   android:networkSecurityConfig=<span class="s">"@xml/network_security_config"</span><span class="k">&gt;</span>
@@ -1239,20 +1370,20 @@
         <div>Minggu 1</div>
         <div>
           <h5>Foundation</h5>
-          <p>Setup project, dependency, theme, model Freezed (Home/Room/Wall/Scene), drift schema + migration awal.
+          <p>Setup project, dependency, theme, model Freezed (Home/Room/Wall/Scene) + <b>grid fields + AspectClass + SceneCompatibility</b>, drift schema + migration awal.
           <b>Deliverable:</b> app launch, scene gallery dummy bisa tampil dari scenes.json.</p>
         </div>
         <div>Minggu 2</div>
         <div>
-          <h5>WLED API client</h5>
-          <p>WledClient (HTTP), WledSocket (WebSocket), unit test dengan mock server.
-          <b>Test target:</b> dari Dart code, bisa apply scene ke wall fisik di lab dan terima state via WebSocket.</p>
+          <h5>WLED API client + 2D matrix config</h5>
+          <p>WledClient (HTTP) termasuk <code style="font-family:var(--mono);">configureMatrix()</code>, WledSocket (WebSocket), unit test dengan mock server.
+          <b>Test target:</b> dari Dart code, bisa kirim 2D matrix config + apply scene 2D ke wall fisik di lab dan terima state via WebSocket.</p>
         </div>
         <div>Minggu 3</div>
         <div>
-          <h5>Discovery + Onboarding (S01–S04)</h5>
-          <p>mDNS + fallback subnet scan. Onboarding 4-step. Native config iOS + Android.
-          <b>Risk gate:</b> tes di iPhone + Android device fisik, bukan simulator.</p>
+          <h5>Discovery + Onboarding (S01–S04) + QR scan (S03b)</h5>
+          <p>mDNS + fallback subnet scan. Onboarding 5-step (tambah QR scan). Native config iOS + Android termasuk kamera permission.
+          <b>Risk gate:</b> tes di iPhone + Android device fisik — discovery + QR scan + camera dialog.</p>
         </div>
         <div>Minggu 4</div>
         <div>
@@ -1262,27 +1393,28 @@
         </div>
         <div>Minggu 5</div>
         <div>
-          <h5>Wall Control + Pick Scene (S06, S08, S09)</h5>
-          <p>WallControlScreen, SceneGallery, AdjustmentSheet. Apply scene via controller.
+          <h5>Wall Control + Pick Scene dengan aspect filter (S06, S08, S09)</h5>
+          <p>WallControlScreen, SceneGallery dengan <b>sort-by-aspect-class + "kurang optimal" badge</b>, AdjustmentSheet.
           Polish toast applied (S10).</p>
         </div>
         <div>Minggu 6</div>
         <div>
           <h5>Group Control (S11, S12) + UDP sync</h5>
-          <p>Setup UDP sync group via API saat wall ditambahkan ke ruangan. Wall excluded state.
+          <p>UDP sync sudah di-batch di <code style="font-family:var(--mono);">configureMatrix()</code> minggu 2. Wall excluded state, room screen logic.
           <b>Test:</b> dengan 2 wall di lab, perubahan di satu wall sync ke wall lain &lt;100ms.</p>
         </div>
         <div>Minggu 7</div>
         <div>
-          <h5>Tambah Wall &amp; Ruangan (Sub-A, Sub-B)</h5>
-          <p>Reuse onboarding components dengan param add-context. AddRoomDialog. Edge case ruangan kosong.
-          <b>Risk gate:</b> alur add-wall dari awal-akhir di iOS + Android, termasuk captive portal flow.</p>
+          <h5>Tambah Wall (Discovery → QR → Name) &amp; Ruangan (Sub-A, Sub-B)</h5>
+          <p>Reuse onboarding QR + Name components dengan param add-context. AddRoomDialog. Wall Settings "Konfigurasi ulang" dengan re-scan QR.
+          <b>Risk gate:</b> alur add-wall dari awal-akhir di iOS + Android.</p>
         </div>
         <div>Minggu 8</div>
         <div>
-          <h5>Tuning scene di hardware + polish</h5>
-          <p>18 scene di-tune di wall sungguhan (brightness, speed, intensity disesuaikan dengan LED actual).
-          Bug fix. Internal release ke 3-5 user untuk feedback awal.</p>
+          <h5>Tuning scene + tier L validation + polish</h5>
+          <p>18 scene di-tune sebagai 2D effects di wall sungguhan, lintas 3 aspect class (sample landscape/portrait/square).
+          <b>Tier L validation:</b> ESP32-S3 @ ~7,800 LED harus sustain ≥30 FPS di Plasma 2D & Polar Lights — kalau gagal, adopsi fallback.
+          Bug fix. Internal release ke 3-5 user.</p>
         </div>
       </div>
     </div>
@@ -1290,6 +1422,33 @@
     <div class="block">
       <div class="blk-h">Risk register</div>
       <div class="risks">
+
+        <div class="risk">
+          <div class="risk-sev high">High</div>
+          <div>
+            <h5>Tier L (~7,800 LED) belum tervalidasi di ESP32-S3</h5>
+            <p><span class="lbl">Konteks:</span> Tier L menuntut ESP32-S3 men-drive 2D effects (Plasma 2D, Polar Lights)
+            di ~7,800 LED dengan ≥30 FPS sustained. WLED 2D effects mulai melambat di atas ~4,000–5,000 LED tergantung
+            kompleksitas effect. Kalau gagal validasi, marketing tier L sebagai ready-stock = breaking promise.</p>
+            <p><span class="lbl">Mitigasi:</span> Lab test sebelum minggu 8: setup ESP32-S3 + 7,800 LED + zigzag,
+            ukur FPS di 5 effect representatif selama 30 menit. <b>Fallback ladder</b> kalau gagal:
+            (a) cap L di ~5,000 LED dengan dim 1.6×1.0m, (b) dual ESP32 + E1.31 sync, (c) drop density L jadi 30/m.
+            Sampai tervalidasi, tier L di-tag <code style="font-family:var(--mono);">tentative</code> di CLAUDE.md.</p>
+          </div>
+        </div>
+
+        <div class="risk">
+          <div class="risk-sev high">High</div>
+          <div>
+            <h5>Production belum punya pipeline QR label per-unit</h5>
+            <p><span class="lbl">Konteks:</span> App expect tiap unit punya QR code unik berisi serial + grid dims.
+            Kalau production team belum punya tooling untuk generate QR per-unit dari assembly data, app akan jalan
+            tanpa input yang valid. Bug paling mahal di sini: customer tidak bisa onboard.</p>
+            <p><span class="lbl">Mitigasi:</span> Koordinasi early dengan tim produksi: definisikan format payload
+            (sudah ada — URL scheme <code style="font-family:var(--mono);">livingwall://provision?v=1&amp;...</code>), siapkan QR generator script,
+            test print di label material yang dipakai. Untuk dev unit lab, generate QR manual via online tool.</p>
+          </div>
+        </div>
 
         <div class="risk">
           <div class="risk-sev high">High</div>
@@ -1307,13 +1466,15 @@
         <div class="risk">
           <div class="risk-sev high">High</div>
           <div>
-            <h5>Tuning scene di hardware berbeda dari simulator</h5>
+            <h5>Tuning scene 2D di hardware berbeda dari simulator</h5>
             <p><span class="lbl">Konteks:</span> 18 scene di catalog adalah titik awal yang masuk akal,
-            tapi <code style="font-family:var(--mono);">sx=64</code> akan terlihat beda di LED density rendah vs tinggi, dan brightness
-            255 mungkin silau di diffuser tertentu.</p>
-            <p><span class="lbl">Mitigasi:</span> Sediakan satu minggu khusus (minggu 8) untuk tuning di wall fisik.
-            Hardware spec (panjang strip, LED density) harus sudah final sebelum minggu 8 — kalau belum,
-            tuning tidak bisa dimulai dan release tertunda.</p>
+            tapi <code style="font-family:var(--mono);">sx=64</code> akan terlihat beda di grid 72×48 vs 108×72, dan brightness
+            255 mungkin silau di diffuser tertentu. Tambahan: tiap scene mapped ke <b>2D fx</b> (Plasma 2D, Polar Lights, dll)
+            harus divalidasi rendering proporsionalnya di 3 aspect class (landscape, portrait, square).</p>
+            <p><span class="lbl">Mitigasi:</span> Minggu 8 dialokasi untuk tuning di wall fisik — lintas 3 aspect class.
+            Hardware spec final (density 60/m sudah fixed), satu reference M-panel cukup untuk universal scenes,
+            sample portrait + square panel untuk validate compatibility class. Tuning output langsung jadi
+            <code style="font-family:var(--mono);">assets/scenes.json</code> production.</p>
           </div>
         </div>
 

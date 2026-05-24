@@ -538,13 +538,21 @@
 
   <!-- ================= 02 · 7-SCREEN TOUR ================= -->
   <section class="section" id="s2">
-    <div class="sec-tab"><span class="badge">02</span><span class="lbl">Tur 7 Layar Inti</span></div>
+    <div class="sec-tab"><span class="badge">02</span><span class="lbl">Tur 8 Layar Inti</span></div>
     <h2 class="sec-h">Dari kardus ke <em>"ruangan saya terasa hidup"</em>.</h2>
     <p class="sec-intro">
-      Gambaran menyeluruh tujuh layar utama Phase 1. Tiga pertama adalah <b>onboarding</b> — termasuk
-      segmen captive portal WLED yang tidak bisa dihapus, hanya dibungkus. Empat terakhir adalah
-      <b>penggunaan harian</b>. Bagian 04–06 nanti memperdalam layar-layar kunci ini langkah demi langkah.
+      Gambaran menyeluruh delapan layar utama Phase 1. Empat pertama adalah <b>onboarding</b> — termasuk
+      segmen captive portal WLED yang tidak bisa dihapus, hanya dibungkus, plus <b>QR scan</b> untuk
+      provisioning 2D matrix. Empat terakhir adalah <b>penggunaan harian</b>. Bagian 04–06 nanti memperdalam
+      layar-layar kunci ini langkah demi langkah.
     </p>
+
+    <div style="margin-top:24px;padding:14px 18px;border-left:3px solid var(--accent-line);background:var(--accent-soft);border-radius:8px;color:var(--text-dim);font-size:13.5px;line-height:1.6;">
+      <b style="color:var(--accent-2);">⚠ Catatan visual</b> — Phone mockup di bawah masih merefleksikan flow lama (7 layar, tanpa QR scan).
+      Flow aktual sekarang menyisipkan langkah <b>QR scan</b> antara Discovery (03) dan Beri Nama (04) untuk membaca
+      grid dimensions dari label wall. Visual canvas refresh akan menyusul; teks <i>Konteks/User/Teknis</i> di
+      setiap kartu sudah diupdate untuk reflect keputusan baru.
+    </div>
 
     <div class="grid7" style="margin-top:34px;">
 
@@ -638,8 +646,8 @@
         <div class="note">
           <dl>
             <dt>Konteks</dt><dd>App menemukan wall. <b>IP tidak pernah ditampilkan</b> — hanya "Wall baru".</dd>
-            <dt>User</dt><dd>Mengenali wall-nya, tap <b>Klaim wall ini</b>.</dd>
-            <dt class="tech">Teknis</dt><dd>mDNS scan dengan <b>fallback scan subnet</b>.</dd>
+            <dt>User</dt><dd>Mengenali wall-nya, tap <b>Klaim wall ini</b> → lanjut ke QR scan.</dd>
+            <dt class="tech">Teknis</dt><dd>mDNS scan dengan <b>fallback scan subnet</b>. Setelah claim → langkah baru: scan QR di label wall untuk dapat grid dims.</dd>
           </dl>
         </div>
       </article>
@@ -670,9 +678,9 @@
         </div>
         <div class="note">
           <dl>
-            <dt>Konteks</dt><dd>App menciptakan konsep <b>Rumah → Ruangan → Wall</b>.</dd>
+            <dt>Konteks</dt><dd>App menciptakan konsep <b>Rumah → Ruangan → Wall</b>. Dipanggil <i>setelah</i> QR scan — payload grid dims sudah ada di tangan.</dd>
             <dt>User</dt><dd>Ketik nama, pilih/buat ruangan, tap <b>Lanjut</b>.</dd>
-            <dt class="tech">Teknis</dt><dd>Buat record <b>Wall</b> (nama, IP, ID, ruangan) di storage lokal.</dd>
+            <dt class="tech">Teknis</dt><dd>Buat record <b>Wall</b> (nama, IP, ID, ruangan, <b>gridW/H, aspectClass, serial</b>) di storage lokal, lalu <code style="font-family:var(--mono);font-size:11px;">WledClient.configureMatrix()</code> kirim 2D config + UDP sync ke wall (single flash write).</dd>
           </dl>
         </div>
       </article>
@@ -1088,6 +1096,13 @@
       ingin mengubah brightness, speed, atau intensity sebelum menerapkan.
     </p>
 
+    <div style="margin-top:18px;padding:14px 18px;border-left:3px solid var(--accent-line);background:var(--accent-soft);border-radius:8px;color:var(--text-dim);font-size:13.5px;line-height:1.6;">
+      <b style="color:var(--accent-2);">Aspect-aware gallery</b> — Galeri Scene <b>selalu menampilkan ke-18 scene</b>, tapi diurutkan berdasarkan
+      compatibility wall yang aktif: scene yang match aspect class wall di atas, universal di tengah, mismatched
+      di bawah dengan label kecil <i>"kurang optimal untuk wall ini"</i>. Tidak pernah hide, tidak pernah disable
+      — user tetap bisa apply scene apapun. Detail di <code style="font-family:var(--mono);font-size:11px;">docs/scene-catalog.html</code>.
+    </div>
+
     <div class="rail" style="margin-top:30px;">
       <!-- 1 -->
       <div class="stepwrap">
@@ -1161,9 +1176,9 @@
           </div>
           <div class="note">
             <dl>
-              <dt>Konteks</dt><dd>Scene dikelompokkan per <b>mood</b>: Tenang, Fokus, Sosial, Dinamis. Chip kategori memfilter.</dd>
-              <dt>User</dt><dd>Scroll, filter lewat chip, tap kartu scene yang diinginkan.</dd>
-              <dt class="tech">Teknis</dt><dd>Daftar scene + kategori + thumbnail = <b>data statis di app</b>.</dd>
+              <dt>Konteks</dt><dd>Scene dikelompokkan per <b>mood</b>: Tenang, Fokus, Sosial, Dinamis. Chip kategori memfilter. Dalam tiap kategori, urutan tergantung <b>aspect class wall</b> — match dulu, mismatched di bawah dengan badge.</dd>
+              <dt>User</dt><dd>Scroll, filter lewat chip, tap kartu scene yang diinginkan. Mismatched scene tetap bisa di-tap.</dd>
+              <dt class="tech">Teknis</dt><dd>Daftar scene + kategori + thumbnail + <b>compatibility class</b> = data statis di <code style="font-family:var(--mono);font-size:11px;">scenes.json</code>. Sort logic baca <code style="font-family:var(--mono);font-size:11px;">wall.aspectClass</code> di gallery state.</dd>
             </dl>
           </div>
         </div>
@@ -1405,6 +1420,22 @@
       ruangan baru <b>langsung diisi wall</b>.
     </p>
 
+    <div style="margin-top:18px;padding:14px 18px;border-left:3px solid var(--accent-line);background:var(--accent-soft);border-radius:8px;color:var(--text-dim);font-size:13.5px;line-height:1.6;">
+      <b style="color:var(--accent-2);">Add Wall sekarang 3 langkah, bukan 4</b> — Sejak pivot ke 2D matrix + QR provisioning,
+      Add Wall flow = <b>Discovery → QR scan → Beri Nama</b>. Langkah <b>WiFi guide di-skip</b> karena app sudah jalan
+      di WiFi (asumsi: kalau app jalan, WiFi sudah connect). Langkah <b>QR scan</b> ditambahkan setelah Discovery
+      untuk membaca grid dims dari label wall. Visual mockup A.2 di bawah masih menampilkan langkah WiFi —
+      itu deprecated, akan dihapus di visual canvas refresh.
+    </div>
+
+    <div style="margin-top:14px;padding:14px 18px;border-left:3px solid var(--accent-line);background:var(--accent-soft);border-radius:8px;color:var(--text-dim);font-size:13.5px;line-height:1.6;">
+      <b style="color:var(--accent-2);">Wall Settings → Konfigurasi ulang</b> — Ada juga jalur edit config setelah onboarding: di Wall Settings,
+      tombol <i>"Konfigurasi ulang"</i> memungkinkan user re-scan QR (jika dimensi tersimpan salah, panel diganti,
+      atau bug provisioning). Primary path: scan QR ulang. Fallback: input manual disembunyikan di link kecil "lanjutan"
+      dengan confirmation "ini akan reset scene aktif ke default". Re-issues <code style="font-family:var(--mono);font-size:11px;">/json/cfg</code>
+      ke wall — flash write, jangan diekspos sebagai action sering.
+    </div>
+
     <!-- relationship map -->
     <div class="mapbox" style="margin-top:34px;">
       <div class="blk-h">Hubungan dua journey</div>
@@ -1435,7 +1466,7 @@
     <!-- ====== Sub-journey A: Tambah Wall ====== -->
     <div class="subhead">
       <div class="st"><span class="sn">A</span><span class="stt">Tambah Wall ke Ruangan yang Ada</span></div>
-      <p>Dimulai dari <b>dalam Layar Ruangan</b> — sehingga ruangan tujuan sudah otomatis diketahui. Alurnya mirip onboarding tapi <b>lebih ringkas</b>: langkah WiFi sering bisa dilewati saat wall sudah di jaringan.</p>
+      <p>Dimulai dari <b>dalam Layar Ruangan</b> — sehingga ruangan tujuan sudah otomatis diketahui. Alurnya <b>3 langkah</b>: <b>Discovery → QR scan → Beri Nama</b>. WiFi guide di-skip (app sudah online); QR scan wajib untuk setiap wall baru, karena tiap unit punya dimensi unik di label.</p>
     </div>
 
     <div class="rail">
@@ -1506,9 +1537,10 @@
           </div>
           <div class="note">
             <dl>
-              <dt>Konteks</dt><dd>Identik dengan onboarding. Bedanya: <b>banner konteks</b> "akan masuk ke Ruang Tamu" + tombol ✕.</dd>
-              <dt>User</dt><dd>Wall sudah di WiFi yang sama → <b>"cari sekarang"</b>. Benar-benar baru → ikuti panduan.</dd>
-              <dt class="tech">Teknis</dt><dd>App tidak menyimpan kredensial WiFi user — tapi wall yang sudah online langsung muncul di discovery.</dd>
+              <dt style="color:var(--high);">⚠ Deprecated</dt><dd style="color:var(--high);">Langkah ini <b>dihapus</b> di flow Add Wall yang baru. App sudah pasti jalan di WiFi (kalau tidak, Discovery juga gagal); tidak perlu user menavigasi ulang Settings. Mockup di sebelah kiri masih ada untuk referensi historis sampai visual canvas refresh.</dd>
+              <dt>Konteks (lama)</dt><dd>Identik dengan onboarding. Bedanya: <b>banner konteks</b> "akan masuk ke Ruang Tamu" + tombol ✕.</dd>
+              <dt>User (lama)</dt><dd>Wall sudah di WiFi yang sama → <b>"cari sekarang"</b>. Benar-benar baru → ikuti panduan.</dd>
+              <dt class="tech">Teknis</dt><dd>Add Wall flow baru langsung mulai dari Discovery (step A.3) tanpa langkah ini.</dd>
             </dl>
           </div>
         </div>
@@ -1544,9 +1576,9 @@
           </div>
           <div class="note">
             <dl>
-              <dt>Konteks</dt><dd>Sama seperti onboarding — tapi <b>menyaring wall yang sudah terdaftar</b>.</dd>
-              <dt>User</dt><dd>Pilih wall baru.</dd>
-              <dt class="tech">Teknis</dt><dd>Filter berdasarkan device ID yang sudah ada di storage — mencegah menambah wall yang sama dua kali.</dd>
+              <dt>Konteks</dt><dd>Sama seperti onboarding — tapi <b>menyaring wall yang sudah terdaftar</b>. Setelah pilih wall → <b>lanjut ke QR scan</b>, bukan langsung Beri Nama.</dd>
+              <dt>User</dt><dd>Pilih wall baru → kamera terbuka untuk scan QR di label wall.</dd>
+              <dt class="tech">Teknis</dt><dd>Filter berdasarkan device ID yang sudah ada di storage. QR scan step (tidak digambarkan terpisah di visual ini, lihat callout di atas section) wajib sebelum Beri Nama — payload jadi sumber grid dims.</dd>
             </dl>
           </div>
         </div>
@@ -1581,9 +1613,9 @@
           </div>
           <div class="note">
             <dl>
-              <dt>Konteks</dt><dd>Beda dari onboarding: chip ruangan <b>terkunci</b> ke "Ruang Tamu" — bukan pilihan.</dd>
+              <dt>Konteks</dt><dd>Beda dari onboarding: chip ruangan <b>terkunci</b> ke "Ruang Tamu" — bukan pilihan. Dipanggil <i>setelah</i> QR scan; payload grid dims sudah ada.</dd>
               <dt>User</dt><dd>Ketik nama wall, tap <b>Selesai</b>.</dd>
-              <dt class="tech">Teknis</dt><dd>Record <b>Wall</b> dibuat dengan roomId yang sudah ditentukan. Tidak ada state "tanpa ruangan".</dd>
+              <dt class="tech">Teknis</dt><dd>Record <b>Wall</b> dibuat dengan roomId yang ditentukan + grid fields dari QR (gridW/H, aspectClass, serial). Tap Selesai → <code style="font-family:var(--mono);font-size:11px;">WledClient.configureMatrix()</code> kirim 2D config + UDP sync ke wall (single batched flash write).</dd>
             </dl>
           </div>
         </div>

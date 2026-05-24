@@ -9,6 +9,7 @@ import '../screens/dashboard/dashboard_screen.dart';
 import '../screens/onboarding/discovery_screen.dart';
 import '../screens/onboarding/empty_state_screen.dart';
 import '../screens/onboarding/name_place_screen.dart';
+import '../screens/onboarding/qr_scan_screen.dart';
 import '../screens/onboarding/wifi_guide_screen.dart';
 import '../screens/room/room_screen.dart';
 import '../screens/scenes/scene_gallery_screen.dart';
@@ -48,14 +49,25 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (_, __) => const DiscoveryScreen(),
       ),
       GoRoute(
-        path: Routes.onboardingNamePlace,
+        path: Routes.onboardingQrScan,
         builder: (context, state) {
           final discovered = state.extra as DiscoveredWall?;
-          if (discovered == null) {
-            // Defensive: someone navigated here without a selection.
-            return const _MissingExtraScreen();
-          }
-          return NamePlaceScreen(discovered: discovered);
+          if (discovered == null) return const _MissingExtraScreen();
+          return QrScanScreen(
+            discovered: discovered,
+            onScanned: (payload) => context.push(
+              Routes.onboardingNamePlace,
+              extra: (discovered: discovered, provision: payload),
+            ),
+          );
+        },
+      ),
+      GoRoute(
+        path: Routes.onboardingNamePlace,
+        builder: (context, state) {
+          final extra = state.extra;
+          if (extra is! OnboardingPayload) return const _MissingExtraScreen();
+          return NamePlaceScreen(payload: extra);
         },
       ),
       GoRoute(
@@ -83,16 +95,10 @@ final routerProvider = Provider<GoRouter>((ref) {
                   ),
                 ],
               ),
-              // Add-wall flow — reuses the onboarding screens with an
-              // AddWallContext that locks the target room.
-              GoRoute(
-                path: 'add-wall/wifi',
-                builder: (_, state) => WifiGuideScreen(
-                  addContext: AddWallContext(
-                    roomId: state.pathParameters['roomId']!,
-                  ),
-                ),
-              ),
+              // Add-wall flow — 3 steps reusing onboarding screens with an
+              // AddWallContext that locks the target room. WiFi guide is
+              // skipped (app is already on WiFi); QR scan is mandatory for
+              // every new wall to populate grid dimensions.
               GoRoute(
                 path: 'add-wall/discovery',
                 builder: (_, state) => DiscoveryScreen(
@@ -102,12 +108,31 @@ final routerProvider = Provider<GoRouter>((ref) {
                 ),
               ),
               GoRoute(
-                path: 'add-wall/name',
+                path: 'add-wall/qr-scan',
                 builder: (context, state) {
+                  final roomId = state.pathParameters['roomId']!;
+                  final addCtx = AddWallContext(roomId: roomId);
                   final discovered = state.extra as DiscoveredWall?;
                   if (discovered == null) return const _MissingExtraScreen();
-                  return NamePlaceScreen(
+                  return QrScanScreen(
                     discovered: discovered,
+                    addContext: addCtx,
+                    onScanned: (payload) => context.push(
+                      Routes.addWallName(roomId),
+                      extra: (discovered: discovered, provision: payload),
+                    ),
+                  );
+                },
+              ),
+              GoRoute(
+                path: 'add-wall/name',
+                builder: (context, state) {
+                  final extra = state.extra;
+                  if (extra is! OnboardingPayload) {
+                    return const _MissingExtraScreen();
+                  }
+                  return NamePlaceScreen(
+                    payload: extra,
                     addContext: AddWallContext(
                       roomId: state.pathParameters['roomId']!,
                     ),

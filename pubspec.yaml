@@ -41,6 +41,11 @@ dependencies:
   permission_handler: ^11.3.1
   url_launcher: ^6.3.0
 
+  # QR scan — onboarding/add-wall reads each unit's grid dims from a QR
+  # code on the wall's label. mobile_scanner is the actively maintained
+  # successor to the (deprecated) qr_code_scanner.
+  mobile_scanner: ^5.0.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

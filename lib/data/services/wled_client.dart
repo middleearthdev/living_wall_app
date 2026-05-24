@@ -52,12 +52,66 @@ class WledClient {
   Future<void> setBrightness(int bri) =>
       _post('/json/state', {'bri': bri.clamp(0, 255)});
 
-  /// Wire a wall into a UDP sync group. Both flags true = full bidirectional
-  /// sync; the spec uses room-level sync, so every wall in a room gets this.
+  /// One-shot provisioning at add-wall time: declare the wall's 2D matrix
+  /// layout and join its room's UDP sync group.
+  ///
+  /// Matrix config tells WLED to render 2D effects in (x, y) space across a
+  /// serpentine-wired panel, instead of treating the strip as a 1D list of
+  /// LEDs. Without this, scenes like Sunset render as scrambled zig-zags on
+  /// a real wall.
+  ///
+  /// Wiring convention is fixed by production: zigzag, bottom-left origin,
+  /// row-major. That maps to WLED panel flags `b=true, r=false, v=false,
+  /// s=true`.
+  ///
+  /// Writes to flash — call this once per wall (add-wall or explicit
+  /// reconfigure), never on app launch.
+  Future<void> configureMatrix({
+    required int gridWidth,
+    required int gridHeight,
+  }) => _post('/json/cfg', {
+    'hw': {
+      'led': {
+        'matrix': {
+          'mpc': 1,
+          'panels': [
+            {
+              'b': true, // wiring starts at the bottom row
+              'r': false, // ...progressing left-to-right
+              'v': false, // row-major (rows, not columns)
+              's': true, // serpentine (zigzag)
+              'x': 0,
+              'y': 0,
+              'w': gridWidth,
+              'h': gridHeight,
+            },
+          ],
+        },
+      },
+    },
+    // Enable full bidirectional sync. The room-level group concept lives in
+    // the app; WLED handles the actual UDP broadcast between walls.
+    'if': {
+      'sync': {
+        'send': {'en': true},
+        'recv': {'bri': true, 'col': true, 'fx': true, 'pal': true},
+      },
+    },
+  });
+
+  /// Toggle whether this wall participates in its room's UDP sync group.
+  /// Used by the per-wall exclude flow on the room screen.
+  ///
+  /// WLED stores send/recv as nested objects under `if.sync` (each with its
+  /// own sub-flags); passing the top-level booleans as objects' contents
+  /// keeps the call atomic from the app's point of view.
   Future<void> setSyncEnabled({required bool send, required bool recv}) =>
       _post('/json/cfg', {
         'if': {
-          'sync': {'send': send, 'recv': recv},
+          'sync': {
+            'send': {'en': send},
+            'recv': {'bri': recv, 'col': recv, 'fx': recv, 'pal': recv},
+          },
         },
       });
 

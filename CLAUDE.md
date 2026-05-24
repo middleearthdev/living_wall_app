@@ -8,9 +8,11 @@ Smart LED ambient wall product. Premium home lighting that doubles as moody atmo
 
 ## Quick context
 
-- **Hardware:** ESP32-S3 + stock WLED firmware + LED strip (density/length TBD by ID team)
+- **Hardware:** ESP32-S3 + stock WLED 0.14+ firmware + WS2812B strip at 60/m fixed density, mounted zigzag (serpentine) bottom-left origin
+- **Wall model:** 2D grid (W × H), provisioned to WLED as **2D matrix mode** — not 1D strip
 - **Communication:** WLED JSON API over HTTP + WebSocket on local network
 - **App:** Flutter, this repository
+- **Provisioning:** Per-unit QR code on label carries grid dimensions; scanned during onboarding/add-wall
 - **Group sync:** WLED UDP sync handles room-level synchronization — app does not orchestrate
 - **Discovery:** mDNS scan for `_wled._tcp` with subnet ping fallback
 
@@ -37,6 +39,86 @@ Smart LED ambient wall product. Premium home lighting that doubles as moody atmo
 - Voice control
 - Schedules / automations
 - Adding scenes beyond the curated 18
+- Multi-controller installations (single ESP32 per wall only)
+- Aspect ratios outside 1:3 to 3:1 range
+- Pre-rendered pixel data scenes (custom images/photos) — Phase 2+
+- Commercial / B2B installs requiring site survey
+
+---
+
+## Product model
+
+Living Wall is a **flexible platform**, not a fixed-SKU product. Two catalog tiers cover the common cases, plus a custom-loose tier for everything else within sane technical bounds.
+
+### Catalog tiers (ready stock, landscape 3:2)
+
+| Tier | Dimensions | Grid | Approx. LED count |
+|---|---|---|---|
+| M | 1.2 × 0.8m | 72 × 48 | ~3,500 |
+| L | 1.8 × 1.2m | 108 × 72 | ~7,800 |
+
+### Custom tier (sales touch, 4–6 week lead)
+- **Aspect ratio:** 1:3 to 3:1 (anything outside → bespoke/B2B waitlist)
+- **Dimensions:** kelipatan 200mm, width 600–2400mm, height 400–1600mm
+- **Density:** fixed 60/m (same as catalog)
+- **Pricing:** surcharge multiplier by ratio deviation from 3:2 (1.0x catalog, 1.2x near-3:2, 1.4x further) — exact numbers owned by business doc, not this file
+- **Terms:** 50% deposit, final sale, MOQ 1 per order
+
+### App treats every wall identically
+Critical rule: **app code has zero branching on M / L / custom.** The `Wall` model knows `gridWidth`, `gridHeight`, `aspectClass` — nothing else. Tier is a production/marketing concept, not a runtime concept. Every wall, regardless of tier, is configured the same way: parse QR → set 2D matrix on WLED → done.
+
+### Tier L is tentative
+Tier L (~7,800 LED) needs hardware validation before commit. ESP32-S3 may not sustain ≥30 FPS on 2D effects at that count. Fallback ladder if it fails: cap L at ~5,000 LED, dual-controller with E1.31 sync, or drop density to 30/m. Mark as `tentative — pending hardware validation` until proven.
+
+---
+
+## Spatial model — the 2D matrix
+
+Walls are **2D grids**, not 1D strips. This is the foundational shift that makes scenes look consistent across different wall sizes.
+
+### Why 2D, not 1D
+- WLED firmware in default mode treats a strip as a flat list of LEDs (0…N). A scene like Sunset rendered as 1D becomes a horizontal gradient running through wire order — which on a zigzag-wired panel renders as visual nonsense.
+- WLED 0.14+ adds native **2D Matrix mode**. Tell WLED the grid is W × H with serpentine wiring; 2D effects (Plasma 2D, Polar Lights, Fire 2D, Sunrise 2D, etc.) then render coherently in (x, y) space.
+- Result: customer A with 1.2 × 0.8m and customer B with 2.4 × 1.6m both see Sunset as "orange at the bottom, purple at the top" — composition proportionally preserved.
+
+### Provisioning (once, at add-wall)
+1. User scans QR code on the wall label.
+2. App parses payload (URL scheme): `v=1`, `serial`, `gw` (grid width), `gh` (grid height), `lw`/`lh` (mm), `wp` (wiring pattern), `tier`.
+3. App POSTs to `/json/cfg` with the 2D matrix config + UDP sync settings.
+4. WLED writes once to flash. **Do not re-send `cfg` on every app launch** — flash has finite write cycles.
+
+### QR payload format
+```
+livingwall://provision?v=1&serial=LW-2026-00342&gw=72&gh=48&lw=1200&lh=800&wp=zigzag-bl-rm&tier=M
+```
+
+- `v=1` mandatory (schema version)
+- `wp` canonical value: `zigzag-bl-rm` (bottom-left origin, row-major)
+- **No HMAC/signing in Phase 1** — provisioning is local-network only; worst-case spoof = ugly rendering, not security
+- App must validate: ratio within 1:3–3:1, dims in 200mm increments, within size envelope. Reject invalid with clear error.
+
+### Scene compatibility classification
+
+Each of the 18 scenes is tagged with one of three classes:
+
+| Class | Renders well at | Examples |
+|---|---|---|
+| `universal` | Any aspect ratio | candle, breathe, focus, daylight, forest, sakura, fireplace, twinkle, party, movie |
+| `landscape` | Wide aspect (composition has horizon / horizontal flow) | ocean, sunset, golden, aurora, tokyo |
+| `portrait` | Tall aspect (vertical flow) | rain, dawn (wind down), dinner |
+
+### Aspect class derivation (from grid dims, at registration)
+- `landscape` if `gridWidth / gridHeight ≥ 1.2`
+- `portrait` if `gridWidth / gridHeight ≤ 0.83`
+- `square` otherwise (between 0.83 and 1.2)
+
+### Scene gallery filtering UX
+Show **all 18 scenes always.** Sort logic:
+1. Scenes matching wall's aspect class first
+2. Universal scenes second
+3. Mismatched scenes at the bottom with a small label "kurang optimal untuk wall ini"
+
+Never hide, never disable. Customer keeps the choice. Premium UX = informative, not restrictive.
 
 ---
 
@@ -56,8 +138,9 @@ Smart LED ambient wall product. Premium home lighting that doubles as moody atmo
 | freezed | ^2.5 | Immutable models |
 | json_serializable | ^6.8 | JSON parsing |
 | google_fonts | ^6.2 | Fraunces + Hanken Grotesk |
-| permission_handler | ^11 | Android location, iOS local network |
+| permission_handler | ^11 | Android location, iOS local network, camera (for QR) |
 | url_launcher | ^6.3 | Open WiFi settings |
+| mobile_scanner | ^5 | QR scan during onboarding / add-wall provisioning |
 
 ### Don't add without discussion
 - **Anything cloud/Firebase** — violates local-first decision
@@ -118,8 +201,8 @@ assets/
 ### Entities
 - **Home** — top-level container. Phase 1: only one home, but model supports multiple.
 - **Room** — a space in the home. Maps 1:1 to a WLED UDP sync group.
-- **Wall** — a physical LED panel. Belongs to exactly one Room. Has WLED device (ESP32) at an IP address.
-- **Scene** — a curated mood preset. Catalog is static (18 scenes). Maps to WLED JSON API params: `fx`, `pal`, `bri`, `sx`, `ix`, optional `col`.
+- **Wall** — a physical LED panel mounted as a **2D grid**. Belongs to exactly one Room. Has WLED device (ESP32) at an IP address. Required fields: `gridWidth`, `gridHeight` (in LEDs), `aspectClass` (`landscape` / `portrait` / `square`, derived from grid dims at registration), `serialNumber` (from QR), `lengthMm`, `heightMm`.
+- **Scene** — a curated mood preset. Catalog is static (18 scenes). Maps to WLED JSON API params: `fx`, `pal`, `bri`, `sx`, `ix`, optional `col`, plus a required `compatibility` tag (`universal` / `landscape` / `portrait`) used by the scene gallery for sort-and-badge.
 
 ### Relationships
 - Home has many Rooms
@@ -166,14 +249,16 @@ Use real photographic images (Unsplash references in design canvas), bundled to 
 
 ## Key user flows (memorize these)
 
-### 1. Onboarding (4 steps)
-First launch → Empty state → WiFi guide → Discovery → Name & place → Dashboard
+### 1. Onboarding (5 steps, first wall)
+First launch → Empty state → WiFi guide → Discovery → **QR scan** → Name & place → Dashboard
+
+QR scan is mandatory in the primary path — it provisions the wall's 2D matrix config to WLED. Advanced manual entry is hidden behind a small "input manual" link as a fallback only.
 
 ### 2. Daily use (the 80% case)
 Open app → Dashboard → tap mini-control on RoomCard → wall changes. Most actions never leave the Dashboard.
 
 ### 3. Pick scene (deeper)
-Wall Control → tap "Lihat semua" → Scene Gallery (category tabs) → tap scene → applied immediately. Adjustment Sheet only opens if user wants to fine-tune.
+Wall Control → tap "Lihat semua" → Scene Gallery (category tabs) → tap scene → applied immediately. Adjustment Sheet only opens if user wants to fine-tune. Gallery sorts scenes by aspect-class match for the current wall — universal first within match, mismatched at bottom with "kurang optimal" label, never hidden.
 
 ### 4. Group control
 Already implicit: a Room is a sync group. Change one wall in the room → all walls in that room change. To exclude one wall temporarily, the user can mark it excluded in Room screen.
@@ -182,20 +267,32 @@ Already implicit: a Room is a sync group. Change one wall in the room → all wa
 - **'+' button on Dashboard** = add room (then immediately enter add-wall flow)
 - **'Tambah wall' inside Room screen** = add wall to this specific room
 - Wall is ALWAYS placed in a room. No "unassigned" state.
-- Add wall flow = same 3-step module (WiFi → Discovery → Name) used by onboarding
+- Add wall flow = **3 steps** (Discovery → QR scan → Name). WiFi guide is skipped — app is already running on WiFi.
+- QR scan is mandatory for every new wall, regardless of whether it's the first or the nth. Same component reused from onboarding.
+
+### 6. Reconfigure wall (Wall Settings → "Konfigurasi ulang")
+Rare but supported. Used when QR was misscanned, the wall was upgraded with a different panel, or factory provisioning was wrong.
+- Primary path: scan QR again
+- Fallback: manual dimension entry, hidden as "lanjutan" with a warning
+- Confirmation: "Mengganti konfigurasi akan menyebabkan scene saat ini reset ke default. Lanjutkan?"
+- Re-issues `/json/cfg` to WLED. This is a flash write — do not expose as a frequent action.
 
 ---
 
-## Scene catalog (18 scenes — IDs and params)
+## Scene catalog (18 scenes — IDs, params, compatibility)
 
-Reference only — full data is in `assets/scenes.json`. Each scene has a stable `id`.
+Reference only — full data is in `assets/scenes.json`. Each scene has a stable `id` and a `compatibility` tag (`universal` / `landscape` / `portrait`).
 
-**Tenang (6):** ocean, candle, dawn, aurora, rain, breathe
-**Fokus (3):** focus, forest, daylight
-**Sosial (6):** sunset, dinner, movie, tokyo, golden, sakura
-**Dinamis (3):** fireplace, twinkle, party
+**Tenang (6):** ocean `[landscape]`, candle `[universal]`, dawn `[portrait]`, aurora `[landscape]`, rain `[portrait]`, breathe `[universal]`
+**Fokus (3):** focus `[universal]`, forest `[universal]`, daylight `[universal]`
+**Sosial (6):** sunset `[landscape]`, dinner `[portrait]`, movie `[universal]`, tokyo `[landscape]`, golden `[landscape]`, sakura `[universal]`
+**Dinamis (3):** fireplace `[universal]`, twinkle `[universal]`, party `[universal]`
+
+Totals: 10 universal, 5 landscape, 3 portrait = 18.
 
 Default `transition: 14` (1.4s). Wind Down (`dawn`) uses `30` (3s) for slower fade.
+
+All scene `fx` values must be **2D effects** (Plasma 2D, Polar Lights, Fire 2D, Sunrise 2D, Drift 2D, Color Waves 2D, Matrix 2D, etc.) — not 1D effects. 1D effects on a zigzag-wired panel render as scrambled lines, defeating the entire spatial model.
 
 See `docs/scene-catalog.html` for full params per scene including fx/pal/bri/sx/ix/col.
 
@@ -215,6 +312,9 @@ udpn.send = true
 udpn.recv = true
 ```
 via `/json/cfg`. After that, app does not orchestrate sync — WLED does it.
+
+### 2D matrix provisioning (once, at add-wall)
+At the same `/json/cfg` write, app also sets the 2D matrix configuration: grid `width` × `height` in LEDs, `serpentine: true` (zigzag), origin bottom-left. This and the UDP sync settings are batched into a single config write — flash is written once per wall lifecycle, not per session. Re-issuing `cfg` on every app launch wears the flash and is a hard-banned pattern.
 
 ### IP discovery is not persistent
 Walls' IPs can change (DHCP). On each app launch, run discovery and match by `deviceId` (MAC) to update stored IP. Don't trust stored IPs as truth — they're caches.
@@ -308,7 +408,16 @@ Run through this list whenever reviewing a diff, finishing a feature, or before 
 
 ### Scenes
 - [ ] Scene catalog stays at 18 entries. New scenes only after hardware tuning.
-- [ ] Scene params match `assets/scenes.json` shape: `fx`, `pal`, `bri`, `sx`, `ix`, optional `col`, `transition` (default 14).
+- [ ] Scene params match `assets/scenes.json` shape: `fx`, `pal`, `bri`, `sx`, `ix`, optional `col`, `transition` (default 14), `compatibility` (`universal`/`landscape`/`portrait`).
+- [ ] `fx` value is a 2D effect ID — never a 1D effect.
+- [ ] Scene gallery shows all 18 scenes regardless of wall aspect; sorts mismatched to bottom with badge, never hides or disables.
+
+### Spatial model
+- [ ] Wall is provisioned to WLED as 2D matrix at add-wall time (`/json/cfg` with serpentine config).
+- [ ] `cfg` is written once per wall lifecycle, never on app launch.
+- [ ] `Wall` model carries `gridWidth`, `gridHeight`, `aspectClass`, `serialNumber` — populated from QR scan.
+- [ ] No code path branches on tier (`M` / `L` / `custom`). Tier is not a runtime concept.
+- [ ] QR payload validated against ratio range 1:3–3:1 and 200mm-increment size envelope before accepting.
 
 ### Conventions hygiene
 - [ ] Filenames `snake_case.dart`; widgets/controllers/providers follow naming suffix rules.
@@ -354,6 +463,10 @@ If any item fails, surface it explicitly rather than silently working around it.
 6. **Do not use amber/warm-yellow chrome palette.** Periwinkle is final.
 7. **Do not skip iOS Bonjour or Android cleartext config.** Discovery will silently fail.
 8. **Do not commit `*.g.dart` or `*.freezed.dart`** generated files. They're in `.gitignore`.
+9. **Do not treat walls as 1D strips.** Every wall must be provisioned as a WLED 2D matrix via `/json/cfg`. Without it, scene rendering on zigzag wiring is visually scrambled.
+10. **Do not branch app code on tier (M / L / custom).** App reads grid dims from QR; tier is a production/marketing concept, not a runtime concept.
+11. **Do not accept walls outside the 1:3–3:1 aspect range** or outside the 600–2400mm × 400–1600mm envelope. Reject at QR scan with a clear error.
+12. **Do not re-write `/json/cfg` on every app launch.** Config writes hit flash — only on add-wall or explicit "Konfigurasi ulang".
 
 ---
 
@@ -363,16 +476,20 @@ If any item fails, surface it explicitly rather than silently working around it.
 
 | Week | Focus |
 |---|---|
-| 1 | Foundation: theme, models, drift schema |
-| 2 | WLED API client + WebSocket |
-| 3 | Discovery + Onboarding (S01-S04) |
+| 1 | Foundation: theme, models (incl. grid fields), drift schema |
+| 2 | WLED API client + WebSocket + 2D matrix `/json/cfg` payload builder |
+| 3 | Discovery + Onboarding (S01–S04) + QR scan step |
 | 4 | Dashboard + Room (S05, S07) |
-| 5 | Wall Control + Pick Scene (S06, S08, S09) |
+| 5 | Wall Control + Pick Scene with aspect-class sort + badge (S06, S08, S09) |
 | 6 | Group control + UDP sync setup |
-| 7 | Add Wall + Add Room flows |
-| 8 | Scene tuning on hardware + polish |
+| 7 | Add Wall (with QR) + Add Room flows |
+| 8 | Scene tuning on hardware across 3 aspect classes + tier L validation + polish |
 
-Risk gates at week 3 (iOS captive portal must work on real device) and week 8 (hardware spec must be final).
+Risk gates:
+- Week 3: iOS captive portal + QR scan camera permission must work on real device
+- Week 8: hardware spec final, all 18 scenes tuned as 2D effects, tier L validated (or fallback adopted)
+
+**Note:** All 8 weeks were already implemented under the old 1D-strip assumption. The shift to 2D matrix + QR provisioning is a **refactor branch** on top of completed work, not a fresh greenfield sprint. See Current status for the refactor plan.
 
 ---
 
@@ -425,10 +542,25 @@ flutter run -d <device-id>
 
 ## Current status
 
-**Where we are:** Design + planning complete. Code not yet started.
+**Where we are:** Sprint weeks 1–8 implemented end-to-end on `sprint/week-1-foundation`, **but under the old 1D-strip assumption.** Foundation, WLED HTTP + WebSocket, discovery, onboarding (4-step), Dashboard, Room, Wall Control, Pick Scene, group control, Add Wall + Add Room, and polish (connectivity, wall settings, IP refresh) are all wired. Follow-up fixes hardened discovery, brightness curve, wall-control hero, and iOS WiFi guide.
 
-**Next concrete step:** Sprint week 1 — initialize Flutter project, install dependencies, scaffold theme system, define 4 Freezed models (Home, Room, Wall, Scene), set up drift schema.
+**Active decision (this commit):** Pivot to **WLED 2D Matrix + per-unit QR provisioning**. See [Product model](#product-model) and [Spatial model — the 2D matrix](#spatial-model--the-2d-matrix). This is a refactor of in-place code, not greenfield work.
 
-**Parallel hardware track:** Flash WLED to one ESP32 with target LED strip, validate that all 18 scene payloads render acceptably. Tune brightness/speed values. Result feeds into the eventual `assets/scenes.json`.
+**Next concrete step:** Open `feature/2d-matrix-refactor` branch. Break work into 5 atomic PRs:
 
-**Risk to watch:** LED strip spec (density, length per panel) has not been finalized by industrial design. This blocks final scene tuning at week 8. Surface to user if scene tuning approach needs adjustment.
+1. **Models + schema** — `Wall` gains `gridWidth`/`gridHeight`/`aspectClass`/`serialNumber`/`lengthMm`/`heightMm`; `Scene` gains `compatibility`; drift migration; updated `assets/scenes.json`.
+2. **WLED 2D config** — `WledClient.configureMatrix()` sends 2D matrix dims + serpentine + udpn via `/json/cfg`. One-shot, never re-issued.
+3. **QR scan integration** — `mobile_scanner` install, camera permissions (iOS `NSCameraUsageDescription`, Android `CAMERA`), QR scan step inserted into onboarding (between Discovery and Name & Place) and add-wall (between Discovery and Name).
+4. **Scene gallery aspect filter** — sort-and-badge by aspect class match, never hide.
+5. **Hardware validation pass** — notes + final scene tuning, no code changes.
+
+**Parallel hardware track:**
+- Validate tier L (~7,800 LED on ESP32-S3) sustains ≥30 FPS on 2D effects (Plasma 2D, Polar Lights especially). If not, adopt fallback ladder (cap LED count, dual-controller with E1.31 sync, or 30/m density on L).
+- Tune all 18 scenes on a reference M-sized panel under 2D matrix mode. Document final `fx` + `pal` + parameter values per scene per aspect class.
+- Update `assets/scenes.json` from tuning output — replaces current best-guess defaults.
+- Coordinate with production team on QR label generation pipeline — app expects a specific URL payload format and validation rules.
+
+**Risks to watch:**
+- **Tier L hardware capacity** — blocker for marketing L as ready-stock. Marked `tentative` in [Product model](#product-model) until proven.
+- **Refactor scope** — Wall model migration touches every consumer; resist temptation to bundle UI changes into the same PR.
+- **Production dependency** — QR provisioning only works if production actually prints valid QR labels. Coordinate before app code expects them.

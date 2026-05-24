@@ -7,7 +7,6 @@ import '../../../application/providers/app_providers.dart';
 import '../../../application/providers/room_providers.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../data/models/add_wall_context.dart';
-import '../../../data/models/discovered_wall.dart';
 import '../../../data/models/room.dart';
 import '../../routing/routes.dart';
 import '../../widgets/add_wall_chrome.dart';
@@ -17,15 +16,15 @@ import '../../widgets/onboarding_scaffold.dart';
 ///
 /// First-launch run hits this with zero rooms: we hide the picker and just
 /// show the "new room" field. Once the user has rooms, the same screen is
-/// reused from the Add Wall flow (week 7) with the picker visible.
+/// reused from the Add Wall flow with the picker visible.
+///
+/// The [payload] carries both the wall picked at Discovery and the validated
+/// grid dims from QR scan — submit feeds both into the controller so the
+/// Wall record + WLED 2D matrix config land in one atomic operation.
 class NamePlaceScreen extends ConsumerStatefulWidget {
-  const NamePlaceScreen({
-    super.key,
-    required this.discovered,
-    this.addContext,
-  });
+  const NamePlaceScreen({super.key, required this.payload, this.addContext});
 
-  final DiscoveredWall discovered;
+  final OnboardingPayload payload;
 
   /// When non-null the room is locked — picker is hidden and the wall lands
   /// in the configured room. Success navigation also lands back on that
@@ -47,7 +46,7 @@ class _NamePlaceScreenState extends ConsumerState<NamePlaceScreen> {
   @override
   void initState() {
     super.initState();
-    _wallNameCtrl = TextEditingController(text: widget.discovered.name);
+    _wallNameCtrl = TextEditingController(text: widget.payload.discovered.name);
     _newRoomCtrl = TextEditingController(text: 'Ruang Tamu');
     _roomsFuture = _loadRooms();
   }
@@ -89,7 +88,7 @@ class _NamePlaceScreenState extends ConsumerState<NamePlaceScreen> {
     });
 
     return OnboardingScaffold(
-      stepLabel: ctx == null ? 'LANGKAH 3 / 3' : null,
+      stepLabel: ctx == null ? 'LANGKAH 4 / 4' : null,
       topBar: ctx == null
           ? null
           : AddWallTopBar(
@@ -166,7 +165,7 @@ class _NamePlaceScreenState extends ConsumerState<NamePlaceScreen> {
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          '${widget.discovered.ipAddress} · ${widget.discovered.deviceId}',
+                          '${widget.payload.discovered.ipAddress} · ${widget.payload.discovered.deviceId}',
                           style: theme.textTheme.labelSmall?.copyWith(
                             color: ext.textDim,
                           ),
@@ -191,7 +190,7 @@ class _NamePlaceScreenState extends ConsumerState<NamePlaceScreen> {
             ref
                 .read(onboardingSubmitControllerProvider.notifier)
                 .submit(
-                  discovered: widget.discovered,
+                  payload: widget.payload,
                   wallName: name,
                   roomId: ctx.roomId,
                 );
@@ -201,7 +200,7 @@ class _NamePlaceScreenState extends ConsumerState<NamePlaceScreen> {
           ref
               .read(onboardingSubmitControllerProvider.notifier)
               .submit(
-                discovered: widget.discovered,
+                payload: widget.payload,
                 wallName: name,
                 roomId: _creatingNewRoom ? null : _selectedRoomId,
                 newRoomName: _creatingNewRoom ? _newRoomCtrl.text : null,

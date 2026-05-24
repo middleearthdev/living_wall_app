@@ -35,6 +35,8 @@
 	<array>
 		<string>_wled._tcp</string>
 	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>Living Wall memerlukan kamera untuk memindai QR code di label wall saat instalasi.</string>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>Living Wall mencari panel LED di jaringan WiFi rumah Anda untuk mengontrol pencahayaan.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>

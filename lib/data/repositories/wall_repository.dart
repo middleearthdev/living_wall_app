@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 
 import '../database/app_database.dart';
+import '../models/aspect_class.dart';
 import '../models/wall.dart';
 
 class WallRepository {
@@ -41,13 +42,23 @@ class WallRepository {
     return rows.map(_toWall).toList();
   }
 
-  /// Inserts a new wall. Throws on deviceId conflict — the caller should
-  /// catch this and surface "wall already added" to the user.
+  /// Inserts a new wall. Throws on deviceId or serialNumber conflict — the
+  /// caller should catch this and surface "wall already added" to the user.
+  ///
+  /// The grid fields come from the QR payload scanned during add-wall;
+  /// [aspectClass] is derived via [aspectClassFor] at the call site so
+  /// invalid grid dims (height <= 0) fail loudly before reaching the DB.
   Future<Wall> addWall({
     required String roomId,
     required String name,
     required String deviceId,
     required String ipAddress,
+    required String serialNumber,
+    required int gridWidth,
+    required int gridHeight,
+    required int lengthMm,
+    required int heightMm,
+    required AspectClass aspectClass,
   }) async {
     final wall = Wall(
       id: _generateId('wall'),
@@ -55,6 +66,12 @@ class WallRepository {
       name: name,
       deviceId: deviceId,
       ipAddress: ipAddress,
+      serialNumber: serialNumber,
+      gridWidth: gridWidth,
+      gridHeight: gridHeight,
+      lengthMm: lengthMm,
+      heightMm: heightMm,
+      aspectClass: aspectClass,
       lastSeen: DateTime.now(),
       online: true,
     );
@@ -67,6 +84,12 @@ class WallRepository {
             name: wall.name,
             deviceId: wall.deviceId,
             ipAddress: wall.ipAddress,
+            serialNumber: wall.serialNumber,
+            gridWidth: wall.gridWidth,
+            gridHeight: wall.gridHeight,
+            lengthMm: wall.lengthMm,
+            heightMm: wall.heightMm,
+            aspectClass: wall.aspectClass,
             lastSeen: Value(wall.lastSeen),
           ),
         );
@@ -99,6 +122,12 @@ class WallRepository {
     name: row.name,
     deviceId: row.deviceId,
     ipAddress: row.ipAddress,
+    serialNumber: row.serialNumber,
+    gridWidth: row.gridWidth,
+    gridHeight: row.gridHeight,
+    lengthMm: row.lengthMm,
+    heightMm: row.heightMm,
+    aspectClass: row.aspectClass,
     lastSeen: row.lastSeen,
   );
 }

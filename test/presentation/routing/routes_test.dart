@@ -5,17 +5,20 @@ import 'package:living_wall_app/presentation/routing/routes.dart';
 void main() {
   group('Routes.*For helpers', () {
     test('null context returns onboarding paths', () {
-      expect(Routes.wifiFor(null), Routes.onboardingWifi);
       expect(Routes.discoveryFor(null), Routes.onboardingDiscovery);
+      expect(Routes.qrScanFor(null), Routes.onboardingQrScan);
       expect(Routes.namePlaceFor(null), Routes.onboardingNamePlace);
     });
 
     test('add-wall context returns room-scoped paths', () {
       const ctx = AddWallContext(roomId: 'room_42');
-      expect(Routes.wifiFor(ctx), '/dashboard/room/room_42/add-wall/wifi');
       expect(
         Routes.discoveryFor(ctx),
         '/dashboard/room/room_42/add-wall/discovery',
+      );
+      expect(
+        Routes.qrScanFor(ctx),
+        '/dashboard/room/room_42/add-wall/qr-scan',
       );
       expect(
         Routes.namePlaceFor(ctx),
@@ -26,7 +29,7 @@ void main() {
     test('different room ids produce distinct paths', () {
       const a = AddWallContext(roomId: 'room_a');
       const b = AddWallContext(roomId: 'room_b');
-      expect(Routes.wifiFor(a), isNot(equals(Routes.wifiFor(b))));
+      expect(Routes.qrScanFor(a), isNot(equals(Routes.qrScanFor(b))));
     });
   });
 

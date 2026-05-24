@@ -50,8 +50,10 @@ class _AddRoomDialogState extends ConsumerState<AddRoomDialog> {
       // Per spec B.2 — "Buat & tambah wall": after creating the room, hand
       // straight off to the add-wall flow with the new room locked in. If
       // the user cancels mid-add-wall the room is preserved (Dashboard
-      // shows it as an empty room with "Tambah wall pertama").
-      navigator.push(Routes.addWallWifi(room.id));
+      // shows it as an empty room with "Tambah wall pertama"). Discovery
+      // is the new entry — WiFi guide is skipped in add-wall because the
+      // app is already on WiFi.
+      navigator.push(Routes.addWallDiscovery(room.id));
     } catch (e) {
       if (!mounted) return;
       setState(() {

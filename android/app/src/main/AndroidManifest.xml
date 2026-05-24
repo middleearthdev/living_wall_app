@@ -8,6 +8,12 @@
     <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
 
+    <!-- QR scan during onboarding / add-wall. Camera is optional hardware
+         (manual entry exists as a fallback) so the device works on tablets
+         without a camera. -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+
     <application
         android:label="living_wall_app"
         android:name="${applicationName}"

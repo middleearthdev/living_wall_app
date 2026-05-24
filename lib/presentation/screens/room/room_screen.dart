@@ -100,7 +100,7 @@ class RoomScreen extends ConsumerWidget {
                             ],
                             _AddWallRow(
                               onTap: () => context
-                                  .push(Routes.addWallWifi(roomId)),
+                                  .push(Routes.addWallDiscovery(roomId)),
                             ),
                             const SizedBox(height: 16),
                             _SectionLabel(
@@ -749,7 +749,7 @@ class _EmptyRoom extends StatelessWidget {
                 ),
               ),
               onPressed: () =>
-                  GoRouter.of(context).push(Routes.addWallWifi(roomId)),
+                  GoRouter.of(context).push(Routes.addWallDiscovery(roomId)),
               child: const Text('Tambah wall pertama'),
             ),
           ],

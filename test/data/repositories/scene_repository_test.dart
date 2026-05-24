@@ -38,6 +38,18 @@ void main() {
       expect(byCat[SceneCategory.dinamis], 3);
     });
 
+    test('compatibility distribution matches CLAUDE.md spec (10/5/3)', () async {
+      final repo = SceneRepository(bundle: _RawBundle(rawJson));
+      final scenes = await repo.loadAll();
+      final byCompat = <SceneCompatibility, int>{};
+      for (final s in scenes) {
+        byCompat[s.compatibility] = (byCompat[s.compatibility] ?? 0) + 1;
+      }
+      expect(byCompat[SceneCompatibility.universal], 10);
+      expect(byCompat[SceneCompatibility.landscape], 5);
+      expect(byCompat[SceneCompatibility.portrait], 3);
+    });
+
     test('caches the catalog — bundle is read once across calls', () async {
       final bundle = _RawBundle(rawJson);
       final repo = SceneRepository(bundle: bundle);
