@@ -58,7 +58,22 @@ final _wallSocketProvider = FutureProvider.family<WledSocket?, String>((
 ) async {
   final wall = await ref.watch(wallRepositoryProvider).findById(wallId);
   if (wall == null) return null;
-  final socket = WledSocket(wall.ipAddress);
+  final ip = wall.ipAddress;
+  final socket = WledSocket(
+    ip,
+    // HTTP probe ensures we only mark the socket "connected" once the
+    // wall has actually answered something — the WS channel object
+    // creation is optimistic. Without this the toggle bounces on/off
+    // each reconnect cycle for a powered-off wall.
+    probe: () async {
+      try {
+        final info = await WledClient(baseUrl: 'http://$ip').getInfo();
+        return info?.brand == 'WLED';
+      } catch (_) {
+        return false;
+      }
+    },
+  );
   ref.onDispose(socket.dispose);
   socket.connect();
   return socket;
@@ -137,6 +152,19 @@ void invalidateWall(Ref ref, String wallId) {
   ref.invalidate(wallByIdProvider(wallId));
   ref.invalidate(lastAppliedSceneIdProvider(wallId));
   ref.invalidate(wallExcludedProvider(wallId));
+  ref.invalidate(wallIntentOnProvider(wallId));
+}
+
+/// Forces a wall's live-state pipeline to rebuild without touching user
+/// intent / exclusion / scene state. Use this after a successful HTTP
+/// command (toggle, brightness, scene) when the WebSocket appears to be
+/// stuck in a backoff loop — a fresh subscription re-seeds via
+/// [WledClient.getState] and reconnects immediately, so the UI converges
+/// before the optimistic-intent window closes.
+void triggerStateRefresh(Ref ref, String wallId) {
+  ref.invalidate(_wallSocketProvider(wallId));
+  ref.invalidate(wallStateProvider(wallId));
+  ref.invalidate(wallConnectivityProvider(wallId));
 }
 
 /// User-intent override: which scene id the controller most recently applied
@@ -155,6 +183,39 @@ final lastAppliedSceneIdProvider = StateProvider.family<String?, String>(
 final wallExcludedProvider = StateProvider.family<bool, String>(
   (ref, wallId) => false,
 );
+
+/// Optimistic on/off intent for a single wall. The controller sets this
+/// the instant the user taps a toggle so the UI flips before the HTTP
+/// round-trip; the controller's auto-clear timer drops it back to null
+/// after a few seconds so the WebSocket truth ([WallState.on]) takes
+/// over again. `null` = no pending intent, fall back to WS state.
+///
+/// Mirrors the [lastAppliedSceneIdProvider] pattern (user intent wins
+/// briefly, then truth reconciles).
+final wallIntentOnProvider = StateProvider.family<bool?, String>(
+  (ref, wallId) => null,
+);
+
+/// Optimistic on/off intent for a whole room (RoomCard toggle). Same
+/// semantics as [wallIntentOnProvider] but room-scoped — set by
+/// [RoomController.setOnOff], cleared by the room's auto-clear timer.
+final roomIntentOnProvider = StateProvider.family<bool?, String>(
+  (ref, roomId) => null,
+);
+
+/// True if at least one wall in the room is currently reachable
+/// (WebSocket online). Drives the RoomCard toggle's enabled state —
+/// when every wall is offline, tapping the toggle would just stall on
+/// HTTP timeouts, so we disable it and surface a snackbar instead.
+final roomReachableProvider = Provider.family<bool, String>((ref, roomId) {
+  final walls =
+      ref.watch(wallsForRoomProvider(roomId)).valueOrNull ?? const <Wall>[];
+  if (walls.isEmpty) return false;
+  return walls.any((w) {
+    final c = ref.watch(wallConnectivityProvider(w.id)).valueOrNull;
+    return c == WallConnectivity.online;
+  });
+});
 
 /// What scene to surface as "active" on cards/headers. Falls back through:
 /// explicit user intent → fx+pal lookup against catalog → null (Custom).

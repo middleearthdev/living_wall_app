@@ -44,6 +44,15 @@ class WallControlScreen extends ConsumerWidget {
     final connectivity =
         ref.watch(wallConnectivityProvider(wallId)).valueOrNull ??
         WallConnectivity.connecting;
+    final reachable = connectivity == WallConnectivity.online;
+    // Same three-layer truth as RoomCard's toggleOn: when the wall isn't
+    // reachable, force off (state.on is stale-on after a power cut);
+    // user intent wins briefly during the optimistic window; otherwise
+    // trust the latest WebSocket frame.
+    final intentOn = ref.watch(wallIntentOnProvider(wallId));
+    final effectiveIsOn = reachable
+        ? (intentOn ?? state?.on ?? false)
+        : false;
 
     final wallName = wallAsync.valueOrNull?.name ?? 'Wall';
 
@@ -62,7 +71,7 @@ class WallControlScreen extends ConsumerWidget {
               const SizedBox(height: 8),
               _Hero(
                 activeScene: activeScene,
-                isOn: state?.on ?? false,
+                isOn: effectiveIsOn,
                 brightness: state?.brightness ?? 0,
                 connectivity: connectivity,
                 hasSeenState: state != null,
@@ -86,8 +95,11 @@ class WallControlScreen extends ConsumerWidget {
               _BrightnessSlider(
                 wallId: wallId,
                 brightness: state?.brightness ?? 0,
-                isOn: state?.on ?? false,
-                enabled: state != null,
+                // Use the reachability-aware on flag so the slider pins
+                // to 0% (and goes muted) the moment the wall stops
+                // responding — matches RoomCard behavior.
+                isOn: effectiveIsOn,
+                enabled: state != null && reachable,
               ),
             ],
           ),
@@ -438,6 +450,12 @@ class _BrightnessSliderState extends ConsumerState<_BrightnessSlider> {
   double get _displayValue {
     if (_draggingValue != null) return _draggingValue!;
     if (_lastSent != null) return _lastSent!;
+    // When the wall reports `on=false`, WLED still holds the previous
+    // brightness as a "restore-on-toggle" value — but the actual LED
+    // output is 0. Showing the stored value bounces the slider back up
+    // after a snap-to-off (user dragged to 0, wall went off, slider
+    // springs to 8%). Pin to 0 whenever the device is off.
+    if (!widget.isOn) return 0;
     return BrightnessCurve.deviceToSlider(widget.brightness).clamp(0, 255);
   }
 

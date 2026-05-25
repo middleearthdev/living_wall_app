@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/utils/throttler.dart';
@@ -20,6 +22,16 @@ class WallController {
 
   final Ref _ref;
   final Map<String, Throttler<int>> _brightnessThrottlers = {};
+
+  // Auto-clear timers for the optimistic [wallIntentOnProvider] entries.
+  // Window matches what feels like the longest the WebSocket should take
+  // to echo back a successful state change on a healthy LAN. If WS is
+  // sluggish (e.g. recovering from a power cycle), the timer extends
+  // itself up to [_intentMaxExtensions] times so the toggle doesn't
+  // bounce back to a stale truth before the device's actual echo lands.
+  static const _intentClearWindow = Duration(seconds: 3);
+  static const _intentMaxExtensions = 3; // total ~12s before giving up
+  final Map<String, Timer> _intentTimers = {};
 
   Future<WledClient?> _clientFor(String wallId) async {
     final wall = await _ref.read(wallRepositoryProvider).findById(wallId);
@@ -52,10 +64,62 @@ class WallController {
     );
   }
 
+  /// Toggle on/off with optimistic UI. Sets [wallIntentOnProvider]
+  /// synchronously so the toggle flips before the HTTP round-trip
+  /// (otherwise a 1.5s connect timeout — and a 3.4s worst-case retry
+  /// chain when the wall is unreachable — would leave the toggle
+  /// looking frozen). The intent auto-clears after [_intentClearWindow]
+  /// so the WebSocket truth reasserts itself; if the wall is offline
+  /// and never echoes back, the toggle correctly snaps to "the wall
+  /// didn't respond".
   Future<void> setOnOff(String wallId, bool on) async {
+    _ref.read(wallIntentOnProvider(wallId).notifier).state = on;
+    _scheduleIntentClear(wallId, on);
     final client = await _clientFor(wallId);
     if (client == null) return;
-    await client.setOnOff(on);
+    try {
+      await client.setOnOff(on);
+      // If the WebSocket isn't currently online (e.g. still in backoff
+      // after a power cycle), nudge the live-state pipeline so the WS
+      // truth catches up to the change we just made — otherwise the
+      // intent timer would expire to a stale `vitals.anyOn` and the
+      // toggle would bounce back.
+      final conn = _ref.read(wallConnectivityProvider(wallId)).valueOrNull;
+      if (conn != WallConnectivity.online) {
+        triggerStateRefresh(_ref, wallId);
+      }
+    } catch (_) {
+      // Swallow — intent auto-clear + WS reconciliation will surface
+      // the actual device state. Could snackbar from the caller if the
+      // failure needs to be visible.
+    }
+  }
+
+  void _scheduleIntentClear(String wallId, bool intent) {
+    _intentTimers.remove(wallId)?.cancel();
+    var extensions = 0;
+    late void Function() check;
+    check = () {
+      final notifier = _ref.read(wallIntentOnProvider(wallId).notifier);
+      // A newer tap superseded ours — let it manage its own timer.
+      if (notifier.state != intent) {
+        _intentTimers.remove(wallId);
+        return;
+      }
+      final state = _ref.read(wallStateProvider(wallId)).valueOrNull;
+      final wsAligns = state?.on == intent;
+      if (wsAligns || extensions >= _intentMaxExtensions) {
+        _intentTimers.remove(wallId);
+        notifier.state = null;
+      } else {
+        // WS hasn't echoed back our intent yet — give it another window
+        // before surrendering. Common when WS is recovering from a
+        // power cycle and lags behind the HTTP control path.
+        extensions++;
+        _intentTimers[wallId] = Timer(_intentClearWindow, check);
+      }
+    };
+    _intentTimers[wallId] = Timer(_intentClearWindow, check);
   }
 
   /// Toggle whether the wall participates in its room's UDP sync group.
@@ -170,6 +234,10 @@ class WallController {
       t.dispose();
     }
     _brightnessThrottlers.clear();
+    for (final t in _intentTimers.values) {
+      t.cancel();
+    }
+    _intentTimers.clear();
   }
 }
 

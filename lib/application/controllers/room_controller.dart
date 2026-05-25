@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/utils/throttler.dart';
@@ -20,6 +22,12 @@ class RoomController {
 
   final Ref _ref;
   final Map<String, Throttler<int>> _brightnessThrottlers = {};
+
+  // Mirrors WallController's optimistic-intent pattern — see comments
+  // there for the timer-extension rationale.
+  static const _intentClearWindow = Duration(seconds: 3);
+  static const _intentMaxExtensions = 3;
+  final Map<String, Timer> _intentTimers = {};
 
   WledClient _clientFor(Wall wall) =>
       WledClient(baseUrl: 'http://${wall.ipAddress}');
@@ -59,8 +67,54 @@ class RoomController {
     await Future.wait(walls.map((w) => _clientFor(w).applyScene(scene)));
   }
 
-  Future<void> setOnOff(String roomId, bool on) {
-    return _forEach(roomId, (c) => c.setOnOff(on));
+  /// Optimistic room-level on/off. Sets [roomIntentOnProvider] before
+  /// fanning out HTTP so the RoomCard toggle flips immediately even when
+  /// one or more walls are unreachable (HTTP would otherwise stall the
+  /// toggle until the 3.4s retry chain finishes). Auto-clears so WS
+  /// truth wins after the dust settles.
+  Future<void> setOnOff(String roomId, bool on) async {
+    _ref.read(roomIntentOnProvider(roomId).notifier).state = on;
+    _scheduleIntentClear(roomId, on);
+    try {
+      await _forEach(roomId, (c) => c.setOnOff(on));
+    } catch (_) {
+      // Per-wall failures are tolerated — intent + WS reconciliation
+      // surface whatever actually happened on each device.
+    }
+    // Nudge any wall whose WebSocket is still in backoff so the state
+    // pipeline picks up the change quickly. Without this the intent
+    // window would expire to a stale `vitals.anyOn` after a power
+    // cycle, snapping the toggle back.
+    final walls = await _targets(roomId);
+    for (final w in walls) {
+      final conn = _ref.read(wallConnectivityProvider(w.id)).valueOrNull;
+      if (conn != WallConnectivity.online) {
+        triggerStateRefresh(_ref, w.id);
+      }
+    }
+  }
+
+  void _scheduleIntentClear(String roomId, bool intent) {
+    _intentTimers.remove(roomId)?.cancel();
+    var extensions = 0;
+    late void Function() check;
+    check = () {
+      final notifier = _ref.read(roomIntentOnProvider(roomId).notifier);
+      if (notifier.state != intent) {
+        _intentTimers.remove(roomId);
+        return;
+      }
+      final vitals = _ref.read(roomVitalsProvider(roomId));
+      final wsAligns = vitals.anyOn == intent;
+      if (wsAligns || extensions >= _intentMaxExtensions) {
+        _intentTimers.remove(roomId);
+        notifier.state = null;
+      } else {
+        extensions++;
+        _intentTimers[roomId] = Timer(_intentClearWindow, check);
+      }
+    };
+    _intentTimers[roomId] = Timer(_intentClearWindow, check);
   }
 
   /// Throttled — coalesces slider frames into ~12 calls/sec per room. That
@@ -96,6 +150,10 @@ class RoomController {
       t.dispose();
     }
     _brightnessThrottlers.clear();
+    for (final t in _intentTimers.values) {
+      t.cancel();
+    }
+    _intentTimers.clear();
   }
 }
 

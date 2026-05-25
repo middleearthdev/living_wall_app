@@ -40,9 +40,18 @@ class RoomCard extends ConsumerWidget {
     final vitals = ref.watch(roomVitalsProvider(room.id));
     final activeScene = ref.watch(activeSceneForRoomProvider(room.id));
     final catalog = ref.watch(sceneCatalogSyncProvider);
+    final intentOn = ref.watch(roomIntentOnProvider(room.id));
+    final reachable = ref.watch(roomReachableProvider(room.id));
+    // Three-layer toggle truth, in priority order:
+    //   1. !reachable → override to OFF (WS lost contact; the cached
+    //      vitals.anyOn = true is stale and would lie to the user).
+    //   2. intentOn  → user just tapped, flip optimistically before
+    //      WS echoes back.
+    //   3. vitals.anyOn → live WS truth.
+    final toggleOn = reachable ? (intentOn ?? vitals.anyOn) : false;
 
     final controller = ref.read(roomControllerProvider);
-    final isOff = !vitals.anyOn || vitals.wallCount == 0;
+    final isOff = !toggleOn || vitals.wallCount == 0;
     final isEmpty = vitals.wallCount == 0;
 
     final quickScenes = [
@@ -131,10 +140,17 @@ class RoomCard extends ConsumerWidget {
                           ),
                         ),
                         _RoomToggle(
-                          on: vitals.anyOn,
-                          enabled: !isEmpty,
+                          on: toggleOn,
+                          // Empty rooms can't be controlled at all; rooms
+                          // with all walls offline would just stall the
+                          // toggle on HTTP timeouts, so we disable and
+                          // surface a snackbar instead.
+                          enabled: !isEmpty && reachable,
                           onChanged: (next) =>
                               controller.setOnOff(room.id, next),
+                          onDisabledTap: !isEmpty && !reachable
+                              ? () => _showOfflineSnackbar(context)
+                              : null,
                         ),
                       ],
                     ),
@@ -151,8 +167,11 @@ class RoomCard extends ConsumerWidget {
                       _RoomBrightnessSlider(
                         roomId: room.id,
                         brightness: vitals.brightness,
-                        isOn: vitals.anyOn,
-                        enabled: vitals.allKnown,
+                        // Use toggleOn (reachability-aware) so the slider
+                        // shows 0% when the room is unreachable instead
+                        // of bouncing to the cached value.
+                        isOn: toggleOn,
+                        enabled: vitals.allKnown && reachable,
                       ),
                       const SizedBox(height: 10),
                       Center(
@@ -247,16 +266,41 @@ class RoomCard extends ConsumerWidget {
   );
 }
 
+/// Snackbar shown when the user taps a disabled toggle because no wall in
+/// the room is reachable. Mirrors the language used on Wall Control's
+/// "Tidak terjangkau" pill.
+void _showOfflineSnackbar(BuildContext context) {
+  final messenger = ScaffoldMessenger.maybeOf(context);
+  if (messenger == null) return;
+  messenger
+    ..hideCurrentSnackBar()
+    ..showSnackBar(
+      const SnackBar(
+        content: Text(
+          'Wall tidak terjangkau — cek WiFi atau daya panel.',
+        ),
+        duration: Duration(seconds: 3),
+      ),
+    );
+}
+
 class _RoomToggle extends StatelessWidget {
   const _RoomToggle({
     required this.on,
     required this.enabled,
     required this.onChanged,
+    this.onDisabledTap,
   });
 
   final bool on;
   final bool enabled;
   final ValueChanged<bool> onChanged;
+
+  /// Fired when the user taps a disabled toggle — used to surface a
+  /// "Wall tidak terjangkau" snackbar instead of silently absorbing
+  /// the tap. Skip wiring this when the disable reason is "room is
+  /// empty" (no actionable feedback in that case).
+  final VoidCallback? onDisabledTap;
 
   @override
   Widget build(BuildContext context) {
@@ -264,7 +308,7 @@ class _RoomToggle extends StatelessWidget {
     return Opacity(
       opacity: enabled ? 1 : 0.4,
       child: GestureDetector(
-        onTap: enabled ? () => onChanged(!on) : null,
+        onTap: enabled ? () => onChanged(!on) : onDisabledTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 160),
           width: 44,
@@ -436,6 +480,10 @@ class _RoomBrightnessSliderState extends ConsumerState<_RoomBrightnessSlider> {
   double get _displayValue {
     if (_draggingValue != null) return _draggingValue!;
     if (_lastSent != null) return _lastSent!;
+    // Mirrors _BrightnessSlider in wall_control_screen.dart — when off,
+    // pin to 0 instead of falling back to WLED's stored brightness
+    // (which causes the snap-to-off → bounce-to-8% bug).
+    if (!widget.isOn) return 0;
     return BrightnessCurve.deviceToSlider(widget.brightness).clamp(0, 255);
   }
 
