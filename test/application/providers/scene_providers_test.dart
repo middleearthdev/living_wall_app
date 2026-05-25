@@ -140,4 +140,128 @@ void main() {
       expect(sorted.every((s) => s.isOptimal), isTrue);
     });
   });
+
+  group('wallQuickScenesProvider', () {
+    // Wider fixture covering every ID referenced by the curated quick-scene
+    // lists across all three aspect classes.
+    final fullCatalog = <Scene>[
+      _scene('ocean', SceneCompatibility.landscape),
+      _scene('sunset', SceneCompatibility.landscape),
+      _scene('golden', SceneCompatibility.landscape),
+      _scene('rain', SceneCompatibility.portrait),
+      _scene('dawn', SceneCompatibility.portrait),
+      _scene('dinner', SceneCompatibility.portrait),
+      _scene('focus', SceneCompatibility.universal),
+      _scene('candle', SceneCompatibility.universal),
+      _scene('forest', SceneCompatibility.universal),
+      _scene('breathe', SceneCompatibility.universal),
+      _scene('sakura', SceneCompatibility.universal),
+      _scene('twinkle', SceneCompatibility.universal),
+    ];
+
+    ProviderContainer containerForWall(Wall wall) => ProviderContainer(
+      overrides: [
+        sceneCatalogProvider.overrideWith((_) async => fullCatalog),
+        wallByIdProvider(wall.id).overrideWith((_) async => wall),
+      ],
+    );
+
+    test('landscape wall gets landscape-leaning quick scenes', () async {
+      final wall = makeTestWall(
+        id: 'w_land',
+        aspectClass: AspectClass.landscape,
+      );
+      final container = containerForWall(wall);
+      addTearDown(container.dispose);
+
+      await container.read(sceneCatalogProvider.future);
+      await container.read(wallByIdProvider(wall.id).future);
+
+      final ids = container
+          .read(wallQuickScenesProvider(wall.id))
+          .map((s) => s.id)
+          .toList();
+      expect(ids, ['ocean', 'sunset', 'focus', 'candle', 'forest', 'golden']);
+    });
+
+    test('portrait wall gets portrait-leaning quick scenes', () async {
+      final wall = makeTestWall(
+        id: 'w_port',
+        gridWidth: 48,
+        gridHeight: 24,
+        lengthMm: 800,
+        heightMm: 1200,
+        aspectClass: AspectClass.portrait,
+      );
+      final container = containerForWall(wall);
+      addTearDown(container.dispose);
+
+      await container.read(sceneCatalogProvider.future);
+      await container.read(wallByIdProvider(wall.id).future);
+
+      final ids = container
+          .read(wallQuickScenesProvider(wall.id))
+          .map((s) => s.id)
+          .toList();
+      expect(ids, ['rain', 'dawn', 'focus', 'candle', 'forest', 'dinner']);
+    });
+
+    test('square wall gets all-universal quick scenes', () async {
+      final wall = makeTestWall(
+        id: 'w_sq',
+        gridWidth: 24,
+        gridHeight: 8,
+        lengthMm: 400,
+        heightMm: 400,
+        aspectClass: AspectClass.square,
+      );
+      final container = containerForWall(wall);
+      addTearDown(container.dispose);
+
+      await container.read(sceneCatalogProvider.future);
+      await container.read(wallByIdProvider(wall.id).future);
+
+      final scenes = container.read(wallQuickScenesProvider(wall.id));
+      expect(
+        scenes.map((s) => s.id).toList(),
+        ['focus', 'candle', 'breathe', 'forest', 'sakura', 'twinkle'],
+      );
+      // Sanity: square's list should be entirely universal.
+      expect(
+        scenes.every((s) => s.compatibility == SceneCompatibility.universal),
+        isTrue,
+      );
+    });
+
+    test('missing wall falls back to square (all-universal) list', () async {
+      final container = ProviderContainer(
+        overrides: [
+          sceneCatalogProvider.overrideWith((_) async => fullCatalog),
+          wallByIdProvider('missing').overrideWith((_) async => null),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await container.read(sceneCatalogProvider.future);
+      await container.read(wallByIdProvider('missing').future);
+
+      final ids = container
+          .read(wallQuickScenesProvider('missing'))
+          .map((s) => s.id)
+          .toList();
+      expect(ids, ['focus', 'candle', 'breathe', 'forest', 'sakura', 'twinkle']);
+    });
+
+    test('empty catalog yields empty list (no crash on first launch)', () {
+      final container = ProviderContainer(
+        overrides: [
+          sceneCatalogProvider.overrideWith((_) async => const <Scene>[]),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final scenes = container.read(wallQuickScenesProvider('any'));
+      expect(scenes, isEmpty);
+    });
+  });
 }

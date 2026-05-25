@@ -129,7 +129,8 @@ class WallController {
       gridHeight: payload.gridHeight,
       lengthMm: payload.lengthMm,
       heightMm: payload.heightMm,
-      aspectClass: aspectClassFor(payload.gridWidth, payload.gridHeight),
+      // Derive from physical mm, not grid LEDs — see aspectClassFor doc.
+      aspectClass: aspectClassFor(payload.lengthMm, payload.heightMm),
     );
 
     try {

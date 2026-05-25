@@ -23,11 +23,14 @@ class RoomCard extends ConsumerWidget {
 
   final Room room;
 
-  /// Three curated quick scenes shown on every room card. We pick one from
-  /// each of the everyday categories (Tenang/Sosial/Fokus) so the strip
-  /// covers the most common moods without needing per-room configuration.
+  /// Three curated quick scenes shown on every room card. **Universal-only**
+  /// because a room can contain walls of mixed aspect — picking an
+  /// orientation-specific scene here would look great on one wall and
+  /// kurang optimal on another. The Wall Control screen (per-wall) does
+  /// the aspect-aware curation via [wallQuickScenesProvider].
+  ///
   /// Per-room last-used quick scenes are a Phase 2 nicety.
-  static const _quickSceneIds = ['ocean', 'candle', 'focus'];
+  static const _quickSceneIds = ['candle', 'focus', 'movie'];
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

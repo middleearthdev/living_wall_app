@@ -19,15 +19,18 @@ class QrPayloadParser {
   static const _supportedVersion = 1;
   static const _supportedWiringPattern = 'zigzag-bl-rm';
 
-  // Envelope per CLAUDE.md "Product model" section.
-  static const _minWidthMm = 600;
+  // Envelope per CLAUDE.md "Product model" section. Min width matches the
+  // 40cm sample panel from ID validation; everything else follows the
+  // catalog tiers (M = 1200×800, L = 1800×1200) plus custom-loose room.
+  static const _minWidthMm = 400;
   static const _maxWidthMm = 2400;
   static const _minHeightMm = 400;
   static const _maxHeightMm = 1600;
   static const _dimensionStepMm = 200;
 
-  // Aspect ratio band 1:3 to 3:1 — anything outside is bespoke / B2B and
-  // gets rejected at the QR scan, not silently accepted.
+  // Aspect ratio band 1:3 to 3:1 derived from PHYSICAL dimensions, not
+  // grid LED counts — pixels are non-square (1.67cm horizontal × 5cm
+  // vertical), so grid ratio is meaningless as a visual measurement.
   static const _minAspectRatio = 1 / 3;
   static const _maxAspectRatio = 3.0;
 
@@ -55,7 +58,7 @@ class QrPayloadParser {
 
     _validateWiringPattern(wiringPattern);
     _validateDimensions(lengthMm, heightMm);
-    _validateAspectRatio(gridWidth, gridHeight);
+    _validateAspectRatio(lengthMm, heightMm);
 
     return ProvisionPayload(
       version: version,
@@ -144,8 +147,8 @@ class QrPayloadParser {
     }
   }
 
-  void _validateAspectRatio(int gridWidth, int gridHeight) {
-    final ratio = gridWidth / gridHeight;
+  void _validateAspectRatio(int lengthMm, int heightMm) {
+    final ratio = lengthMm / heightMm;
     if (ratio < _minAspectRatio || ratio > _maxAspectRatio) {
       final formatted = ratio.toStringAsFixed(2);
       throw QrPayloadException(

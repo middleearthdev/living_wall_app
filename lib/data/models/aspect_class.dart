@@ -7,17 +7,24 @@ import 'scene.dart';
 /// wall settings UI to show the configured orientation.
 enum AspectClass { landscape, portrait, square }
 
-/// Classify a grid by its width/height ratio.
+/// Classify a wall by its **physical** width/height ratio.
+///
+/// **Always call with physical millimeters** (lengthMm, heightMm), never
+/// with grid LED count. Production wires the strip at 60 LED/m horizontal
+/// but mounts rows at a 5cm vertical pitch (20 LED/m vertical) — pixels
+/// are non-square (3:1 ratio). That makes grid LED ratio diverge from the
+/// visual aspect: a 1200×800mm M-tier wall is grid 72×16 (ratio 4.5) but
+/// visually 3:2 landscape.
 ///
 /// Thresholds match the scene catalog's compatibility design:
 /// - ratio >= 1.2 → landscape
 /// - ratio <= 1 / 1.2 ≈ 0.833 → portrait
 /// - otherwise → square (between 0.833 and 1.2)
-AspectClass aspectClassFor(int gridWidth, int gridHeight) {
-  if (gridHeight <= 0) {
-    throw ArgumentError.value(gridHeight, 'gridHeight', 'must be positive');
+AspectClass aspectClassFor(int widthMm, int heightMm) {
+  if (heightMm <= 0) {
+    throw ArgumentError.value(heightMm, 'heightMm', 'must be positive');
   }
-  final ratio = gridWidth / gridHeight;
+  final ratio = widthMm / heightMm;
   if (ratio >= 1.2) return AspectClass.landscape;
   if (ratio <= 1 / 1.2) return AspectClass.portrait;
   return AspectClass.square;

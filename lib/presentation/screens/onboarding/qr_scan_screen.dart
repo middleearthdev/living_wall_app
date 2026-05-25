@@ -119,7 +119,9 @@ class _QrScanScreenState extends ConsumerState<QrScanScreen> {
   @override
   Widget build(BuildContext context) {
     final ctx = widget.addContext;
-    final targetRoom = ctx == null ? null : ref.watch(roomByIdProvider(ctx.roomId));
+    final targetRoom = ctx == null
+        ? null
+        : ref.watch(roomByIdProvider(ctx.roomId));
 
     return OnboardingScaffold(
       stepLabel: ctx == null ? 'LANGKAH 3 / 4' : null,
@@ -280,7 +282,15 @@ class _ManualEntrySheet extends StatefulWidget {
 }
 
 class _ManualEntrySheetState extends State<_ManualEntrySheet> {
-  static const _ledsPerMeter = 60;
+  // Strip spec: WS2812B 60 LED/m → spacing 1.67cm along the strip length,
+  // which becomes horizontal density when wired left-to-right.
+  static const _ledsPerMeterHorizontal = 60;
+
+  // Mounting spec: rows mounted in zig-zag at 5cm vertical pitch → 20 rows
+  // per meter of wall height. Independent from strip density; this is an
+  // industrial-design choice that affects total LED count + power but not
+  // strip type.
+  static const _ledsPerMeterVertical = 20;
 
   final _formKey = GlobalKey<FormState>();
   final _serialCtrl = TextEditingController();
@@ -300,8 +310,8 @@ class _ManualEntrySheetState extends State<_ManualEntrySheet> {
     if (!_formKey.currentState!.validate()) return;
     final lengthMm = int.parse(_lengthCtrl.text.trim());
     final heightMm = int.parse(_heightCtrl.text.trim());
-    final gridWidth = (lengthMm * _ledsPerMeter / 1000).round();
-    final gridHeight = (heightMm * _ledsPerMeter / 1000).round();
+    final gridWidth = (lengthMm * _ledsPerMeterHorizontal / 1000).round();
+    final gridHeight = (heightMm * _ledsPerMeterVertical / 1000).round();
 
     final payload = ProvisionPayload(
       version: 1,
@@ -355,70 +365,77 @@ class _ManualEntrySheetState extends State<_ManualEntrySheet> {
       ),
       child: Form(
         key: _formKey,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Center(
-              child: Container(
-                width: 36,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 16),
-                decoration: BoxDecoration(
-                  color: ext.surface3,
-                  borderRadius: BorderRadius.circular(2),
+        // Sheet content + soft keyboard frequently exceeds the available
+        // height on smaller phones; let it scroll instead of overflowing.
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: ext.surface3,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
               ),
-            ),
-            Text('Input manual', style: theme.textTheme.titleMedium),
-            const SizedBox(height: 6),
-            Text(
-              'Fitur lanjutan. Pakai ini hanya kalau QR rusak — typo di dimensi bisa membuat scene rendering aneh tanpa error.',
-              style: TextStyle(color: ext.textDim, fontSize: 12.5, height: 1.4),
-            ),
-            const SizedBox(height: 20),
-            _Field(
-              controller: _serialCtrl,
-              label: 'Serial number',
-              hint: 'LW-2026-00342',
-              validator: (v) => (v == null || v.trim().isEmpty)
-                  ? 'Wajib diisi'
-                  : null,
-            ),
-            const SizedBox(height: 12),
-            _Field(
-              controller: _lengthCtrl,
-              label: 'Lebar (mm)',
-              hint: '1200',
-              keyboardType: TextInputType.number,
-              validator: _validateMm,
-            ),
-            const SizedBox(height: 12),
-            _Field(
-              controller: _heightCtrl,
-              label: 'Tinggi (mm)',
-              hint: '800',
-              keyboardType: TextInputType.number,
-              validator: _validateMm,
-            ),
-            if (_topLevelError != null) ...[
-              const SizedBox(height: 14),
+              Text('Input manual', style: theme.textTheme.titleMedium),
+              const SizedBox(height: 6),
               Text(
-                _topLevelError!,
-                style: TextStyle(color: AppColors.high, fontSize: 12.5),
+                'Fitur lanjutan. Pakai ini hanya kalau QR rusak — typo di dimensi bisa membuat scene rendering aneh tanpa error.',
+                style: TextStyle(
+                  color: ext.textDim,
+                  fontSize: 12.5,
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 20),
+              _Field(
+                controller: _serialCtrl,
+                label: 'Serial number',
+                hint: 'LW-2026-00342',
+                validator: (v) =>
+                    (v == null || v.trim().isEmpty) ? 'Wajib diisi' : null,
+              ),
+              const SizedBox(height: 12),
+              _Field(
+                controller: _lengthCtrl,
+                label: 'Lebar (mm)',
+                hint: '1200',
+                keyboardType: TextInputType.number,
+                validator: _validateMm,
+              ),
+              const SizedBox(height: 12),
+              _Field(
+                controller: _heightCtrl,
+                label: 'Tinggi (mm)',
+                hint: '800',
+                keyboardType: TextInputType.number,
+                validator: _validateMm,
+              ),
+              if (_topLevelError != null) ...[
+                const SizedBox(height: 14),
+                Text(
+                  _topLevelError!,
+                  style: TextStyle(color: AppColors.high, fontSize: 12.5),
+                ),
+              ],
+              const SizedBox(height: 20),
+              PrimaryButton(label: 'Simpan & lanjut', onPressed: _submit),
+              const SizedBox(height: 8),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text(
+                  'Batal',
+                  style: TextStyle(color: ext.textDim, fontSize: 13),
+                ),
               ),
             ],
-            const SizedBox(height: 20),
-            PrimaryButton(label: 'Simpan & lanjut', onPressed: _submit),
-            const SizedBox(height: 8),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text(
-                'Batal',
-                style: TextStyle(color: ext.textDim, fontSize: 13),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );

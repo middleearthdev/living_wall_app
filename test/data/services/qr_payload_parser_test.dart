@@ -136,8 +136,8 @@ void main() {
   });
 
   group('dimension envelope', () {
-    test('rejects width below 600mm', () {
-      expect(() => parser.parse(valid(lw: 400)), throwsA(isA<QrPayloadException>()));
+    test('rejects width below 400mm', () {
+      expect(() => parser.parse(valid(lw: 200)), throwsA(isA<QrPayloadException>()));
     });
 
     test('rejects width above 2400mm', () {
@@ -166,52 +166,64 @@ void main() {
       expect(() => parser.parse(valid(lh: 850)), throwsA(isA<QrPayloadException>()));
     });
 
-    test('accepts envelope boundaries (600x400, 2400x1600)', () {
-      // 3:2 ratio at the small end (need matching grid: 36×24 keeps 1.5).
+    test('accepts envelope boundaries (400x400 sample, 2400x1600 max)', () {
+      // 1:1 square sample matches ID's 40cm validation panel.
+      // Grid for 400x400 at 5cm vertical pitch: 24×8.
       expect(
-        () => parser.parse(valid(gw: 36, gh: 24, lw: 600, lh: 400)),
+        () => parser.parse(valid(gw: 24, gh: 8, lw: 400, lh: 400)),
         returnsNormally,
       );
-      // Large end.
+      // Large end — L tier ceiling.
       expect(
-        () => parser.parse(valid(gw: 144, gh: 96, lw: 2400, lh: 1600)),
+        () => parser.parse(valid(gw: 144, gh: 32, lw: 2400, lh: 1600)),
         returnsNormally,
       );
     });
   });
 
-  group('aspect ratio envelope', () {
-    test('rejects 4:1 ultra-wide (above 3:1)', () {
-      // 144x36 = 4:1 ratio.
+  group('aspect ratio envelope (derived from physical mm)', () {
+    test('rejects 4:1 ultra-wide (physical lw/lh = 4)', () {
+      // Grid 144×12 at 5cm vertical pitch.
       expect(
-        () => parser.parse(valid(gw: 144, gh: 36, lw: 2400, lh: 600)),
+        () => parser.parse(valid(gw: 144, gh: 12, lw: 2400, lh: 600)),
         throwsA(isA<QrPayloadException>()),
       );
     });
 
-    test('rejects 1:4 ultra-tall (below 1:3)', () {
-      // 36x144 = 1:4 ratio.
+    test('rejects 1:4 ultra-tall (physical lw/lh = 0.25)', () {
       expect(
-        () => parser.parse(valid(gw: 36, gh: 144, lw: 600, lh: 1600)),
+        () => parser.parse(valid(gw: 24, gh: 32, lw: 400, lh: 1600)),
         throwsA(isA<QrPayloadException>()),
       );
     });
 
-    test('accepts exactly 3:1 (upper boundary)', () {
-      // 144x48 = 3:1.
+    test('accepts exactly 3:1 physical (upper boundary)', () {
+      // Grid 144×16 — grid ratio is 9, but physical is 3.
       expect(
-        () => parser.parse(valid(gw: 144, gh: 48, lw: 2400, lh: 800)),
+        () => parser.parse(valid(gw: 144, gh: 16, lw: 2400, lh: 800)),
         returnsNormally,
       );
     });
 
-    test('accepts exactly 1:3 (lower boundary)', () {
-      // 48x144 = 1:3.
+    test('accepts exactly 1:3 physical (lower boundary)', () {
+      // Grid 24×24 — square grid, but physical is 1:3 portrait.
       expect(
-        () => parser.parse(valid(gw: 48, gh: 144, lw: 800, lh: 1600)),
+        () => parser.parse(valid(gw: 24, gh: 24, lw: 400, lh: 1200)),
         returnsNormally,
       );
     });
+
+    test(
+      'M tier (1200×800 landscape) accepted despite grid 72×16 looking 4.5:1',
+      () {
+        // Non-square pixels: validating from grid would reject this wrongly.
+        // Physical 3:2 must pass the 3:1 envelope.
+        expect(
+          () => parser.parse(valid(gw: 72, gh: 16, lw: 1200, lh: 800)),
+          returnsNormally,
+        );
+      },
+    );
   });
 
   group('wiring pattern validation', () {
@@ -233,11 +245,11 @@ void main() {
   group('error messages are user-friendly Indonesian', () {
     test('out-of-envelope width includes the value and the range', () {
       try {
-        parser.parse(valid(lw: 400));
+        parser.parse(valid(lw: 200));
         fail('expected exception');
       } on QrPayloadException catch (e) {
-        expect(e.message, contains('400mm'));
-        expect(e.message, contains('600'));
+        expect(e.message, contains('200mm'));
+        expect(e.message, contains('400'));
         expect(e.message, contains('2400'));
       }
     });

@@ -8,7 +8,9 @@ Smart LED ambient wall product. Premium home lighting that doubles as moody atmo
 
 ## Quick context
 
-- **Hardware:** ESP32-S3 + stock WLED 0.14+ firmware + WS2812B strip at 60/m fixed density, mounted zigzag (serpentine) bottom-left origin
+- **Hardware:** ESP32-S3 + stock WLED 0.14+ firmware + WS2812B strip at 60 LED/m fixed density
+- **Mounting:** zigzag (serpentine), bottom-left origin, **rows spaced 5cm vertical pitch** (= 20 rows/m of wall height)
+- **Pixel grid is non-square:** horizontal 1.67cm spacing × vertical 5cm spacing → 3:1 pixel ratio. Aspect class derivation MUST use physical mm, not grid LED count.
 - **Wall model:** 2D grid (W × H), provisioned to WLED as **2D matrix mode** — not 1D strip
 - **Communication:** WLED JSON API over HTTP + WebSocket on local network
 - **App:** Flutter, this repository
@@ -52,23 +54,27 @@ Living Wall is a **flexible platform**, not a fixed-SKU product. Two catalog tie
 
 ### Catalog tiers (ready stock, landscape 3:2)
 
-| Tier | Dimensions | Grid | Approx. LED count |
-|---|---|---|---|
-| M | 1.2 × 0.8m | 72 × 48 | ~3,500 |
-| L | 1.8 × 1.2m | 108 × 72 | ~7,800 |
+LED count = `(widthMm × 60 / 1000) × (heightMm × 20 / 1000)` — 60/m horizontal from the strip, 20/m vertical from the 5cm mounting pitch.
+
+| Tier | Physical dims | Grid (W × H LEDs) | Total LED | Strip length |
+|---|---|---|---|---|
+| M | 1.2 × 0.8m | 72 × 16 | ~1,152 | 19.2m |
+| L | 1.8 × 1.2m | 108 × 24 | ~2,592 | 43.2m |
 
 ### Custom tier (sales touch, 4–6 week lead)
-- **Aspect ratio:** 1:3 to 3:1 (anything outside → bespoke/B2B waitlist)
-- **Dimensions:** kelipatan 200mm, width 600–2400mm, height 400–1600mm
-- **Density:** fixed 60/m (same as catalog)
+- **Aspect ratio:** 1:3 to 3:1 derived from **physical mm** (anything outside → bespoke/B2B waitlist)
+- **Dimensions:** kelipatan 200mm, **width 400–2400mm**, height 400–1600mm. 400mm minimum matches the ID sample panel.
+- **Density:** strip 60 LED/m (horizontal); 5cm vertical pitch (20 rows/m)
 - **Pricing:** surcharge multiplier by ratio deviation from 3:2 (1.0x catalog, 1.2x near-3:2, 1.4x further) — exact numbers owned by business doc, not this file
 - **Terms:** 50% deposit, final sale, MOQ 1 per order
 
 ### App treats every wall identically
-Critical rule: **app code has zero branching on M / L / custom.** The `Wall` model knows `gridWidth`, `gridHeight`, `aspectClass` — nothing else. Tier is a production/marketing concept, not a runtime concept. Every wall, regardless of tier, is configured the same way: parse QR → set 2D matrix on WLED → done.
+Critical rule: **app code has zero branching on M / L / custom.** The `Wall` model knows `gridWidth`, `gridHeight`, `aspectClass`, `lengthMm`, `heightMm` — nothing else. Tier is a production/marketing concept, not a runtime concept. Every wall, regardless of tier, is configured the same way: parse QR → set 2D matrix on WLED → done.
 
-### Tier L is tentative
-Tier L (~7,800 LED) needs hardware validation before commit. ESP32-S3 may not sustain ≥30 FPS on 2D effects at that count. Fallback ladder if it fails: cap L at ~5,000 LED, dual-controller with E1.31 sync, or drop density to 30/m. Mark as `tentative — pending hardware validation` until proven.
+**Aspect class is derived from physical mm**, not grid LED count. Non-square pixels (3:1 ratio) mean grid ratio is meaningless as a visual measurement — 1200×800mm has grid 72×16 (ratio 4.5) but visual aspect 3:2.
+
+### Tier L hardware validation
+Tier L (~2,592 LED) is well within ESP32-S3 2D rendering capacity at 5cm vertical pitch (originally tagged tentative when we incorrectly assumed square-pixel density that would have put L at ~7,800 LED). Still validate ≥30 FPS on Plasma 2D + Polar Lights before locking the spec, but the prior fallback ladder (dual controller, density reduction) is unlikely to be needed.
 
 ---
 
@@ -119,6 +125,14 @@ Show **all 18 scenes always.** Sort logic:
 3. Mismatched scenes at the bottom with a small label "kurang optimal untuk wall ini"
 
 Never hide, never disable. Customer keeps the choice. Premium UX = informative, not restrictive.
+
+### Quick scenes (Wall Control + RoomCard) aspect strategy
+Quick-scene strips are pre-curated per surface, not dynamic sort like the gallery:
+
+- **Wall Control** (6 tiles): `wallQuickScenesProvider(wallId)` returns 6 scenes curated for the wall's `aspectClass`. Landscape wall favors horizon scenes (ocean, sunset, golden), portrait favors vertical-flow (rain, dawn, dinner), square sticks to universals. Each list still mixes in universal staples (focus, candle, forest) so the strip covers everyday moods.
+- **RoomCard** (3 mini tiles on Dashboard): **universal-only** (`candle`, `focus`, `movie`). A room can contain walls of mixed aspect — picking an orientation-specific quick scene would look great on one wall and "kurang optimal" on another. Aspect-aware curation only makes sense per-wall, not per-room.
+
+Per-wall last-used quick scenes (replacing curation with usage history) is a Phase 2 nicety.
 
 ---
 
@@ -465,8 +479,9 @@ If any item fails, surface it explicitly rather than silently working around it.
 8. **Do not commit `*.g.dart` or `*.freezed.dart`** generated files. They're in `.gitignore`.
 9. **Do not treat walls as 1D strips.** Every wall must be provisioned as a WLED 2D matrix via `/json/cfg`. Without it, scene rendering on zigzag wiring is visually scrambled.
 10. **Do not branch app code on tier (M / L / custom).** App reads grid dims from QR; tier is a production/marketing concept, not a runtime concept.
-11. **Do not accept walls outside the 1:3–3:1 aspect range** or outside the 600–2400mm × 400–1600mm envelope. Reject at QR scan with a clear error.
+11. **Do not accept walls outside the 1:3–3:1 aspect range** (derived from physical mm) or outside the 400–2400mm × 400–1600mm envelope. Reject at QR scan with a clear error.
 12. **Do not re-write `/json/cfg` on every app launch.** Config writes hit flash — only on add-wall or explicit "Konfigurasi ulang".
+13. **Do not derive aspect class from grid LED count.** Vertical pitch (5cm) differs from horizontal (1.67cm), so grid ratio ≠ visual aspect. Always pass physical mm to `aspectClassFor`.
 
 ---
 

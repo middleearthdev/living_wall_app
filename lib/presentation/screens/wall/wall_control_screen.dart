@@ -28,18 +28,6 @@ class WallControlScreen extends ConsumerWidget {
   final String roomId;
   final String wallId;
 
-  /// Six fixed quick-scene favorites, two rows of three. Mix of categories
-  /// so the strip covers everyday moods without per-wall configuration.
-  /// Per-wall last-used quick scenes are a Phase 2 nicety.
-  static const _quickSceneIds = [
-    'ocean',
-    'focus',
-    'candle',
-    'sunset',
-    'forest',
-    'rain',
-  ];
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
@@ -48,19 +36,16 @@ class WallControlScreen extends ConsumerWidget {
     final wallAsync = ref.watch(wallByIdProvider(wallId));
     final state = ref.watch(wallStateProvider(wallId)).valueOrNull;
     final activeScene = ref.watch(activeSceneForWallProvider(wallId));
-    final catalog = ref.watch(sceneCatalogSyncProvider);
+    // Quick scenes are curated per wall aspect class: landscape walls
+    // favor horizon scenes, portrait favor vertical-flow scenes, square
+    // sticks to universals. See [wallQuickScenesProvider].
+    final quickScenes = ref.watch(wallQuickScenesProvider(wallId));
     final controller = ref.read(wallControllerProvider);
     final connectivity =
         ref.watch(wallConnectivityProvider(wallId)).valueOrNull ??
         WallConnectivity.connecting;
 
     final wallName = wallAsync.valueOrNull?.name ?? 'Wall';
-
-    final quickScenes = [
-      for (final id in _quickSceneIds)
-        if (catalog.any((s) => s.id == id))
-          catalog.firstWhere((s) => s.id == id),
-    ];
 
     return Scaffold(
       body: SafeArea(

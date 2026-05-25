@@ -60,7 +60,9 @@ class OnboardingSubmitController extends AutoDisposeAsyncNotifier<Wall?> {
         gridHeight: provision.gridHeight,
         lengthMm: provision.lengthMm,
         heightMm: provision.heightMm,
-        aspectClass: aspectClassFor(provision.gridWidth, provision.gridHeight),
+        // Derive from physical mm, not grid LEDs: vertical pitch (5cm) differs
+        // from horizontal (1.67cm) so grid ratio != visual aspect ratio.
+        aspectClass: aspectClassFor(provision.lengthMm, provision.heightMm),
       );
 
       // Best-effort: provision the WLED device with its 2D matrix layout and

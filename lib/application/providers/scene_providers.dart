@@ -32,6 +32,55 @@ class AspectSortedScene {
   final bool isOptimal;
 }
 
+/// Curated 6-scene quick-pick lists per aspect class for Wall Control.
+/// Each list mixes a couple of orientation-matching scenes with universal
+/// staples so the wall's quick strip covers everyday moods (cozy / focus
+/// / dim social) without all 6 collapsing into the same category.
+const Map<AspectClass, List<String>> _wallQuickSceneIdsByAspect = {
+  AspectClass.landscape: [
+    'ocean', // landscape — water horizon
+    'sunset', // landscape — sky gradient
+    'focus', // universal — cool functional
+    'candle', // universal — warm cozy
+    'forest', // universal — green relaxed
+    'golden', // landscape — warm social
+  ],
+  AspectClass.portrait: [
+    'rain', // portrait — vertical drops
+    'dawn', // portrait — vertical sunset
+    'focus', // universal — cool functional
+    'candle', // universal — warm cozy
+    'forest', // universal — green relaxed
+    'dinner', // portrait — warm vertical glow
+  ],
+  AspectClass.square: [
+    'focus', // universal — cool functional
+    'candle', // universal — warm cozy
+    'breathe', // universal — soft pulse
+    'forest', // universal — green relaxed
+    'sakura', // universal — pink mood
+    'twinkle', // universal — sparkle
+  ],
+};
+
+/// Quick scenes for the Wall Control strip — 6 scenes curated for the
+/// wall's aspect class. Falls back to the square list (all-universal) when
+/// the wall isn't loaded yet, so the UI doesn't flash with the wrong set.
+final wallQuickScenesProvider = Provider.family<List<Scene>, String>((
+  ref,
+  wallId,
+) {
+  final catalog = ref.watch(sceneCatalogSyncProvider);
+  if (catalog.isEmpty) return const <Scene>[];
+  final wall = ref.watch(wallByIdProvider(wallId)).valueOrNull;
+  final aspect = wall?.aspectClass ?? AspectClass.square;
+  final ids = _wallQuickSceneIdsByAspect[aspect]!;
+  return [
+    for (final id in ids)
+      if (catalog.any((s) => s.id == id)) catalog.firstWhere((s) => s.id == id),
+  ];
+});
+
 /// Catalog re-sorted for a specific wall's aspect class:
 /// - matching-orientation scenes first
 /// - universal scenes next
