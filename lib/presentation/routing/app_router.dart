@@ -14,6 +14,8 @@ import '../screens/onboarding/qr_scan_screen.dart';
 import '../screens/onboarding/wifi_guide_screen.dart';
 import '../screens/room/room_screen.dart';
 import '../screens/scenes/scene_gallery_screen.dart';
+import '../screens/settings/about_screen.dart';
+import '../screens/settings/settings_screen.dart';
 import '../screens/splash/splash_screen.dart';
 import '../screens/wall/wall_control_screen.dart';
 import 'routes.dart';
@@ -71,6 +73,18 @@ final routerProvider = Provider<GoRouter>((ref) {
           if (extra is! OnboardingPayload) return const _MissingExtraScreen();
           return NamePlaceScreen(payload: extra);
         },
+      ),
+      // Settings is app-level (not nested under dashboard) so the gear
+      // icon push stays distinct from any per-room/per-wall navigation.
+      GoRoute(
+        path: Routes.settings,
+        builder: (_, __) => const SettingsScreen(),
+        routes: [
+          GoRoute(
+            path: 'about',
+            builder: (_, __) => const AboutScreen(),
+          ),
+        ],
       ),
       GoRoute(
         path: Routes.dashboard,

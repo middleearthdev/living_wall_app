@@ -53,6 +53,11 @@ class Routes {
       ctx == null ? onboardingQrScan : addWallQrScan(ctx.roomId);
   static String namePlaceFor(AddWallContext? ctx) =>
       ctx == null ? onboardingNamePlace : addWallName(ctx.roomId);
+
+  // App-level Settings (gear icon top-right on Dashboard). About is the
+  // EUPL-1.2 attribution path — see CLAUDE.md "WLED attribution" rule.
+  static const String settings = '/settings';
+  static const String settingsAbout = '/settings/about';
 }
 
 /// Bundle passed via go_router `extra` from the QR scan screen forward into

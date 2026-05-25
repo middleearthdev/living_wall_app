@@ -46,6 +46,10 @@ dependencies:
   # successor to the (deprecated) qr_code_scanner.
   mobile_scanner: ^5.0.0
 
+  # App version for the About screen (dynamic, sourced from native build
+  # rather than hardcoded in Dart so it can't drift from pubspec).
+  package_info_plus: ^8.0.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -64,8 +68,28 @@ dev_dependencies:
   # custom_lint: ^0.7.3
   # riverpod_lint: ^2.6.1
 
+  # App icon generator — reads the NAUVRA source PNGs in icons/ and
+  # writes iOS AppIcon.appiconset + Android mipmap-* assets. Run via
+  # `dart run flutter_launcher_icons` whenever the source PNGs change.
+  flutter_launcher_icons: ^0.14.0
+
 flutter:
   uses-material-design: true
   assets:
     - assets/scenes.json
     - assets/images/scenes/
+    - assets/licenses/
+
+# NAUVRA brand icon — sources live in assets/icon/ (pre-rasterized by the
+# design team from the brand kit). Re-run the generator if any source
+# PNG changes:
+#
+#   dart run flutter_launcher_icons
+flutter_launcher_icons:
+  android: "ic_launcher"
+  ios: true
+  image_path: "assets/icon/NAUVRA-Icon-iOS-1024.png"
+  remove_alpha_ios: true
+  min_sdk_android: 21
+  adaptive_icon_background: "assets/icon/NAUVRA-Adaptive-Background-1024.png"
+  adaptive_icon_foreground: "assets/icon/NAUVRA-Adaptive-Foreground-1024.png"

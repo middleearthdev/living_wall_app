@@ -482,6 +482,7 @@ If any item fails, surface it explicitly rather than silently working around it.
 11. **Do not accept walls outside the 1:3–3:1 aspect range** (derived from physical mm) or outside the 400–2400mm × 400–1600mm envelope. Reject at QR scan with a clear error.
 12. **Do not re-write `/json/cfg` on every app launch.** Config writes hit flash — only on add-wall or explicit "Konfigurasi ulang".
 13. **Do not derive aspect class from grid LED count.** Vertical pitch (5cm) differs from horizontal (1.67cm), so grid ratio ≠ visual aspect. Always pass physical mm to `aspectClassFor`.
+14. **Do not surface WLED attribution outside Settings → About → Open Source Licenses.** EUPL-1.2 requires accessibility (≤3 taps), not prominence. WLED stays out of splash, dashboard, marketing, onboarding, and chrome — NAUVRA is the single brand the user sees. The attribution flow is wired via `LicenseRegistry.addLicense` in `main.dart` + Flutter's bundled `showLicensePage`.
 
 ---
 

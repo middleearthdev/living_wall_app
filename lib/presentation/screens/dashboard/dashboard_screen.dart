@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../application/providers/room_providers.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/greeting.dart';
 import '../../../data/models/room.dart';
+import '../../routing/routes.dart';
 import '../../widgets/add_room_dialog.dart';
 import '../../widgets/room_card.dart';
 
@@ -34,6 +36,7 @@ class DashboardScreen extends ConsumerWidget {
                 greeting: greetingFor(DateTime.now()),
                 homeName: homeAsync.valueOrNull?.name ?? 'Rumah',
                 onAddRoom: () => _openAddRoom(context, ref),
+                onOpenSettings: () => context.push(Routes.settings),
               ),
               const SizedBox(height: 20),
               Expanded(
@@ -72,11 +75,13 @@ class _DashboardHeader extends StatelessWidget {
     required this.greeting,
     required this.homeName,
     required this.onAddRoom,
+    required this.onOpenSettings,
   });
 
   final String greeting;
   final String homeName;
   final VoidCallback onAddRoom;
+  final VoidCallback onOpenSettings;
 
   @override
   Widget build(BuildContext context) {
@@ -104,23 +109,52 @@ class _DashboardHeader extends StatelessWidget {
             ],
           ),
         ),
-        const SizedBox(width: 12),
-        _AddRoomButton(onTap: onAddRoom),
+        const SizedBox(width: 8),
+        // Gear sits next to "+" so the dashboard chrome stays a single
+        // affordance row. Settings is rarely tapped — kept muted relative
+        // to the accent-tinted "+" so eye still goes to "add room".
+        _HeaderIconButton(
+          icon: Icons.settings_outlined,
+          onTap: onOpenSettings,
+          tinted: false,
+        ),
+        const SizedBox(width: 8),
+        _HeaderIconButton(
+          icon: Icons.add,
+          onTap: onAddRoom,
+          tinted: true,
+        ),
       ],
     );
   }
 }
 
-class _AddRoomButton extends StatelessWidget {
-  const _AddRoomButton({required this.onTap});
+class _HeaderIconButton extends StatelessWidget {
+  const _HeaderIconButton({
+    required this.icon,
+    required this.onTap,
+    required this.tinted,
+  });
 
+  final IconData icon;
   final VoidCallback onTap;
+
+  /// `true` = accent-tinted background (primary affordance, e.g. add room).
+  /// `false` = neutral surface (secondary, e.g. settings).
+  final bool tinted;
 
   @override
   Widget build(BuildContext context) {
     final ext = Theme.of(context).extension<LivingWallTheme>()!;
+    final bg = tinted
+        ? ext.accent.withValues(alpha: 0.16)
+        : ext.surface2;
+    final border = tinted
+        ? ext.accentLight.withValues(alpha: 0.5)
+        : ext.surface3;
+    final fg = tinted ? ext.accentLight : ext.textDim;
     return Material(
-      color: ext.accent.withValues(alpha: 0.16),
+      color: bg,
       borderRadius: BorderRadius.circular(10),
       child: InkWell(
         onTap: onTap,
@@ -130,9 +164,9 @@ class _AddRoomButton extends StatelessWidget {
           height: 36,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: ext.accentLight.withValues(alpha: 0.5)),
+            border: Border.all(color: border),
           ),
-          child: Icon(Icons.add, color: ext.accentLight, size: 20),
+          child: Icon(icon, color: fg, size: 20),
         ),
       ),
     );

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/branding/nauvra_lockup.dart';
 import '../../../core/theme/colors.dart';
@@ -8,18 +7,21 @@ import '../../../core/theme/colors.dart';
 /// from drift. Matches the NAUVRA brand-kit splash spec:
 /// - centered stacked lockup (logomark + wordmark + tagline)
 /// - radial periwinkle glow on a black field
-/// - "Powered by WLED" attribution at the bottom in tracked grotesk
+///
+/// WLED attribution is intentionally not on this screen — per CLAUDE.md
+/// it lives only in Settings → About → Open Source Licenses, matching
+/// the standard EUPL-1.2 compliance pattern (accessibility, not
+/// prominence).
 class SplashScreen extends StatelessWidget {
   const SplashScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return const Scaffold(
       backgroundColor: AppColors.ink,
       body: DecoratedBox(
-        decoration: const BoxDecoration(
-          // Two soft periwinkle glows — top-center halo behind the
-          // lockup, faint bottom glow to lift the attribution line.
+        decoration: BoxDecoration(
+          // Soft periwinkle glow halo behind the lockup.
           gradient: RadialGradient(
             center: Alignment(0, -0.3),
             radius: 0.9,
@@ -27,29 +29,7 @@ class SplashScreen extends StatelessWidget {
             stops: [0, 1],
           ),
         ),
-        child: SafeArea(
-          child: Stack(
-            children: [
-              const Center(child: NauvraLockup.stacked()),
-              Positioned(
-                left: 0,
-                right: 0,
-                bottom: 24,
-                child: Center(
-                  child: Text(
-                    'POWERED BY WLED',
-                    style: GoogleFonts.hankenGrotesk(
-                      fontSize: 8.5,
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.text.withValues(alpha: 0.4),
-                      letterSpacing: 8.5 * 0.2,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
+        child: SafeArea(child: Center(child: NauvraLockup.stacked())),
       ),
     );
   }
