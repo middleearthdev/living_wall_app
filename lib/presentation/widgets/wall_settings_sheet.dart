@@ -115,6 +115,18 @@ class _WallSettingsSheetState extends ConsumerState<WallSettingsSheet> {
     router.push(Routes.reconfigureQr(wall.roomId, wall.id));
   }
 
+  void _addAnotherWall(Wall wall) {
+    // Closes the gap where a single-wall room can't be expanded: tapping
+    // a 1-wall RoomCard on the Dashboard skips Room Screen and lands
+    // straight on Wall Control (per design spec, daily-use shortcut),
+    // which means _AddWallRow inside Room Screen is unreachable from
+    // here. Surfacing the add-wall trigger inside Wall Settings keeps the
+    // shortcut intact while still giving 1-wall rooms a path to grow.
+    final router = GoRouter.of(context);
+    Navigator.of(context).pop(false);
+    router.push(Routes.addWallDiscovery(wall.roomId));
+  }
+
   Future<void> _delete(Wall wall) async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -198,6 +210,11 @@ class _WallSettingsSheetState extends ConsumerState<WallSettingsSheet> {
                     icon: Icons.qr_code_scanner_outlined,
                     label: 'Konfigurasi ulang',
                     onTap: _busy ? null : () => _reconfigure(wall),
+                  ),
+                  _SettingsAction(
+                    icon: Icons.add_box_outlined,
+                    label: 'Tambah wall di ruangan yang sama',
+                    onTap: _busy ? null : () => _addAnotherWall(wall),
                   ),
                   _SettingsAction(
                     icon: Icons.delete_outline,

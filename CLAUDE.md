@@ -279,7 +279,8 @@ Already implicit: a Room is a sync group. Change one wall in the room → all wa
 
 ### 5. Add wall / Add room (entry per context)
 - **'+' button on Dashboard** = add room (then immediately enter add-wall flow)
-- **'Tambah wall' inside Room screen** = add wall to this specific room
+- **'Tambah wall' inside Room screen** = add wall to this specific room (Room Screen renders for 2+-wall rooms; 1-wall rooms shortcut straight to Wall Control)
+- **'Tambah wall di ruangan yang sama' inside Wall Settings sheet** = third entry, covers 1-wall rooms that skip Room Screen via the Dashboard shortcut. Same destination route, roomId taken from the current wall.
 - Wall is ALWAYS placed in a room. No "unassigned" state.
 - Add wall flow = **3 steps** (Discovery → QR scan → Name). WiFi guide is skipped — app is already running on WiFi.
 - QR scan is mandatory for every new wall, regardless of whether it's the first or the nth. Same component reused from onboarding.
