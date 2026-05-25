@@ -1115,7 +1115,23 @@ livingwall:<span class="k">//</span>provision<span class="k">?</span>
         <div>S12_MoodApplied</div>
         <div>RoomScreen (state berbeda)</div>
         <div>Sama dengan S07 + scene aktif diset.</div>
+
+        <div>(post-spec) WallSettings</div>
+        <div>WallSettingsSheet</div>
+        <div>showModalBottomSheet dari "···" di Wall Control. Actions: Ganti nama, <b>Konfigurasi ulang</b> (re-scan QR → <code style="font-family:var(--mono);">WallController.reconfigure</code>), Hapus.</div>
       </div>
+    </div>
+
+    <div class="block">
+      <div class="blk-h muted">QrScanScreen dipakai 3 cara</div>
+      <p class="blk-p">
+        Komponen scanner sama — hanya callback yang berbeda. Onboarding pertama dan add-wall passing
+        <code style="font-family:var(--mono);">discoveredWall</code> + addContext lewat route extra. <b>Reconfigure</b> dari Wall Settings
+        passing keduanya null — route sudah tahu wallId dari URL path, callback langsung memanggil
+        <code style="font-family:var(--mono);">wallController.reconfigure(wallId, payload)</code>. Itu sebabnya
+        <code style="font-family:var(--mono);">QrScanScreen.discovered</code> bersifat nullable di code Flutter — bukan optional yang historis,
+        tapi sengaja untuk reuse 3 jalur.
+      </p>
     </div>
 
     <div class="block">
@@ -1249,6 +1265,15 @@ livingwall:<span class="k">//</span>provision<span class="k">?</span>
                   <span class="t">GoRoute</span>(
                     path: <span class="s">'scenes'</span><span class="k">,</span>
                     builder: (_<span class="k">,</span> state) <span class="k">=&gt;</span> <span class="t">SceneGalleryScreen</span>(
+                      wallId: state<span class="k">.</span>pathParameters[<span class="s">'wallId'</span>]<span class="k">!,</span>
+                    )<span class="k">,</span>
+                  )<span class="k">,</span>
+                  <span class="c">// Wall Settings → "Konfigurasi ulang": re-scan QR untuk</span>
+                  <span class="c">// existing wall. Layar yang sama dengan onboarding QR step,</span>
+                  <span class="c">// hanya callback yang beda (reconfigure vs create).</span>
+                  <span class="t">GoRoute</span>(
+                    path: <span class="s">'reconfigure-qr'</span><span class="k">,</span>
+                    builder: (_<span class="k">,</span> state) <span class="k">=&gt;</span> <span class="t">_ReconfigureQrRoute</span>(
                       wallId: state<span class="k">.</span>pathParameters[<span class="s">'wallId'</span>]<span class="k">!,</span>
                     )<span class="k">,</span>
                   )<span class="k">,</span>
