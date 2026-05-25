@@ -12,9 +12,13 @@ class AppColors {
   static const Color surface3 = Color(0xFF1C1F25);
 
   // Accent — periwinkle. Chrome only; never amber.
+  // accent/accentLight/accentDeep match the existing UI palette and are
+  // also the NAUVRA brand wordmark + lockup tones. accentDeepest is the
+  // far end of the brand gradient (logomark + app icon background).
   static const Color accent = Color(0xFF7C8EF5);
   static const Color accentLight = Color(0xFF9AA8FF);
   static const Color accentDeep = Color(0xFF5D6FE0);
+  static const Color accentDeepest = Color(0xFF3A4FC8);
 
   // Text. Use textDim/textFaint instead of ad-hoc opacity.
   static const Color text = Color(0xFFEEF0F5);

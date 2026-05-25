@@ -1,5 +1,5 @@
 name: living_wall_app
-description: "Living Ambient Wall — smart LED wall controller (Phase 1, local-first)."
+description: "Nauvra — Living Ambient Walls. Smart LED wall controller (Phase 1, local-first)."
 publish_to: 'none'
 version: 0.1.0+1
 

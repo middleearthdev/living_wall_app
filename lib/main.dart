@@ -31,7 +31,7 @@ class _LivingWallAppState extends ConsumerState<LivingWallApp> {
   Widget build(BuildContext context) {
     final router = ref.watch(routerProvider);
     return MaterialApp.router(
-      title: 'Living Wall',
+      title: 'Nauvra',
       debugShowCheckedModeBanner: false,
       theme: buildAppTheme(),
       routerConfig: router,

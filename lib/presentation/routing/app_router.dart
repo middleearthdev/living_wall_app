@@ -14,6 +14,7 @@ import '../screens/onboarding/qr_scan_screen.dart';
 import '../screens/onboarding/wifi_guide_screen.dart';
 import '../screens/room/room_screen.dart';
 import '../screens/scenes/scene_gallery_screen.dart';
+import '../screens/splash/splash_screen.dart';
 import '../screens/wall/wall_control_screen.dart';
 import 'routes.dart';
 
@@ -36,7 +37,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
-      GoRoute(path: Routes.root, builder: (_, __) => const _SplashScreen()),
+      GoRoute(path: Routes.root, builder: (_, __) => const SplashScreen()),
       GoRoute(
         path: Routes.onboardingEmpty,
         builder: (_, __) => const EmptyStateScreen(),
@@ -171,15 +172,6 @@ class _ProviderRefreshListenable extends ChangeNotifier {
   void dispose() {
     _sub.close();
     super.dispose();
-  }
-}
-
-class _SplashScreen extends StatelessWidget {
-  const _SplashScreen();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(body: Center(child: CircularProgressIndicator()));
   }
 }
 
