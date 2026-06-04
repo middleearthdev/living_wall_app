@@ -34,14 +34,16 @@ class RoomController {
 
   WallRepository get _wallRepo => _ref.read(wallRepositoryProvider);
 
-  /// Walls in the room that are still part of the sync group — excluded
-  /// walls drop off these fan-outs entirely. Spec wording: "Mood tetap
-  /// diterapkan ke wall online; yang dikecualikan tetap di scene sendiri."
+  /// Walls in the room that are still part of the sync group. Excluded walls
+  /// and offline walls are both skipped — offline walls can't receive HTTP
+  /// commands, and sending to them just wastes the connect-timeout budget.
   Future<List<Wall>> _targets(String roomId) async {
     final all = await _wallRepo.wallsInRoom(roomId);
-    return all
-        .where((w) => !_ref.read(wallExcludedProvider(w.id)))
-        .toList(growable: false);
+    return all.where((w) {
+      if (_ref.read(wallExcludedProvider(w.id))) return false;
+      final conn = _ref.read(wallConnectivityProvider(w.id)).valueOrNull;
+      return conn == WallConnectivity.online;
+    }).toList(growable: false);
   }
 
   Future<void> _forEach(
@@ -57,14 +59,28 @@ class RoomController {
   /// the UI flips to the new scene immediately; the HTTP fan-out runs after.
   /// If the request fails the override stays — the next WebSocket frame from
   /// the wall will re-derive the truth via the fx/pal lookup. Excluded walls
-  /// are skipped entirely, including the intent override, so their card
-  /// keeps showing whatever they're actually playing.
-  Future<void> applyScene(String roomId, Scene scene) async {
+  /// and offline walls are skipped entirely.
+  Future<void> applyScene(
+    String roomId,
+    Scene scene, {
+    int? briOverride,
+    int? sxOverride,
+    int? ixOverride,
+  }) async {
     final walls = await _targets(roomId);
     for (final w in walls) {
       _ref.read(lastAppliedSceneIdProvider(w.id).notifier).state = scene.id;
     }
-    await Future.wait(walls.map((w) => _clientFor(w).applyScene(scene)));
+    await Future.wait(
+      walls.map(
+        (w) => _clientFor(w).applyScene(
+          scene,
+          briOverride: briOverride,
+          sxOverride: sxOverride,
+          ixOverride: ixOverride,
+        ),
+      ),
+    );
   }
 
   /// Optimistic room-level on/off. Sets [roomIntentOnProvider] before

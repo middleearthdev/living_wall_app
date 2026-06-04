@@ -6,6 +6,8 @@ import '../../data/models/wall.dart';
 import '../../data/services/wled_client.dart';
 import '../../presentation/routing/routes.dart';
 import '../providers/app_providers.dart';
+import '../providers/room_providers.dart';
+import '../providers/wall_providers.dart';
 
 /// Final step of onboarding / add-wall: persist the wall and provision its
 /// WLED 2D matrix + UDP sync. Exposes [AsyncValue] so the UI can show a
@@ -50,20 +52,25 @@ class OnboardingSubmitController extends AutoDisposeAsyncNotifier<Wall?> {
 
       final provision = payload.provision;
       final discovered = payload.discovered;
-      final wall = await walls.addWall(
-        roomId: room.id,
-        name: wallName.trim(),
-        deviceId: discovered.deviceId,
-        ipAddress: discovered.ipAddress,
-        serialNumber: provision.serialNumber,
-        gridWidth: provision.gridWidth,
-        gridHeight: provision.gridHeight,
-        lengthMm: provision.lengthMm,
-        heightMm: provision.heightMm,
-        // Derive from physical mm, not grid LEDs: vertical pitch (5cm) differs
-        // from horizontal (1.67cm) so grid ratio != visual aspect ratio.
-        aspectClass: aspectClassFor(provision.lengthMm, provision.heightMm),
-      );
+      final Wall wall;
+      try {
+        wall = await walls.addWall(
+          roomId: room.id,
+          name: wallName.trim(),
+          deviceId: discovered.deviceId,
+          ipAddress: discovered.ipAddress,
+          serialNumber: provision.serialNumber,
+          gridWidth: provision.gridWidth,
+          gridHeight: provision.gridHeight,
+          lengthMm: provision.lengthMm,
+          heightMm: provision.heightMm,
+          // Derive from physical mm, not grid LEDs: vertical pitch (5cm) differs
+          // from horizontal (1.67cm) so grid ratio != visual aspect ratio.
+          aspectClass: aspectClassFor(provision.lengthMm, provision.heightMm),
+        );
+      } catch (e) {
+        throw _friendlyInsertError(e);
+      }
 
       // Best-effort: provision the WLED device with its 2D matrix layout and
       // join the room's UDP sync group. Failure here doesn't roll back the
@@ -81,8 +88,11 @@ class OnboardingSubmitController extends AutoDisposeAsyncNotifier<Wall?> {
         // settings once they confirm the device is reachable.
       }
 
-      // Invalidate the first-launch gate so the router moves to dashboard.
+      // Invalidate providers that depend on the wall list for this room so
+      // the dashboard card and room screen reflect the new wall immediately.
       ref.invalidate(hasAnyWallProvider);
+      ref.invalidate(wallsForRoomProvider(room.id));
+      ref.invalidate(registeredByDeviceIdProvider);
 
       return wall;
     });
@@ -93,3 +103,25 @@ final onboardingSubmitControllerProvider =
     AutoDisposeAsyncNotifierProvider<OnboardingSubmitController, Wall?>(
       OnboardingSubmitController.new,
     );
+
+/// Converts a raw DB unique-constraint exception into a user-facing message.
+/// SQLite surfaces these as "UNIQUE constraint failed: walls.column_name".
+Exception _friendlyInsertError(Object e) {
+  final s = e.toString().toLowerCase();
+  if (s.contains('unique constraint failed')) {
+    if (s.contains('device_id')) {
+      return Exception(
+        'Perangkat WLED ini sudah terdaftar. Setiap panel hanya bisa '
+        'dipasangkan satu kali.',
+      );
+    }
+    if (s.contains('serial_number')) {
+      return Exception(
+        'Nomor seri panel ini sudah terdaftar. Gunakan '
+        '"Konfigurasi ulang" di Wall Settings jika panel diganti.',
+      );
+    }
+    return Exception('Wall ini sudah terdaftar sebelumnya.');
+  }
+  return Exception('Gagal menyimpan wall. Coba lagi.');
+}

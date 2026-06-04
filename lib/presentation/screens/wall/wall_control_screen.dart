@@ -50,9 +50,7 @@ class WallControlScreen extends ConsumerWidget {
     // user intent wins briefly during the optimistic window; otherwise
     // trust the latest WebSocket frame.
     final intentOn = ref.watch(wallIntentOnProvider(wallId));
-    final effectiveIsOn = reachable
-        ? (intentOn ?? state?.on ?? false)
-        : false;
+    final effectiveIsOn = reachable ? (intentOn ?? state?.on ?? false) : false;
 
     final wallName = wallAsync.valueOrNull?.name ?? 'Wall';
 
@@ -81,9 +79,8 @@ class WallControlScreen extends ConsumerWidget {
                 title: 'Quick Scenes',
                 trailing: 'Lihat semua →',
                 trailingColor: ext.accentLight,
-                onTrailingTap: () => context.push(
-                  Routes.dashboardScenes(roomId, wallId),
-                ),
+                onTrailingTap: () =>
+                    context.push(Routes.dashboardScenes(roomId, wallId)),
               ),
               const SizedBox(height: 10),
               _QuickScenesGrid(
@@ -280,10 +277,7 @@ class _SectionHeader extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.baseline,
       textBaseline: TextBaseline.alphabetic,
       children: [
-        Text(
-          title,
-          style: theme.textTheme.titleSmall?.copyWith(fontSize: 13),
-        ),
+        Text(title, style: theme.textTheme.titleSmall?.copyWith(fontSize: 13)),
         const Spacer(),
         if (trailing != null)
           GestureDetector(
@@ -338,11 +332,7 @@ class _QuickScenesGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       mainAxisSize: MainAxisSize.min,
-      children: [
-        _row(0),
-        const SizedBox(height: 10),
-        _row(3),
-      ],
+      children: [_row(0), const SizedBox(height: 10), _row(3)],
     );
   }
 }
@@ -480,9 +470,7 @@ class _BrightnessSliderState extends ConsumerState<_BrightnessSlider> {
 
   void _onChanged(double v) {
     // Hysteresis: enter off-zone below 8, leave only above 16.
-    final inOff = _draggingOff
-        ? v < _offDeadzoneExit
-        : v < _offDeadzoneEnter;
+    final inOff = _draggingOff ? v < _offDeadzoneExit : v < _offDeadzoneEnter;
     final snapped = inOff ? 0.0 : v;
 
     if (inOff && !_draggingOff) {
@@ -573,4 +561,3 @@ class _BrightnessSliderState extends ConsumerState<_BrightnessSlider> {
     );
   }
 }
-

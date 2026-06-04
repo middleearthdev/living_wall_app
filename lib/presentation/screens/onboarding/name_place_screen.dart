@@ -51,6 +51,14 @@ class _NamePlaceScreenState extends ConsumerState<NamePlaceScreen> {
     _roomsFuture = _loadRooms();
   }
 
+  static String _errorMessage(Object? error) {
+    if (error == null) return '';
+    final s = error.toString();
+    // Exception.toString() prepends "Exception: " — strip it for display.
+    if (s.startsWith('Exception: ')) return s.substring('Exception: '.length);
+    return s;
+  }
+
   Future<List<Room>> _loadRooms() async {
     final homes = ref.read(homeRepositoryProvider);
     // Don't call ensureDefaultHome here — creating the home before the user
@@ -145,7 +153,7 @@ class _NamePlaceScreenState extends ConsumerState<NamePlaceScreen> {
                 if (submit.hasError) ...[
                   const SizedBox(height: 16),
                   Text(
-                    'Gagal menyimpan: ${submit.error}',
+                    _errorMessage(submit.error),
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.error,
                     ),

@@ -107,6 +107,9 @@ class RoomScreen extends ConsumerWidget {
                               text: 'Mood ruangan',
                               hint: 'Lihat semua →',
                               hintColor: ext.accentLight,
+                              onHintTap: () => context.push(
+                                Routes.dashboardRoomScenes(roomId),
+                              ),
                             ),
                             const SizedBox(height: 8),
                             _MoodGrid(
@@ -250,11 +253,17 @@ class _SyncBanner extends StatelessWidget {
 }
 
 class _SectionLabel extends StatelessWidget {
-  const _SectionLabel({required this.text, this.hint, this.hintColor});
+  const _SectionLabel({
+    required this.text,
+    this.hint,
+    this.hintColor,
+    this.onHintTap,
+  });
 
   final String text;
   final String? hint;
   final Color? hintColor;
+  final VoidCallback? onHintTap;
 
   @override
   Widget build(BuildContext context) {
@@ -270,10 +279,13 @@ class _SectionLabel extends StatelessWidget {
         ),
         const Spacer(),
         if (hint != null)
-          Text(
-            hint!,
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: hintColor ?? ext.textDim,
+          GestureDetector(
+            onTap: onHintTap,
+            child: Text(
+              hint!,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: hintColor ?? ext.textDim,
+              ),
             ),
           ),
       ],
@@ -307,6 +319,7 @@ class _WallRow extends ConsumerWidget {
         WallConnectivity.connecting;
 
     final isOffline = connectivity == WallConnectivity.offline;
+    final isOnline = connectivity == WallConnectivity.online;
     final isOff = state == null || !state.on;
     final sceneLabel = scene?.name ?? (isOff ? 'mati' : 'Custom');
 
@@ -396,10 +409,14 @@ class _WallRow extends ConsumerWidget {
                 ),
                 if (showToggle)
                   _SyncToggle(
-                    included: !excluded,
-                    onChanged: (include) => ref
-                        .read(wallControllerProvider)
-                        .setExcluded(wall.id, !include),
+                    // Offline walls can't participate in sync — show as off
+                    // and disable taps until the device comes back online.
+                    included: !excluded && isOnline,
+                    onChanged: !isOnline
+                        ? null
+                        : (include) => ref
+                              .read(wallControllerProvider)
+                              .setExcluded(wall.id, !include),
                   )
                 else
                   Icon(
@@ -573,16 +590,21 @@ class _DashedRectPainter extends CustomPainter {
 /// the row's InkWell, so toggling exclusion never accidentally navigates
 /// into the wall control screen.
 class _SyncToggle extends StatelessWidget {
-  const _SyncToggle({required this.included, required this.onChanged});
+  const _SyncToggle({required this.included, this.onChanged});
 
   final bool included;
-  final ValueChanged<bool> onChanged;
+
+  /// Null when the wall is offline — toggle renders dim and ignores taps.
+  final ValueChanged<bool>? onChanged;
 
   @override
   Widget build(BuildContext context) {
     final ext = Theme.of(context).extension<LivingWallTheme>()!;
-    return GestureDetector(
-      onTap: () => onChanged(!included),
+    final disabled = onChanged == null;
+    return Opacity(
+      opacity: disabled ? 0.4 : 1.0,
+      child: GestureDetector(
+      onTap: disabled ? null : () => onChanged!(!included),
       behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 160),
@@ -612,6 +634,7 @@ class _SyncToggle extends StatelessWidget {
             ),
           ),
         ),
+      ),
       ),
     );
   }
