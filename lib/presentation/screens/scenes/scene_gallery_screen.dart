@@ -12,17 +12,25 @@ import '../../widgets/adjustment_bottom_sheet.dart';
 /// S08 — full scene catalog browsing surface. Category chips filter the
 /// per-category sections below; tapping a scene card opens the adjustment
 /// sheet (S09) rather than applying immediately — the gallery is for
-/// browsing with intent to tune, the quick-scene strip is for instant
-/// apply.
+/// browsing with intent to tune, the quick-scene strip is for instant apply.
+///
+/// Two modes:
+/// - Wall mode ([wallId] provided): active-scene and aspect sort are derived
+///   from that specific wall; apply targets the single wall.
+/// - Room mode ([wallId] null): active scene comes from the room's canonical
+///   first wall; aspect sort uses the same first wall; apply fans out to all
+///   online, non-excluded walls via [RoomController].
 class SceneGalleryScreen extends ConsumerStatefulWidget {
   const SceneGalleryScreen({
     super.key,
     required this.roomId,
-    required this.wallId,
+    this.wallId,
   });
 
   final String roomId;
-  final String wallId;
+
+  /// Null when opened from Room screen (room mode).
+  final String? wallId;
 
   @override
   ConsumerState<SceneGalleryScreen> createState() =>
@@ -37,10 +45,26 @@ class _SceneGalleryScreenState extends ConsumerState<SceneGalleryScreen> {
     final theme = Theme.of(context);
     final ext = theme.extension<LivingWallTheme>()!;
     final catalogAsync = ref.watch(sceneCatalogProvider);
-    final activeScene = ref.watch(activeSceneForWallProvider(widget.wallId));
-    final sortedScenes = ref.watch(
-      sortedScenesForWallProvider(widget.wallId),
-    );
+
+    final isRoomMode = widget.wallId == null;
+
+    // In room mode, use the first wall as canonical for aspect sort and
+    // active-scene detection — consistent with activeSceneForRoomProvider.
+    final firstWallId = isRoomMode
+        ? ref
+              .watch(firstWallForRoomProvider(widget.roomId))
+              .valueOrNull
+              ?.id
+        : null;
+    final resolvedWallId = widget.wallId ?? firstWallId;
+
+    final activeScene = isRoomMode
+        ? ref.watch(activeSceneForRoomProvider(widget.roomId))
+        : ref.watch(activeSceneForWallProvider(widget.wallId!));
+
+    final sortedScenes = resolvedWallId != null
+        ? ref.watch(sortedScenesForWallProvider(resolvedWallId))
+        : const <AspectSortedScene>[];
 
     return Scaffold(
       body: SafeArea(
@@ -88,13 +112,11 @@ class _SceneGalleryScreenState extends ConsumerState<SceneGalleryScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => AdjustmentBottomSheet(
-        scene: scene,
-        wallId: widget.wallId,
-      ),
+      builder: (_) => widget.wallId != null
+          ? AdjustmentBottomSheet(scene: scene, wallId: widget.wallId)
+          : AdjustmentBottomSheet(scene: scene, roomId: widget.roomId),
     );
-    // If the user applied, bounce back to the wall control screen so they
-    // can see the new hero/state without an extra tap.
+    // Applied: bounce back one level so the user sees the updated state.
     if (applied == true && mounted) {
       context.pop();
     }

@@ -28,6 +28,10 @@ class Routes {
   static String dashboardScenes(String roomId, String wallId) =>
       '/dashboard/room/$roomId/wall/$wallId/scenes';
 
+  /// Scene gallery opened from Room screen — applies to the whole room.
+  static String dashboardRoomScenes(String roomId) =>
+      '/dashboard/room/$roomId/scenes';
+
   /// Re-scan QR for an existing wall (Wall Settings → "Konfigurasi ulang").
   /// Reuses [QrScanScreen] but the route callback updates the wall record
   /// instead of creating a new one.

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../application/controllers/room_controller.dart';
 import '../../application/controllers/wall_controller.dart';
+import '../../application/providers/room_providers.dart';
 import '../../application/providers/wall_providers.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/scene_palette.dart';
@@ -12,15 +14,24 @@ import '../../data/models/scene.dart';
 /// always present; Speed only when the scene defines a default sx; Intensity
 /// only when ix is defined. Dragging dismisses without applying — per spec,
 /// "no silent changes" — only the Apply button commits.
+///
+/// Supply exactly one of [wallId] (single-wall context, e.g. from Wall
+/// Control) or [roomId] (room context, e.g. from Room Screen "Lihat semua").
+/// Room mode fans out via [RoomController]; wall mode uses [WallController].
 class AdjustmentBottomSheet extends ConsumerStatefulWidget {
   const AdjustmentBottomSheet({
     super.key,
     required this.scene,
-    required this.wallId,
-  });
+    this.wallId,
+    this.roomId,
+  }) : assert(
+         wallId != null || roomId != null,
+         'Provide wallId (wall mode) or roomId (room mode)',
+       );
 
   final Scene scene;
-  final String wallId;
+  final String? wallId;
+  final String? roomId;
 
   @override
   ConsumerState<AdjustmentBottomSheet> createState() =>
@@ -50,18 +61,31 @@ class _AdjustmentBottomSheetState
     final messenger = ScaffoldMessenger.of(context);
     final navigator = Navigator.of(context);
     final errorColor = Theme.of(context).colorScheme.error;
-    final controller = ref.read(wallControllerProvider);
-    final wallName = await controller.nameOf(widget.wallId);
     try {
-      await controller.applyScene(
-        widget.wallId,
-        widget.scene,
-        briOverride: _brightness,
-        sxOverride: _speed,
-        ixOverride: _intensity,
-      );
-      // S10 — applied toast. Lives here rather than as a separate widget
-      // because the snackbar host scoped to a route is the right surface.
+      final String targetName;
+      if (widget.roomId != null) {
+        final roomCtrl = ref.read(roomControllerProvider);
+        targetName =
+            ref.read(roomByIdProvider(widget.roomId!))?.name ?? 'Ruangan';
+        await roomCtrl.applyScene(
+          widget.roomId!,
+          widget.scene,
+          briOverride: _brightness,
+          sxOverride: _speed,
+          ixOverride: _intensity,
+        );
+      } else {
+        final wallCtrl = ref.read(wallControllerProvider);
+        targetName = await wallCtrl.nameOf(widget.wallId!);
+        await wallCtrl.applyScene(
+          widget.wallId!,
+          widget.scene,
+          briOverride: _brightness,
+          sxOverride: _speed,
+          ixOverride: _intensity,
+        );
+      }
+      // S10 — applied toast.
       final percent = (_brightness / 255 * 100).round();
       messenger
         ..hideCurrentSnackBar()
@@ -69,7 +93,7 @@ class _AdjustmentBottomSheetState
           SnackBar(
             duration: const Duration(seconds: 3),
             content: Text(
-              '${widget.scene.name} diterapkan · $wallName · $percent%',
+              '${widget.scene.name} diterapkan · $targetName · $percent%',
             ),
           ),
         );
@@ -91,8 +115,10 @@ class _AdjustmentBottomSheetState
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final ext = theme.extension<LivingWallTheme>()!;
-    final wallName =
-        ref.watch(wallByIdProvider(widget.wallId)).valueOrNull?.name ?? 'Wall';
+    final targetName = widget.roomId != null
+        ? (ref.watch(roomByIdProvider(widget.roomId!))?.name ?? 'Ruangan')
+        : (ref.watch(wallByIdProvider(widget.wallId!)).valueOrNull?.name ??
+            'Wall');
 
     return Padding(
       padding: EdgeInsets.only(
@@ -163,7 +189,7 @@ class _AdjustmentBottomSheetState
                         ),
                       )
                     : Text(
-                        'Terapkan ke $wallName',
+                        'Terapkan ke $targetName',
                         style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,

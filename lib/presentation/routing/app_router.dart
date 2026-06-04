@@ -95,6 +95,14 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (_, state) =>
                 RoomScreen(roomId: state.pathParameters['roomId']!),
             routes: [
+              // Room-level scene gallery — no wallId in path; applies scene
+              // to all walls in the room via RoomController.
+              GoRoute(
+                path: 'scenes',
+                builder: (_, state) => SceneGalleryScreen(
+                  roomId: state.pathParameters['roomId']!,
+                ),
+              ),
               GoRoute(
                 path: 'wall/:wallId',
                 builder: (_, state) => WallControlScreen(
