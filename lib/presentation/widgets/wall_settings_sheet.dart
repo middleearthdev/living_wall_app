@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../application/controllers/wall_controller.dart';
 import '../../application/providers/wall_providers.dart';
 import '../../core/theme/app_theme.dart';
+import '../../data/models/aspect_class.dart';
 import '../../data/models/wall.dart';
 import '../routing/routes.dart';
 
@@ -201,6 +202,8 @@ class _WallSettingsSheetState extends ConsumerState<WallSettingsSheet> {
               }
               return Column(
                 children: [
+                  _SpecCard(wall: wall),
+                  const SizedBox(height: 6),
                   _SettingsAction(
                     icon: Icons.edit_outlined,
                     label: 'Ganti nama',
@@ -236,6 +239,80 @@ class _WallSettingsSheetState extends ConsumerState<WallSettingsSheet> {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _SpecCard extends StatelessWidget {
+  const _SpecCard({required this.wall});
+
+  final Wall wall;
+
+  String _aspectLabel(AspectClass c) => switch (c) {
+    AspectClass.landscape => 'Landscape',
+    AspectClass.portrait => 'Portrait',
+    AspectClass.square => 'Square',
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final ext = Theme.of(context).extension<LivingWallTheme>()!;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: ext.surface3,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        children: [
+          _SpecRow(label: 'Serial', value: wall.serialNumber),
+          const SizedBox(height: 8),
+          _SpecRow(
+            label: 'Dimensi',
+            value: '${wall.lengthMm} × ${wall.heightMm} mm',
+          ),
+          const SizedBox(height: 8),
+          _SpecRow(
+            label: 'Grid',
+            value: '${wall.gridWidth} × ${wall.gridHeight} LED',
+          ),
+          const SizedBox(height: 8),
+          _SpecRow(label: 'Aspect', value: _aspectLabel(wall.aspectClass)),
+        ],
+      ),
+    );
+  }
+}
+
+class _SpecRow extends StatelessWidget {
+  const _SpecRow({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final ext = Theme.of(context).extension<LivingWallTheme>()!;
+    return Row(
+      children: [
+        SizedBox(
+          width: 64,
+          child: Text(
+            label,
+            style: TextStyle(
+              color: ext.textDim,
+              fontSize: 12,
+            ),
+          ),
+        ),
+        Expanded(
+          child: Text(
+            value,
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+          ),
+        ),
+      ],
     );
   }
 }

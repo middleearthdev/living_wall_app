@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 
+import '../../core/constants/hardware.dart';
 import '../../core/constants/network.dart';
 import '../models/scene.dart';
 import '../models/wall_state.dart';
@@ -52,19 +53,24 @@ class WledClient {
   Future<void> setBrightness(int bri) =>
       _post('/json/state', {'bri': bri.clamp(0, 255)});
 
-  /// One-shot provisioning at add-wall time: declare the wall's 2D matrix
-  /// layout and join its room's UDP sync group.
+  /// One-shot provisioning at add-wall time: configure the LED hardware,
+  /// declare the 2D matrix layout, and join the room's UDP sync group.
   ///
-  /// Matrix config tells WLED to render 2D effects in (x, y) space across a
-  /// serpentine-wired panel, instead of treating the strip as a 1D list of
-  /// LEDs. Without this, scenes like Sunset render as scrambled zig-zags on
-  /// a real wall.
+  /// Sends two sibling keys under `hw.led` in a single `/json/cfg` write:
   ///
-  /// Wiring convention is fixed by production: zigzag, bottom-left origin,
-  /// row-major. That maps to WLED panel flags `b=true, r=false, v=false,
-  /// s=true`.
+  /// - `ins`: the physical LED strip — GPIO pin, type, count, color order.
+  ///   These are fixed by PCB design ([LedHardware]) and strip spec (WS2812B);
+  ///   only `count` varies per wall (gridWidth × gridHeight from QR).
   ///
-  /// Writes to flash — call this once per wall (add-wall or explicit
+  /// - `matrix`: the 2D rendering layer — maps (x, y) coordinates to the
+  ///   linear LED index so 2D effects render coherently across wall sizes.
+  ///   Without this, effects like Plasma 2D render as scrambled zig-zags on
+  ///   a serpentine-wired panel.
+  ///
+  /// Wiring convention fixed by production: zigzag, bottom-left origin,
+  /// row-major → WLED panel flags `b=true, r=false, v=false, s=true`.
+  ///
+  /// Writes to flash — call once per wall lifecycle (add-wall or explicit
   /// reconfigure), never on app launch.
   Future<void> configureMatrix({
     required int gridWidth,
@@ -72,6 +78,17 @@ class WledClient {
   }) => _post('/json/cfg', {
     'hw': {
       'led': {
+        'ins': [
+          {
+            'pin': [LedHardware.dataPin],
+            'type': LedHardware.type,
+            'order': LedHardware.colorOrder,
+            'start': 0,
+            'count': gridWidth * gridHeight,
+            'rev': false,
+            'skip': 0,
+          },
+        ],
         'matrix': {
           'mpc': 1,
           'panels': [
